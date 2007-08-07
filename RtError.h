@@ -21,6 +21,8 @@ class RtError : public std::exception
  public:
   //! Defined RtError types.
   enum Type {
+    WARNING,           /*!< A non-critical error. */
+    DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
     UNSPECIFIED,       /*!< The default, unspecified error type. */
     NO_DEVICES_FOUND,  /*!< No devices found on system. */
     INVALID_DEVICE,    /*!< An invalid device ID was specified. */

@@ -564,12 +564,6 @@ protected:
 
   enum { FAILURE, SUCCESS };
 
-  enum ErrorType {
-    WARNING,
-    INVALID_CALL,
-    SYSTEM
-  };
-
   enum StreamState {
     STREAM_STOPPED,
     STREAM_RUNNING,
@@ -661,7 +655,7 @@ protected:
   void verifyStream( void );
 
   //! Protected common error method to allow global control over error handling.
-  void error( ErrorType type );
+  void error( RtError::Type type );
 
   /*!
     Protected method used to perform format, channel number, and/or interleaving
