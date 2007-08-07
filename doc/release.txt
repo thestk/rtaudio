@@ -1,12 +1,27 @@
-RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), SGI, Macintosh OS X (CoreAudio), and Windows (DirectSound and ASIO) operating systems.
+RtAudio - a set of C++ classes that provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
 
-By Gary P. Scavone, 2001-2005.
+By Gary P. Scavone, 2001-2007.
 
-v3.0.3: ( November 2005)
+v4.0.0: (7 August 2007)
+- new support for non-interleaved user data
+- additional input/output parameter specifications, including channel offset
+- new support for dynamic connection of devices
+- new support for stream time
+- revised callback arguments, including separate input and output buffer arguments
+- revised C++ exception handling
+- revised OSS support for version 4.0
+- discontinued support of blocking functionality
+- discontinued support of SGI
+- Windows DirectSound API bug fix
+- NetBSD support (using OSS API) by Emmanuel Dreyfus
+- changed default pthread scheduling priority to SCHED_RR when defined in the system
+- new getCompiledApi() static function
+- new getCurrentApi(), getStreamTime(), getStreamLatency(), and isStreamRunning() functions
+- modified RtAudioDeviceInfo structure to distinguish default input and output devices
+
+v3.0.3: (18 November 2005)
 - UNICODE fix for Windows DirectSound API
 - MinGW compiler fix for ASIO API
-- jack support to create virtual devices for each jack plugin
-- support to prefill output buffer with zeroes in duplex mode
 
 v3.0.2: (14 October 2005)
 - modification of ALSA read/write order to fix duplex under/overruns
