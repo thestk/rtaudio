@@ -2,6 +2,9 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2007.
 
+v4.0.1: (13 August 2007)
+- fix to RtError::WARNING typo in RtAudio.cpp
+
 v4.0.0: (7 August 2007)
 - new support for non-interleaved user data
 - additional input/output parameter specifications, including channel offset
