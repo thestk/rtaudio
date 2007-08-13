@@ -5906,7 +5906,9 @@ extern "C" void *alsaCallbackHandler( void *ptr )
 #ifdef SCHED_RR
   // Set a higher scheduler priority (P.J. Leonard)
   struct sched_param param;
-  param.sched_priority = 39;   // Is this the best number?
+  int min = sched_get_priority_min( SCHED_RR );
+  int max = sched_get_priority_max( SCHED_RR );
+  param.sched_priority = min + ( max - min ) / 2;   // Is this the best number?
   sched_setscheduler( 0, SCHED_RR, &param );
 #endif
 
@@ -6832,7 +6834,7 @@ extern "C" void *ossCallbackHandler( void *ptr )
 // message printing.
 void RtApi :: error( RtError::Type type )
 {
-  if ( type == RtError::RtError::WARNING && showWarnings_ == true )
+  if ( type == RtError::WARNING && showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
   else
     throw( RtError( errorText_, type ) );
