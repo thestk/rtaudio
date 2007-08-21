@@ -911,7 +911,7 @@ class RtApiDummy: public RtApi
 {
 public:
 
-  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( WARNING ); };
+  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RtError::WARNING ); };
   RtAudio::Api getCurrentApi( void ) { return RtAudio::RTAUDIO_DUMMY; };
   unsigned int getDeviceCount( void ) { return 0; };
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) { RtAudio::DeviceInfo info; return info; };
