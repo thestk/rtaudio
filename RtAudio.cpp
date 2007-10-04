@@ -3223,7 +3223,7 @@ struct DsHandle {
   HANDLE condition;
 
   DsHandle()
-    :drainCounter(0), internalDrain(false) { id[0] = 0, id[1] = 0; xrun[0] = false; xrun[1] = false; bufferPointer[0] = 0; bufferPointer[1] = 0; }
+    :drainCounter(0), internalDrain(false) { id[0] = 0; id[1] = 0; buffer[0] = 0; buffer[1] = 0; xrun[0] = false; xrun[1] = false; bufferPointer[0] = 0; bufferPointer[1] = 0; }
 };
 
 /*
