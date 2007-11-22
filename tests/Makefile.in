@@ -1,6 +1,6 @@
 ### RtAudio tests Makefile - for various flavors of unix
 
-PROGRAMS = probe playsaw playraw record duplex testall
+PROGRAMS = audioprobe playsaw playraw record duplex testall
 RM = /bin/rm
 SRC_PATH = ../
 INCLUDE = ../
@@ -22,8 +22,8 @@ LIBRARY += @frameworks@
 
 all : $(PROGRAMS)
 
-probe : probe.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o probe probe.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+audioprobe : audioprobe.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o audioprobe audioprobe.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
 playsaw : playsaw.cpp $(OBJECTS)
 	$(CC) $(CFLAGS) $(DEFS) -o playsaw playsaw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)

@@ -58,7 +58,7 @@ void usage( void ) {
   std::cout << "    file = the raw file to play,\n";
   std::cout << "    device = optional device to use (default = 0),\n";
   std::cout << "    and channelOffset = an optional channel offset on the device (default = 0).\n\n";
-  exit(0);
+  exit( 0 );
 }
 
 struct OutputData {
@@ -106,13 +106,13 @@ int main( int argc, char *argv[] )
   if ( argc > 4 )
     device = (unsigned int) atoi( argv[4] );
   if ( argc > 5 )
-    offset = (unsigned int) atoi(argv[5]);
+    offset = (unsigned int) atoi( argv[5] );
 
   OutputData data;
   data.fd = fopen( file, "rb" );
   if ( !data.fd ) {
     std::cout << "Unable to find or open file!\n";
-    exit( 0 );
+    exit( 1 );
   }
 
   // Set our stream parameters for output only.

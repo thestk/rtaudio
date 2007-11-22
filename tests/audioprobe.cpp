@@ -1,6 +1,6 @@
 /******************************************/
 /*
-  probe.cpp
+  audioprobe.cpp
   by Gary P. Scavone, 2001
 
   Probe audio system and prints device info.
