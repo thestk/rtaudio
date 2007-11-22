@@ -2528,13 +2528,25 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     return FAILURE;
   }
 
-  // Set the sample rate.
-  result = ASIOSetSampleRate( (ASIOSampleRate) sampleRate );
+  // Get the current sample rate
+  ASIOSampleRate currentRate;
+  result = ASIOGetSampleRate( &currentRate );
   if ( result != ASE_OK ) {
     drivers.removeCurrentDriver();
-    errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error setting sample rate (" << sampleRate << ").";
+    errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error getting sample rate.";
     errorText_ = errorStream_.str();
     return FAILURE;
+  }
+
+  // Set the sample rate only if necessary
+  if ( currentRate != sampleRate ) {
+    result = ASIOSetSampleRate( (ASIOSampleRate) sampleRate );
+    if ( result != ASE_OK ) {
+      drivers.removeCurrentDriver();
+      errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error setting sample rate (" << sampleRate << ").";
+      errorText_ = errorStream_.str();
+      return FAILURE;
+    }
   }
 
   // Determine the driver data type.
@@ -2696,7 +2708,8 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.doConvertBuffer[mode] = true;
 
   // Allocate necessary internal buffers
-  unsigned long bufferBytes = stream_.nUserChannels[mode] * *bufferSize * formatBytes( stream_.userFormat );
+  unsigned long bufferBytes;
+  bufferBytes = stream_.nUserChannels[mode] * *bufferSize * formatBytes( stream_.userFormat );
   stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
   if ( stream_.userBuffer[mode] == NULL ) {
     errorText_ = "RtApiAsio::probeDeviceOpen: error allocating user buffer memory.";
@@ -2958,8 +2971,8 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
       handle->internalDrain = true;
   }
 
-  unsigned int bufferBytes, i, j;
-  unsigned int nChannels = stream_.nDeviceChannels[0] + stream_.nDeviceChannels[1];
+  unsigned int nChannels, bufferBytes, i, j;
+  nChannels = stream_.nDeviceChannels[0] + stream_.nDeviceChannels[1];
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
     bufferBytes = stream_.bufferSize * formatBytes( stream_.deviceFormat[0] );
@@ -3187,6 +3200,14 @@ static const char* getAsioErrorString( ASIOError result )
 #include <dsound.h>
 #include <assert.h>
 
+#if defined(__MINGW32__)
+// missing from latest mingw winapi
+#define WAVE_FORMAT_96M08 0x00010000 /* 96 kHz, Mono, 8-bit */
+#define WAVE_FORMAT_96S08 0x00020000 /* 96 kHz, Stereo, 8-bit */
+#define WAVE_FORMAT_96M16 0x00040000 /* 96 kHz, Mono, 16-bit */
+#define WAVE_FORMAT_96S16 0x00080000 /* 96 kHz, Stereo, 16-bit */
+#endif
+
 #define MINIMUM_DEVICE_BUFFER_SIZE 32768
 
 #ifdef _MSC_VER // if Microsoft Visual C++
@@ -3247,7 +3268,7 @@ RtApiDs::RtDsStatistics RtApiDs::getDsStatistics()
 
 // Declarations for utility functions, callbacks, and structures
 // specific to the DirectSound implementation.
-static bool CALLBACK deviceCountCallback( LPGUID lpguid,
+static BOOL CALLBACK deviceCountCallback( LPGUID lpguid,
                                           LPCTSTR description,
                                           LPCTSTR module,
                                           LPVOID lpContext );
@@ -4665,7 +4686,7 @@ std::string convertTChar( LPCTSTR name )
   return s;
 }
 
-static bool CALLBACK deviceCountCallback( LPGUID lpguid,
+static BOOL CALLBACK deviceCountCallback( LPGUID lpguid,
                                           LPCTSTR description,
                                           LPCTSTR module,
                                           LPVOID lpContext )
@@ -4678,7 +4699,7 @@ static bool CALLBACK deviceCountCallback( LPGUID lpguid,
     LPDIRECTSOUNDCAPTURE object;
 
     hr = DirectSoundCaptureCreate(  lpguid, &object,   NULL );
-    if ( hr != DS_OK ) return true;
+    if ( hr != DS_OK ) return TRUE;
 
     caps.dwSize = sizeof(caps);
     hr = object->GetCaps( &caps );
@@ -4692,7 +4713,7 @@ static bool CALLBACK deviceCountCallback( LPGUID lpguid,
     DSCAPS caps;
     LPDIRECTSOUND object;
     hr = DirectSoundCreate(  lpguid, &object,   NULL );
-    if ( hr != DS_OK ) return true;
+    if ( hr != DS_OK ) return TRUE;
 
     caps.dwSize = sizeof(caps);
     hr = object->GetCaps( &caps );
@@ -4703,20 +4724,20 @@ static bool CALLBACK deviceCountCallback( LPGUID lpguid,
     object->Release();
   }
 
-  if ( info->getDefault && lpguid == NULL ) return false;
+  if ( info->getDefault && lpguid == NULL ) return FALSE;
 
   if ( info->findIndex && info->counter > info->index ) {
     info->id = lpguid;
     info->name = convertTChar( description );
-    return false;
+    return FALSE;
   }
 
-  return true;
+  return TRUE;
 }
 
 static char* getErrorString( int code )
 {
-	switch (code) {
+	switch ( code ) {
 
   case DSERR_ALLOCATED:
     return "Already allocated";
