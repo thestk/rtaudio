@@ -85,12 +85,6 @@ case $host in
   fi
   ;;
 
-  *-sgi*)
-  AC_SUBST( audio_apis, ["-D__IRIX_AL__ -LANG:std -w"] )
-  AC_MSG_RESULT(using IRIX AL)
-  AC_CHECK_LIB(audio, alOpenPort, , AC_MSG_ERROR(IRIX audio support requires the audio library!) )
-  ;;
-
   *-apple*)
   AC_SUBST( sound_api, [_NO_API_] )
   AC_ARG_WITH(jack, [  --with-jack = choose JACK server support (unix only)], [AC_SUBST( sound_api, [-D__UNIX_JACK__] ) AC_MSG_RESULT(using JACK)], )
@@ -115,6 +109,27 @@ case $host in
       [AC_SUBST( audio_apis, [-D__MACOSX_CORE__] )],
       [AC_MSG_ERROR(CoreAudio header files not found!)] )
     AC_SUBST( frameworks, ["-framework CoreAudio -framework CoreFoundation"] )
+  fi
+  ;;
+
+  *-mingw32*)
+  AC_SUBST( sound_api, [_NO_API_] )
+  AC_ARG_WITH(asio, [  --with-asio = choose ASIO API support (windoze only)], [AC_SUBST( sound_api, [-D__WINDOWS_ASIO__] ) AC_MSG_RESULT(using ASIO)], )
+  if [test $sound_api = -D__UNIX_ASIO__;] then
+    audio_apis="-D__WINDOWS_ASIO__"
+  fi
+
+  # Look for DirectSound flag
+  AC_ARG_WITH(ds, [  --with-ds = choose DirectSound API support (windoze only)], [AC_SUBST( sound_api, [-D__WINDOWS_DS__] ) AC_MSG_RESULT(using DirectSound)], )
+  if test $sound_api = -D__WINDOWS_DS__; then
+    audio_apis="-D__WINDOWS_DS__ $audio_apis"
+  fi
+
+  # If no audio api flags specified, use DirectSound
+  if [test $sound_api = _NO_API_;] then
+    AC_SUBST( sound_api, [-D__WINDOWS_DS__] )
+    AC_MSG_RESULT(using DirectSound)
+    audio_apis="-D__WINDOWS_DS__"
   fi
   ;;
 
