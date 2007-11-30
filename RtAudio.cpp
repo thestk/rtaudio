@@ -3268,7 +3268,7 @@ RtApiDs::RtDsStatistics RtApiDs::getDsStatistics()
 
 // Declarations for utility functions, callbacks, and structures
 // specific to the DirectSound implementation.
-static BOOL CALLBACK deviceCountCallback( LPGUID lpguid,
+static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR description,
                                           LPCTSTR module,
                                           LPVOID lpContext );
@@ -3309,7 +3309,7 @@ unsigned int RtApiDs :: getDefaultInputDevice( void )
 {
   // Count output devices.
   EnumInfo info;
-  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &info );
+  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &info );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDefaultOutputDevice: error (" << getErrorString( result ) << ") counting output devices!";
     errorText_ = errorStream_.str();
@@ -3320,7 +3320,7 @@ unsigned int RtApiDs :: getDefaultInputDevice( void )
   // Now enumerate input devices until we find the id = NULL.
   info.isInput = true;
   info.getDefault = true;
-  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &info );
+  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &info );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDefaultInputDevice: error (" << getErrorString( result ) << ") enumerating input devices!";
     errorText_ = errorStream_.str();
@@ -3337,7 +3337,7 @@ unsigned int RtApiDs :: getDefaultOutputDevice( void )
   // Enumerate output devices until we find the id = NULL.
   EnumInfo info;
   info.getDefault = true;
-  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &info );
+  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &info );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDefaultOutputDevice: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
@@ -3353,7 +3353,7 @@ unsigned int RtApiDs :: getDeviceCount( void )
 {
   // Count DirectSound devices.
   EnumInfo info;
-  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &info );
+  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &info );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
@@ -3362,7 +3362,7 @@ unsigned int RtApiDs :: getDeviceCount( void )
 
   // Count DirectSoundCapture devices.
   info.isInput = true;
-  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &info );
+  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &info );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating input devices!";
     errorText_ = errorStream_.str();
@@ -3387,7 +3387,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   EnumInfo dsinfo;
   dsinfo.findIndex = true;
   dsinfo.index = device;
-  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &dsinfo );
+  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &dsinfo );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
@@ -3445,7 +3445,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
  probeInput:
 
   dsinfo.isInput = true;
-  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &dsinfo );
+  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &dsinfo );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") enumerating input devices!";
     errorText_ = errorStream_.str();
@@ -3555,7 +3555,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   EnumInfo dsinfo;
   dsinfo.findIndex = true;
   dsinfo.index = device;
-  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &dsinfo );
+  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &dsinfo );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
@@ -3571,7 +3571,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   }
   else { // mode == INPUT
     dsinfo.isInput = true;
-    HRESULT result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceCountCallback, &dsinfo );
+    HRESULT result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &dsinfo );
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") enumerating input devices!";
       errorText_ = errorStream_.str();
@@ -4686,7 +4686,7 @@ std::string convertTChar( LPCTSTR name )
   return s;
 }
 
-static BOOL CALLBACK deviceCountCallback( LPGUID lpguid,
+static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR description,
                                           LPCTSTR module,
                                           LPVOID lpContext )

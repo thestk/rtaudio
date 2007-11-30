@@ -123,6 +123,7 @@ case $host in
   AC_ARG_WITH(ds, [  --with-ds = choose DirectSound API support (windoze only)], [AC_SUBST( sound_api, [-D__WINDOWS_DS__] ) AC_MSG_RESULT(using DirectSound)], )
   if test $sound_api = -D__WINDOWS_DS__; then
     audio_apis="-D__WINDOWS_DS__ $audio_apis"
+    LIBS="-ldsound -lwinmm $LIBS"
   fi
 
   # If no audio api flags specified, use DirectSound
@@ -130,6 +131,7 @@ case $host in
     AC_SUBST( sound_api, [-D__WINDOWS_DS__] )
     AC_MSG_RESULT(using DirectSound)
     audio_apis="-D__WINDOWS_DS__"
+    LIBS="-ldsound -lwinmm $LIBS"
   fi
   ;;
 
