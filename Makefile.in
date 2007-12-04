@@ -3,7 +3,7 @@
 
 RM = /bin/rm
 
-OBJECTS	= RtAudio.o
+OBJECTS	= RtAudio.o @objects@
 
 LIBRARY  = librtaudio.a
 
@@ -13,7 +13,7 @@ RANLIB   = @RANLIB@
 
 DEFS     = @debug@
 DEFS    += @audio_apis@
-CFLAGS   = @cflags@
+CFLAGS   = @cflags@ -Iinclude
 CFLAGS  += @warn@
 
 all : $(LIBRARY)
@@ -26,6 +26,9 @@ $(LIBRARY): $(OBJECTS)
 	ranlib $(LIBRARY)
 
 %.o : %.cpp
+	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $@
+
+%.o : include/%.cpp
 	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $@
 
 clean : 

@@ -2291,10 +2291,10 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 // on information found in
 // http://www.cs.wustl.edu/~schmidt/win32-cv-1.html.
 
-#include "asio/asiosys.h"
-#include "asio/asio.h"
-#include "asio/iasiothiscallresolver.h"
-#include "asio/asiodrivers.h"
+#include "asiosys.h"
+#include "asio.h"
+#include "iasiothiscallresolver.h"
+#include "asiodrivers.h"
 #include <cmath>
 
 AsioDrivers drivers;
@@ -2366,11 +2366,14 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
     error( RtError::INVALID_USE );
   }
 
-  // Don't probe if a stream is already open.
+  // If a stream is already open, we cannot probe other devices.  Thus, use the saved results.
   if ( stream_.state != STREAM_CLOSED ) {
-    errorText_ = "RtApiAsio::getDeviceInfo: unable to probe driver while a stream is open.";
-    error( RtError::WARNING );
-    return info;
+    if ( device >= devices_.size() ) {
+      errorText_ = "RtApiAsio::getDeviceInfo: device ID was not present before stream was opened.";
+      error( RtError::WARNING );
+      return info;
+    }
+    return devices_[ device ];
   }
 
   char driverName[32];
@@ -2463,6 +2466,16 @@ void bufferSwitch( long index, ASIOBool processNow )
   object->callbackEvent( index );
 }
 
+void RtApiAsio :: saveDeviceInfo( void )
+{
+  devices_.clear();
+
+  unsigned int nDevices = getDeviceCount();
+  devices_.resize( nDevices );
+  for ( unsigned int i=0; i<nDevices; i++ )
+    devices_[i] = getDeviceInfo( i );
+}
+
 bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
                                    RtAudioFormat format, unsigned int *bufferSize,
@@ -2481,6 +2494,12 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     errorText_ = errorStream_.str();
     return FAILURE;
   }
+
+  // The getDeviceInfo() function will not work when a stream is open
+  // because ASIO does not allow multiple devices to run at the same
+  // time.  Thus, we'll probe the system before opening a stream and
+  // save the results for use by getDeviceInfo().
+  this->saveDeviceInfo();
 
   // Only load the driver once for duplex stream.
   if ( mode != INPUT || stream_.mode != OUTPUT ) {
@@ -3879,6 +3898,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   }
 
   // Set various stream parameters
+  DsHandle *handle = 0;
   stream_.nDeviceChannels[mode] = channels + firstChannel;
   stream_.nUserChannels[mode] = channels;
   stream_.bufferSize = *bufferSize;
@@ -3928,7 +3948,6 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   }
 
   // Allocate our DsHandle structures for the stream.
-  DsHandle *handle;
   if ( stream_.apiHandle == 0 ) {
     try {
       handle = new DsHandle;
@@ -4099,7 +4118,7 @@ void RtApiDs :: startStream()
     duplexPrerollBytes = (int) ( 0.5 * stream_.sampleRate * formatBytes( stream_.deviceFormat[1] ) * stream_.nDeviceChannels[1] );
   }
 
-  HRESULT result;
+  HRESULT result = 0;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     //statistics.outputFrameSize = formatBytes( stream_.deviceFormat[0] ) * stream_.nDeviceChannels[0];
 
@@ -4145,7 +4164,7 @@ void RtApiDs :: stopStream()
 
   MUTEX_LOCK( &stream_.mutex );
 
-  HRESULT result;
+  HRESULT result = 0;
   LPVOID audioPtr;
   DWORD dataLen;
   DsHandle *handle = (DsHandle *) stream_.apiHandle;

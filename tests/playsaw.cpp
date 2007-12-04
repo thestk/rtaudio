@@ -129,8 +129,7 @@ int main( int argc, char *argv[] )
   if ( argc > 4 )
     offset = (unsigned int) atoi( argv[4] );
 
-  double *data;
-  data = (double *) calloc( channels, sizeof( double ) );
+  double *data = (double *) calloc( channels, sizeof( double ) );
 
   // Let RtAudio print messages to stderr.
   dac.showWarnings( true );
