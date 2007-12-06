@@ -1,0 +1,12 @@
+
+This is the parent directory of the RtAudio distribution.  Here is a quick description of what is contained here:
+
+RtAudio.h   - class header
+RtAudio.cpp - class source
+rtaudio.dsw - Visual C++ 6.0 workspace file
+
+Directories:
+
+tests - various test programs and Visual C++ 6.0 project files
+doc   - complete documentation in a variety of formats (see doc/html/index.html)
+
