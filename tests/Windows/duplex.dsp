@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /D "NDEBUG" /D "__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /I "../../include" /D "NDEBUG" /D "__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "../../" /D "_DEBUG" /D "__WINDOWS_ASIO__.__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_DS__" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "../../" /I "../../include" /D "_DEBUG" /D "__WINDOWS_ASIO__.__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_DS__" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -87,15 +87,15 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asio.cpp
+SOURCE=..\..\include\asio.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asiodrivers.cpp
+SOURCE=..\..\include\asiodrivers.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asiolist.cpp
+SOURCE=..\..\include\asiolist.cpp
 # End Source File
 # Begin Source File
 
@@ -103,7 +103,7 @@ SOURCE=..\duplex.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\iasiothiscallresolver.cpp
+SOURCE=..\..\include\iasiothiscallresolver.cpp
 # End Source File
 # Begin Source File
 
@@ -115,35 +115,35 @@ SOURCE=..\..\RtAudio.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asio.h
+SOURCE=..\..\include\asio.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asiodrivers.h
+SOURCE=..\..\include\asiodrivers.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asiodrvr.h
+SOURCE=..\..\include\asiodrvr.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asiolist.h
+SOURCE=..\..\include\asiolist.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\asiosys.h
+SOURCE=..\..\include\asiosys.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\ginclude.h
+SOURCE=..\..\include\ginclude.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\iasiodrv.h
+SOURCE=..\..\include\iasiodrv.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\newrtaudio\asio\iasiothiscallresolver.h
+SOURCE=..\..\include\iasiothiscallresolver.h
 # End Source File
 # Begin Source File
 
