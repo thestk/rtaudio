@@ -6874,11 +6874,11 @@ extern "C" void *ossCallbackHandler( void *ptr )
 // message printing.
 void RtApi :: error( RtError::Type type )
 {
+  errorStream_.str(""); // clear the ostringstream
   if ( type == RtError::WARNING && showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
   else
     throw( RtError( errorText_, type ) );
-  errorStream_.str(""); // clear the ostringstream
 }
 
 void RtApi :: verifyStream()

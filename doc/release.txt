@@ -1,6 +1,10 @@
 RtAudio - a set of C++ classes that provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
 
-By Gary P. Scavone, 2001-2007.
+By Gary P. Scavone, 2001-2008.
+
+v4.0.4: ()
+- fixed clearing of error message stream in error()
+- fixed RtAudio::DeviceInfo description in "probing" documentation
 
 v4.0.3: (7 December 2007)
 - added support for MinGW compiler to configure script
