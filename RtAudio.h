@@ -42,7 +42,7 @@
   \file RtAudio.h
  */
 
-// RtAudio: Version 4.0.3
+// RtAudio: Version 4.0.4pre
 
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H

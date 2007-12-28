@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.3
+// RtAudio: Version 4.0.4pre
 
 #include "RtAudio.h"
 #include <iostream>
@@ -1816,8 +1816,8 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Count the available ports containing the client name as device
   // channels.  Jack "input ports" equal RtAudio output channels.
   unsigned int nChannels = 0;
-  unsigned long flag = JackPortIsOutput;
-  if ( mode == INPUT ) flag = JackPortIsInput;
+  unsigned long flag = JackPortIsInput;
+  if ( mode == INPUT ) flag = JackPortIsOutput;
   ports = jack_get_ports( client, deviceName.c_str(), NULL, flag );
   if ( ports ) {
     while ( ports[ nChannels ] ) nChannels++;
@@ -3725,6 +3725,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     ZeroMemory( &bufferDescription, sizeof( DSBUFFERDESC ) );
     bufferDescription.dwSize = sizeof( DSBUFFERDESC );
     bufferDescription.dwFlags = ( DSBCAPS_STICKYFOCUS |
+                                  DSBCAPS_GLOBALFOCUS |
                                   DSBCAPS_GETCURRENTPOSITION2 |
                                   DSBCAPS_LOCHARDWARE );  // Force hardware mixing
     bufferDescription.dwBufferBytes = bufferBytes;
@@ -3735,6 +3736,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = output->CreateSoundBuffer( &bufferDescription, &buffer, NULL );
     if ( FAILED( result ) ) {
       bufferDescription.dwFlags = ( DSBCAPS_STICKYFOCUS |
+                                    DSBCAPS_GLOBALFOCUS |
                                     DSBCAPS_GETCURRENTPOSITION2 |
                                     DSBCAPS_LOCSOFTWARE );  // Force software mixing
       result = output->CreateSoundBuffer( &bufferDescription, &buffer, NULL );
@@ -3995,6 +3997,8 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     goto error;
   }
 
+  // Boost DS thread priority
+  SetThreadPriority( (HANDLE) stream_.callbackInfo.thread, THREAD_PRIORITY_HIGHEST );
   return SUCCESS;
 
  error:
@@ -5164,6 +5168,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 			if ( subdevice < 0 ) break;
       if ( nDevices == device ) {
         sprintf( name, "hw:%d,%d", card, subdevice );
+        snd_ctl_close( chandle );
         goto foundDevice;
       }
       nDevices++;
@@ -6014,6 +6019,7 @@ unsigned int RtApiOss :: getDeviceCount( void )
     return 0;
   }
 
+  close( mixerfd );
   return sysinfo.numaudios;
 }
 
