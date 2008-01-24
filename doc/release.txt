@@ -3,8 +3,13 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 By Gary P. Scavone, 2001-2008.
 
 v4.0.4: ()
+- added functionality to allow getDeviceInfo() to work in ALSA on an open device (like ASIO)
+- fixes in configure script
 - fixed clearing of error message stream in error()
 - fixed RtAudio::DeviceInfo description in "probing" documentation
+- memory leak fixes in ALSA and OSS
+- Jack in/out port flag fix
+- Windows changes for thread priority and GLOBALFOCUS
 
 v4.0.3: (7 December 2007)
 - added support for MinGW compiler to configure script

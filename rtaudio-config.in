@@ -9,7 +9,7 @@ CFLAGS="@audio_apis@"
 
 if (test "x$1" == "x--libs") ; then
   echo "$LIBRARY"
-elif (test "x$1" == "x--cflags") ; then
+elif (test "x$1" == "x--CFLAGS") ; then
   echo "$CFLAGS"
 else
   echo "Unknown option: $1"
