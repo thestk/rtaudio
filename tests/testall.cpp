@@ -1,7 +1,7 @@
 /******************************************/
 /*
   testall.cpp
-  by Gary P. Scavone, 2007
+  by Gary P. Scavone, 2007-2008
 
   This program will make a variety of calls
   to extensively test RtAudio functionality.
@@ -17,11 +17,13 @@
 void usage( void ) {
   // Error function in case of incorrect command-line
   // argument specifications
-  std::cout << "\nuseage: testall N fs <device> <channelOffset>\n";
+  std::cout << "\nuseage: testall N fs <iDevice> <oDevice> <iChannelOffset> <oChannelOffset>\n";
   std::cout << "    where N = number of channels,\n";
   std::cout << "    fs = the sample rate,\n";
-  std::cout << "    device = optional device to use (default = 0),\n";
-  std::cout << "    and channelOffset = an optional channel offset on the device (default = 0).\n\n";
+  std::cout << "    iDevice = optional input device to use (default = 0),\n";
+  std::cout << "    oDevice = optional output device to use (default = 0),\n";
+  std::cout << "    iChannelOffset = an optional input channel offset (default = 0),\n";
+  std::cout << "    and oChannelOffset = optional output channel offset (default = 0).\n\n";
   exit( 0 );
 }
 
@@ -89,11 +91,11 @@ int inout( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
 int main( int argc, char *argv[] )
 {
-  unsigned int bufferFrames, fs, device = 0, offset = 0;
+  unsigned int bufferFrames, fs, oDevice = 0, iDevice = 0, iOffset = 0, oOffset = 0;
   char input;
 
   // minimal command-line checking
-  if (argc < 3 || argc > 5 ) usage();
+  if (argc < 3 || argc > 7 ) usage();
 
   RtAudio dac;
   if ( dac.getDeviceCount() < 1 ) {
@@ -104,9 +106,13 @@ int main( int argc, char *argv[] )
   channels = (unsigned int) atoi( argv[1] );
   fs = (unsigned int) atoi( argv[2] );
   if ( argc > 3 )
-    device = (unsigned int) atoi( argv[3] );
+    iDevice = (unsigned int) atoi( argv[3] );
   if ( argc > 4 )
-    offset = (unsigned int) atoi( argv[4] );
+    oDevice = (unsigned int) atoi(argv[4]);
+  if ( argc > 5 )
+    iOffset = (unsigned int) atoi(argv[5]);
+  if ( argc > 6 )
+    oOffset = (unsigned int) atoi(argv[6]);
 
   double *data = (double *) calloc( channels, sizeof( double ) );
 
@@ -116,9 +122,9 @@ int main( int argc, char *argv[] )
   // Set our stream parameters for output only.
   bufferFrames = 256;
   RtAudio::StreamParameters oParams, iParams;
-  oParams.deviceId = device;
+  oParams.deviceId = oDevice;
   oParams.nChannels = channels;
-  oParams.firstChannel = offset;
+  oParams.firstChannel = oOffset;
 
   RtAudio::StreamOptions options;
   options.flags = RTAUDIO_HOG_DEVICE;
@@ -181,9 +187,9 @@ int main( int argc, char *argv[] )
 
   // Now open a duplex stream.
   unsigned int bufferBytes;
-  iParams.deviceId = device;
+  iParams.deviceId = iDevice;
   iParams.nChannels = channels;
-  iParams.firstChannel = offset;
+  iParams.firstChannel = iOffset;
   options.flags = RTAUDIO_NONINTERLEAVED;
   try {
     dac.openStream( &oParams, &iParams, RTAUDIO_SINT32, fs, &bufferFrames, &inout, (void *)&bufferBytes, &options );

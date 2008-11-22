@@ -11,7 +11,7 @@ tests/Windows: Visual C++ .net test program workspace and projects
 
 OVERVIEW:
 
-RtAudio is a set of C++ classes that provide a common API (Application Programming Interface) for realtime audio input/output across Linux (native ALSA, JACK, and OSS), Macintosh OS X, SGI, and Windows (DirectSound and ASIO) operating systems.  RtAudio significantly simplifies the process of interacting with computer audio hardware.  It was designed with the following objectives:
+RtAudio is a set of C++ classes that provides a common API (Application Programming Interface) for realtime audio input/output across Linux (native ALSA, JACK, and OSS), Macintosh OS X, SGI, and Windows (DirectSound and ASIO) operating systems.  RtAudio significantly simplifies the process of interacting with computer audio hardware.  It was designed with the following objectives:
 
   - object-oriented C++ design
   - simple, common API across all supported platforms

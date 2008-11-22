@@ -108,11 +108,15 @@ static const RtAudioFormat RTAUDIO_FLOAT64 = 0x20; // Normalized between plus/mi
     If the RTAUDIO_HOG_DEVICE flag is set, RtAudio will attempt to
     open the input and/or output stream device(s) for exclusive use.
     Note that this is not possible with all supported audio APIs.
+
+    If the RTAUDIO_SCHEDULE_REALTIME flag is set, RtAudio will attempt 
+    to select realtime scheduling (round-robin) for the callback thread.
 */
 typedef unsigned int RtAudioStreamFlags;
 static const RtAudioStreamFlags RTAUDIO_NONINTERLEAVED = 0x1;    // Use non-interleaved buffers (default = interleaved).
 static const RtAudioStreamFlags RTAUDIO_MINIMIZE_LATENCY = 0x2;  // Attempt to set stream parameters for lowest possible latency.
 static const RtAudioStreamFlags RTAUDIO_HOG_DEVICE = 0x4;        // Attempt grab device and prevent use by others.
+static const RtAudioStreamFlags RTAUDIO_SCHEDULE_REALTIME = 0x8; // Try to select realtime scheduling for callback thread.
 
 /*! \typedef typedef unsigned long RtAudioStreamStatus;
     \brief RtAudio stream status (over- or underflow) flags.
@@ -240,9 +244,10 @@ class RtAudio
     The following flags can be OR'ed together to allow a client to
     make changes to the default stream behavior:
 
-    - \e RTAUDIO_NONINTERLEAVED:   Use non-interleaved buffers (default = interleaved).
-    - \e RTAUDIO_MINIMIZE_LATENCY: Attempt to set stream parameters for lowest possible latency.
-    - \e RTAUDIO_HOG_DEVICE:       Attempt grab device for exclusive use.
+    - \e RTAUDIO_NONINTERLEAVED:    Use non-interleaved buffers (default = interleaved).
+    - \e RTAUDIO_MINIMIZE_LATENCY:  Attempt to set stream parameters for lowest possible latency.
+    - \e RTAUDIO_HOG_DEVICE:        Attempt grab device for exclusive use.
+    - \e RTAUDIO_SCHEDULE_REALTIME: Attempt to select realtime scheduling for callback thread.
 
     By default, RtAudio streams pass and receive audio data from the
     client in an interleaved format.  By passing the
@@ -268,6 +273,11 @@ class RtAudio
     open the input and/or output stream device(s) for exclusive use.
     Note that this is not possible with all supported audio APIs.
 
+    If the RTAUDIO_SCHEDULE_REALTIME flag is set, RtAudio will attempt 
+    to select realtime scheduling (round-robin) for the callback thread.
+    The \c priority parameter will only be used if the RTAUDIO_SCHEDULE_REALTIME
+    flag is set. It defines the thread's realtime priority. 
+
     The \c numberOfBuffers parameter can be used to control stream
     latency in the Windows DirectSound, Linux OSS, and Linux Alsa APIs
     only.  A value of two is usually the smallest allowed.  Larger
@@ -285,10 +295,11 @@ class RtAudio
     RtAudioStreamFlags flags;      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE). */
     unsigned int numberOfBuffers;  /*!< Number of stream buffers. */
     std::string streamName;        /*!< A stream name (currently used only in Jack). */
+    int priority;                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
 
     // Default constructor.
     StreamOptions()
-      : flags(0), numberOfBuffers(0) {}
+    : flags(0), numberOfBuffers(0), priority(0) {}
   };
 
   //! A static function to determine the available compiled audio APIs.
@@ -440,10 +451,10 @@ class RtAudio
   void abortStream( void );
 
   //! Returns true if a stream is open and false if not.
-  bool isStreamOpen( void ) throw();
+  bool isStreamOpen( void ) const throw();
 
   //! Returns true if the stream is running and false if it is stopped or not open.
-  bool isStreamRunning( void ) throw();
+  bool isStreamRunning( void ) const throw();
 
   //! Returns the number of elapsed seconds since the stream was started.
   /*!
@@ -461,6 +472,14 @@ class RtAudio
     report latency, the return value will be zero.
   */
   long getStreamLatency( void );
+
+ //! Returns actual sample rate in use by the stream.
+ /*!
+   On some systems, the sample rate used may be slightly different
+   than that specified in the stream parameters.  If a stream is not
+   open, an RtError (type = INVALID_USE) will be thrown.
+ */
+  unsigned int getStreamSampleRate( void );
 
   //! Specify whether warning messages should be printed to stderr.
   void showWarnings( bool value = true ) throw();
@@ -551,9 +570,10 @@ public:
   virtual void stopStream( void ) = 0;
   virtual void abortStream( void ) = 0;
   long getStreamLatency( void );
+  unsigned int getStreamSampleRate( void );
   virtual double getStreamTime( void );
-  bool isStreamOpen( void ) { return stream_.state != STREAM_CLOSED; };
-  bool isStreamRunning( void ) { return stream_.state == STREAM_RUNNING; };
+  bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; };
+  bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; };
   void showWarnings( bool value ) { showWarnings_ = value; };
 
 
@@ -688,9 +708,10 @@ inline void RtAudio :: closeStream( void ) throw() { return rtapi_->closeStream(
 inline void RtAudio :: startStream( void ) { return rtapi_->startStream(); }
 inline void RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
 inline void RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
-inline bool RtAudio :: isStreamOpen( void ) throw() { return rtapi_->isStreamOpen(); }
-inline bool RtAudio :: isStreamRunning( void ) throw() { return rtapi_->isStreamRunning(); }
+inline bool RtAudio :: isStreamOpen( void ) const throw() { return rtapi_->isStreamOpen(); }
+inline bool RtAudio :: isStreamRunning( void ) const throw() { return rtapi_->isStreamRunning(); }
 inline long RtAudio :: getStreamLatency( void ) { return rtapi_->getStreamLatency(); }
+inline unsigned int RtAudio :: getStreamSampleRate( void ) { return rtapi_->getStreamSampleRate(); };
 inline double RtAudio :: getStreamTime( void ) { return rtapi_->getStreamTime(); }
 inline void RtAudio :: showWarnings( bool value ) throw() { rtapi_->showWarnings( value ); }
 
