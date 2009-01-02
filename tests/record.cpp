@@ -15,21 +15,21 @@
 /*
 typedef char  MY_TYPE;
 #define FORMAT RTAUDIO_SINT8
+*/
 
 typedef signed short  MY_TYPE;
 #define FORMAT RTAUDIO_SINT16
 
+/*
 typedef signed long  MY_TYPE;
 #define FORMAT RTAUDIO_SINT24
 
 typedef signed long  MY_TYPE;
 #define FORMAT RTAUDIO_SINT32
-*/
 
 typedef float  MY_TYPE;
 #define FORMAT RTAUDIO_FLOAT32
 
-/*
 typedef double  MY_TYPE;
 #define FORMAT RTAUDIO_FLOAT64
 */

@@ -4,7 +4,7 @@
 
     RtAudio provides a common API (Application Programming Interface)
     for realtime audio input/output across Linux (native ALSA, Jack,
-    and OSS), SGI, Macintosh OS X (CoreAudio and Jack), and Windows
+    and OSS), Macintosh OS X (CoreAudio and Jack), and Windows
     (DirectSound and ASIO) operating systems.
 
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
