@@ -1098,6 +1098,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.doConvertBuffer[mode] = true;
 
   std::cout << "doConvert = " << stream_.doConvertBuffer[mode] << ", userInterleaved = " << stream_.userInterleaved << ", deviceInterleaved = " << stream_.deviceInterleaved[mode] << std::endl;
+  std::cout << "nUserChannels = " << stream_.nUserChannels[mode] << ", nDeviceChannels = " << stream_.nDeviceChannels[mode] << std::endl;
 
   // Allocate our CoreHandle structure for the stream.
   CoreHandle *handle = 0;
@@ -1467,7 +1468,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
         UInt32 bufferBytes = outBufferList->mBuffers[handle->iStream[0]].mDataByteSize;
         for ( unsigned int i=0; i<stream_.nUserChannels[0]; i++ ) {
           memcpy( outBufferList->mBuffers[handle->iStream[0]+i].mData,
-                  &inBuffer[i*bufferBytes], bufferBytes );
+                  (void *)&inBuffer[i*stream_.bufferSize], bufferBytes );
         }
       }
       else { // fill multiple multi-channel streams with interleaved data
@@ -1477,7 +1478,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
         bool inInterleaved = ( stream_.userInterleaved ) ? true : false;
         UInt32 inChannels = stream_.nUserChannels[0];
         if ( stream_.doConvertBuffer[0] ) {
-          inInterleaved = true; // device buffer will always be interleaved for nStreams > 1
+          inInterleaved = true; // device buffer will always be interleaved for nStreams > 1 and not mono mode
           inChannels = stream_.nDeviceChannels[0];
         }
 
@@ -1555,7 +1556,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
       if ( stream_.deviceInterleaved[1] == false ) { // mono mode
         UInt32 bufferBytes = inBufferList->mBuffers[handle->iStream[1]].mDataByteSize;
         for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ ) {
-          memcpy( &outBuffer[i*bufferBytes],
+          memcpy( (void *)&outBuffer[i*stream_.bufferSize],
                   inBufferList->mBuffers[handle->iStream[1]+i].mData, bufferBytes );
         }
       }
@@ -1566,7 +1567,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
         bool outInterleaved = ( stream_.userInterleaved ) ? true : false;
         UInt32 outChannels = stream_.nUserChannels[1];
         if ( stream_.doConvertBuffer[1] ) {
-          outInterleaved = true; // device buffer will always be interleaved for nStreams > 1
+          outInterleaved = true; // device buffer will always be interleaved for nStreams > 1 and not mono mode
           outChannels = stream_.nDeviceChannels[1];
         }
 
