@@ -1,6 +1,20 @@
 RtAudio - a set of C++ classes that provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
 
-By Gary P. Scavone, 2001-2008.
+By Gary P. Scavone, 2001-2009.
+
+v4.0.5: (?? January 2009)
+- added support in CoreAudio for arbitrary stream channel configurations
+- added getStreamSampleRate() function because the actual sample rate can sometimes vary slightly from the specified one (thanks to Theo Veenker)
+- added new StreamOptions flag "RTAUDIO_SCHEDULE_REALTIME" and attribute "priority" to StreamOptions (thanks to Theo Veenker)
+- replaced usleep(50000) in callbackEvent() by a wait on condition variable which gets signaled in startStream() (thanks to Theo Veenker)
+- fix to way stream state is changed to avoid infinite loop problem
+- fix to int<->float conversion in convertBuffer() (thanks to Theo Veenker)
+- bug fix in byteSwapBuffer() (thanks to Stefan Muller Arisona and Theo Veenker)
+- fixed a few gcc 4.4 errors in OS-X
+- fixed bug in rtaudio-config script
+- revised configure script and Makefile structures
+- 64-bit fixes in ALSA API (thanks to Stefan Muller Arisona)
+- fixed ASIO sample rate selection bug (thanks to Sasha Zheligovsky)
 
 v4.0.4: (24 January 2008)
 - added functionality to allow getDeviceInfo() to work in ALSA for an open device (like ASIO)
