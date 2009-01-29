@@ -11,6 +11,8 @@
 
 #include "RtAudio.h"
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
 
 /*
 typedef char  MY_TYPE;

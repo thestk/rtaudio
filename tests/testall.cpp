@@ -10,6 +10,8 @@
 
 #include "RtAudio.h"
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
 
 #define BASE_RATE 0.005
 #define TIME   1.0

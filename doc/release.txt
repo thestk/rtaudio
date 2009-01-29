@@ -2,11 +2,12 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2009.
 
-v4.0.5: (?? January 2009)
+v4.0.5: (29 January 2009)
 - added support in CoreAudio for arbitrary stream channel configurations
 - added getStreamSampleRate() function because the actual sample rate can sometimes vary slightly from the specified one (thanks to Theo Veenker)
 - added new StreamOptions flag "RTAUDIO_SCHEDULE_REALTIME" and attribute "priority" to StreamOptions (thanks to Theo Veenker)
 - replaced usleep(50000) in callbackEvent() by a wait on condition variable which gets signaled in startStream() (thanks to Theo Veenker)
+- fix for Jack API when user callback function signals stop or abort calls
 - fix to way stream state is changed to avoid infinite loop problem
 - fix to int<->float conversion in convertBuffer() (thanks to Theo Veenker)
 - bug fix in byteSwapBuffer() (thanks to Stefan Muller Arisona and Theo Veenker)

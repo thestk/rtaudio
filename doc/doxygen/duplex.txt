@@ -5,6 +5,8 @@ Finally, it is easy to use RtAudio for simultaneous audio input/output, or duple
 \code
 #include "RtAudio.h"
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
 
 // Pass-through function.
 int inout( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,

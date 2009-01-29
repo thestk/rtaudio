@@ -42,6 +42,9 @@
 
 #include "RtAudio.h"
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
+#include <limits.h>
 
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
@@ -1731,9 +1734,15 @@ struct JackHandle {
     :client(0), drainCounter(0), internalDrain(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
 
+void jackSilentError( const char * ) {};
+
 RtApiJack :: RtApiJack()
 {
   // Nothing to do here.
+#if !defined(__RTAUDIO_DEBUG__)
+  // Turn off Jack's internal error reporting.
+  jack_set_error_function( &jackSilentError );
+#endif
 }
 
 RtApiJack :: ~RtApiJack()
@@ -2306,6 +2315,21 @@ void RtApiJack :: abortStream( void )
   stopStream();
 }
 
+// This function will be called by a spawned thread when the user
+// callback function signals that the stream should be stopped or
+// aborted.  It is necessary to handle it this way because the
+// callbackEvent() function must return before the jack_deactivate()
+// function will return.
+extern "C" void *jackStopStream( void *ptr )
+{
+  CallbackInfo *info = (CallbackInfo *) ptr;
+  RtApiJack *object = (RtApiJack *) info->object;
+
+  object->stopStream();
+
+  pthread_exit( NULL );
+}
+
 bool RtApiJack :: callbackEvent( unsigned long nframes )
 {
   if ( stream_.state == STREAM_STOPPED ) return SUCCESS;
@@ -2325,10 +2349,12 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 
   // Check if we were draining the stream and signal is finished.
   if ( handle->drainCounter > 3 ) {
-    if ( handle->internalDrain == false )
-      pthread_cond_signal( &handle->condition );
+    if ( handle->internalDrain == true ) {
+      ThreadHandle id;
+      pthread_create( &id, NULL, jackStopStream, info );
+    }
     else
-      stopStream();
+      pthread_cond_signal( &handle->condition );
     return SUCCESS;
   }
 
@@ -2357,7 +2383,8 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
                                      stream_.bufferSize, streamTime, status, info->userData );
     if ( handle->drainCounter == 2 ) {
       MUTEX_UNLOCK( &stream_.mutex );
-      abortStream();
+      ThreadHandle id;
+      pthread_create( &id, NULL, jackStopStream, info );
       return SUCCESS;
     }
     else if ( handle->drainCounter == 1 )
@@ -3857,7 +3884,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
       bufferBytes *= 2;
 
     // Set cooperative level to DSSCL_EXCLUSIVE ... sound stops when window focus changes.
-    //result = output->SetCooperativeLevel( hWnd, DSSCL_EXCLUSIVE );
+    // result = output->SetCooperativeLevel( hWnd, DSSCL_EXCLUSIVE );
     // Set cooperative level to DSSCL_PRIORITY ... sound remains when window focus changes.
     result = output->SetCooperativeLevel( hWnd, DSSCL_PRIORITY );
     if ( FAILED( result ) ) {
@@ -4023,6 +4050,11 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     // Update wave format structure and buffer information.
     waveFormat.nBlockAlign = waveFormat.nChannels * waveFormat.wBitsPerSample / 8;
     waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
+    dsPointerLeadTime = nBuffers * (*bufferSize) * (waveFormat.wBitsPerSample / 8) * channels;
+
+    // If the user wants an even bigger buffer, increase the device buffer size accordingly.
+    while ( dsPointerLeadTime * 2U > (DWORD) bufferBytes )
+      bufferBytes *= 2;
 
     // Setup the secondary DS buffer description.
     dsBufferSize = bufferBytes;
@@ -4043,6 +4075,20 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
       errorText_ = errorStream_.str();
       return FAILURE;
     }
+
+    // Get the buffer size ... might be different from what we specified.
+    DSCBCAPS dscbcaps;
+    dscbcaps.dwSize = sizeof( DSCBCAPS );
+    result = buffer->GetCaps( &dscbcaps );
+    if ( FAILED( result ) ) {
+      input->Release();
+      buffer->Release();
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting buffer settings (" << dsinfo.name << ")!";
+      errorText_ = errorStream_.str();
+      return FAILURE;
+    }
+
+    bufferBytes = dscbcaps.dwBufferBytes;
 
     // Lock the capture buffer
     LPVOID audioPtr;
@@ -4483,7 +4529,7 @@ void RtApiDs :: callbackEvent()
   // The state might change while waiting on a mutex.
   if ( stream_.state == STREAM_STOPPED ) {
     MUTEX_UNLOCK( &stream_.mutex );
-    return SUCCESS;
+    return;
   }
 
   // Invoke user callback to get fresh output data UNLESS we are
@@ -4530,7 +4576,7 @@ void RtApiDs :: callbackEvent()
   long bufferBytes;
 
   if ( stream_.mode == DUPLEX && !buffersRolling ) {
-    assert( handle->dsBufferSize[0] == handle->dsBufferSize[1] );
+    //assert( handle->dsBufferSize[0] == handle->dsBufferSize[1] );
 
     // It takes a while for the devices to get rolling. As a result,
     // there's no guarantee that the capture and write device pointers
@@ -4581,7 +4627,7 @@ void RtApiDs :: callbackEvent()
       Sleep( 1 );
     }
 
-    assert( handle->dsBufferSize[0] == handle->dsBufferSize[1] );
+    //assert( handle->dsBufferSize[0] == handle->dsBufferSize[1] );
 
     buffersRolling = true;
     handle->bufferPointer[0] = ( safeWritePos + handle->dsPointerLeadTime[0] );
