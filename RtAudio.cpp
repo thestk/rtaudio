@@ -4411,7 +4411,7 @@ void RtApiDs :: stopStream()
     LPDIRECTSOUNDBUFFER buffer = (LPDIRECTSOUNDBUFFER) handle->buffer[0];
     result = buffer->Stop();
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::abortStream: error (" << getErrorString( result ) << ") stopping output buffer!";
+      errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") stopping output buffer!";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -4420,7 +4420,7 @@ void RtApiDs :: stopStream()
     // we won't have old data playing.
     result = buffer->Lock( 0, handle->dsBufferSize[0], &audioPtr, &dataLen, NULL, NULL, 0 );
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::abortStream: error (" << getErrorString( result ) << ") locking output buffer!";
+      errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") locking output buffer!";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -4431,7 +4431,7 @@ void RtApiDs :: stopStream()
     // Unlock the DS buffer
     result = buffer->Unlock( audioPtr, dataLen, NULL, 0 );
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::abortStream: error (" << getErrorString( result ) << ") unlocking output buffer!";
+      errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") unlocking output buffer!";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -4447,7 +4447,7 @@ void RtApiDs :: stopStream()
 
     result = buffer->Stop();
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::abortStream: error (" << getErrorString( result ) << ") stopping input buffer!";
+      errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") stopping input buffer!";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -4456,7 +4456,7 @@ void RtApiDs :: stopStream()
     // we won't have old data playing.
     result = buffer->Lock( 0, handle->dsBufferSize[1], &audioPtr, &dataLen, NULL, NULL, 0 );
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::abortStream: error (" << getErrorString( result ) << ") locking input buffer!";
+      errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") locking input buffer!";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -4467,7 +4467,7 @@ void RtApiDs :: stopStream()
     // Unlock the DS buffer
     result = buffer->Unlock( audioPtr, dataLen, NULL, 0 );
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::abortStream: error (" << getErrorString( result ) << ") unlocking input buffer!";
+      errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") unlocking input buffer!";
       errorText_ = errorStream_.str();
       goto unlock;
     }
