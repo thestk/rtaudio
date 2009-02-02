@@ -2,7 +2,7 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2009.
 
-v4.0.5: (29 January 2009)
+v4.0.5: (2 February 2009)
 - added support in CoreAudio for arbitrary stream channel configurations
 - added getStreamSampleRate() function because the actual sample rate can sometimes vary slightly from the specified one (thanks to Theo Veenker)
 - added new StreamOptions flag "RTAUDIO_SCHEDULE_REALTIME" and attribute "priority" to StreamOptions (thanks to Theo Veenker)

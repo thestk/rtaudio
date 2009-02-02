@@ -143,6 +143,7 @@ int main( int argc, char *argv[] )
   oParams.firstChannel = offset;
 
   options.flags |= RTAUDIO_HOG_DEVICE;
+  options.flags |= RTAUDIO_SCHEDULE_REALTIME;
 #if !defined( USE_INTERLEAVED )
   options.flags |= RTAUDIO_NONINTERLEAVED;
 #endif
