@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.5
+// RtAudio: Version 4.0.6
 
 #include "RtAudio.h"
 #include <iostream>

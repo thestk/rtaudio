@@ -2,6 +2,10 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2009.
 
+v4.0.6: (3 June 2009)
+- bug fix in ALSA code to set period size to power of two (thanks to Joakim Karrstrom)
+- bug fix in OS-X for OS < 10.5 ... need preprocessor definition around new variable type (thanks to Tristan Matthews)
+
 v4.0.5: (2 February 2009)
 - added support in CoreAudio for arbitrary stream channel configurations
 - added getStreamSampleRate() function because the actual sample rate can sometimes vary slightly from the specified one (thanks to Theo Veenker)

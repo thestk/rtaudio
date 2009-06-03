@@ -32,7 +32,7 @@ Devices are now re-enumerated every time the RtAudio::getDeviceCount(), RtAudio:
 
 \section download Download
 
-Latest Release (2 February 2009): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.0.5.tar.gz">Version 4.0.5</A>
+Latest Release (3 June 2009): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.0.6.tar.gz">Version 4.0.6</A>
 
 \section documentation Documentation Links
 
