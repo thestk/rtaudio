@@ -88,7 +88,11 @@ case $host in
   AC_ARG_WITH(jack, [  --with-jack = choose JACK server support (unix only)], [
     api="$api -D__UNIX_JACK__"
     AC_MSG_RESULT(using JACK)
-    AC_CHECK_LIB(jack, jack_client_new, , AC_MSG_ERROR(JACK support requires the jack library!))], )
+    AC_CHECK_LIB(jack, jack_client_open, , AC_MSG_ERROR(JACK support requires the jack library!))], )
+
+#    AC_CHECK_HEADER(jack/jack.h, [], [AC_MSG_ERROR(Jack header file not found!)] )
+#    LIBS="$LIBS -framework jackmp" ], )
+
 
   # Look for Core flag
   AC_ARG_WITH(core, [  --with-core = choose CoreAudio API support (mac only)], [
