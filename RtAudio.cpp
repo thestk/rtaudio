@@ -1799,7 +1799,7 @@ RtApiJack :: ~RtApiJack()
 unsigned int RtApiJack :: getDeviceCount( void )
 {
   // See if we can become a jack client.
-  jack_options_t options = (jack_options_t) ( JackNoStartServer | JackUseExactName ); //JackNullOption;
+  jack_options_t options = (jack_options_t) ( JackNoStartServer ); //JackNullOption;
   jack_status_t *status = NULL;
   jack_client_t *client = jack_client_open( "RtApiJackCount", options, status );
   if ( client == 0 ) return 0;
@@ -1834,7 +1834,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   RtAudio::DeviceInfo info;
   info.probed = false;
 
-  jack_options_t options = (jack_options_t) ( JackNoStartServer | JackUseExactName ); //JackNullOption
+  jack_options_t options = (jack_options_t) ( JackNoStartServer ); //JackNullOption
   jack_status_t *status = NULL;
   jack_client_t *client = jack_client_open( "RtApiJackInfo", options, status );
   if ( client == 0 ) {
@@ -1977,7 +1977,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Look for jack server and try to become a client (only do once per stream).
   jack_client_t *client = 0;
   if ( mode == OUTPUT || ( mode == INPUT && stream_.mode != OUTPUT ) ) {
-    jack_options_t jackoptions = (jack_options_t) ( JackNoStartServer | JackUseExactName ); //JackNullOption;
+    jack_options_t jackoptions = (jack_options_t) ( JackNoStartServer ); //JackNullOption;
     jack_status_t *status = NULL;
     if ( options && !options->streamName.empty() )
       client = jack_client_open( options->streamName.c_str(), jackoptions, status );
