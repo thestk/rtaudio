@@ -26,11 +26,7 @@ typedef signed short  MY_TYPE;
 #define SCALE  32767.0
 
 /*
-typedef signed long  MY_TYPE;
-#define FORMAT RTAUDIO_SINT24
-#define SCALE  8388607.0
-
-typedef signed long  MY_TYPE;
+typedef signed int  MY_TYPE;
 #define FORMAT RTAUDIO_SINT32
 #define SCALE  2147483647.0
 

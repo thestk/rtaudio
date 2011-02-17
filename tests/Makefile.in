@@ -49,7 +49,7 @@ clean :
 	$(RM) -fR *.dSYM
 
 distclean: clean
-	$(RM) Makefile
+	$(RM) -f Makefile
 
 strip : 
 	strip $(PROGRAMS)
