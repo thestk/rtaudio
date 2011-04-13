@@ -4,9 +4,12 @@ Many thanks to the following people for providing bug fixes and improvements:
 <UL>
 <LI>Anders Ervik</LI>
 <LI>Robin Davies (Windows DS and ASIO)</LI>
+<LI>Antoine Lefebvre</LI>
+<LI>Dominic Mazzoni</LI>
+<LI>Tristan Matthews</LI>
 <LI>Ryan Williams (Windows non-MS compiler ASIO support)</LI>
 <LI>Ed Wildgoose (Linux ALSA and Jack)</LI>
-<LI>Dominic Mazzoni</LI>
+
 </UL>
 
 The RtAudio API incorporates many of the concepts developed in the <A href="http://www.portaudio.com/">PortAudio</A> project by Phil Burk and Ross Bencina.  Early development also incorporated ideas from Bill Schottstaedt's <A href="http://www-ccrma.stanford.edu/software/snd/sndlib/">sndlib</A>.  The CCRMA <A href="http://www-ccrma.stanford.edu/groups/soundwire/">SoundWire group</A> provided valuable feedback during the API proposal stages.

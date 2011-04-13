@@ -2,9 +2,16 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2011.
 
-v4.0.8: (?? February 2011)
-- fix for MinGW4 problem enumerating and setting sample rates
-
+v4.0.8: (12 April 2011)
+- fix for MinGW4 problem enumerating and setting sample rates (iasiothiscallresolver, Dmitry Kostjuchenko)
+- fix for OS-X problem handling device names in some languages (CFString conversion, Vincent Bénony)
+- small change to OS-X mutex lock location to avoid lockups
+- correction to documentation regarding 24-bit data (should be lower 3 bytes, not upper 3 bytes)
+- bug fix for error handling of warnings (Antoine Lefebvre)
+- added option to use the ALSA "default" device (Tristan Matthews)
+- removed use of mutexes in Windows
+- fix for ASIO4ALL behavior when stopping/closing streams (Antoine Lefebvre)
+- included python binding in "contrib" directory (beta, Antoine Lefebvre)
 
 v4.0.7: (4 February 2010)
 - revised Windows DS code and device enumeration to speed up device queries

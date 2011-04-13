@@ -1175,7 +1175,8 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Allocate necessary internal buffers.
   unsigned long bufferBytes;
   bufferBytes = stream_.nUserChannels[mode] * *bufferSize * formatBytes( stream_.userFormat );
-  stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
+  //  stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
+  stream_.userBuffer[mode] = (char *) malloc( bufferBytes );
   if ( stream_.userBuffer[mode] == NULL ) {
     errorText_ = "RtApiCore::probeDeviceOpen: error allocating user buffer memory.";
     goto error;
@@ -1384,7 +1385,7 @@ void RtApiCore :: stopStream( void )
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
     if ( handle->drainCounter == 0 ) {
-      handle->drainCounter = 1;
+      handle->drainCounter = 2;
       pthread_cond_wait( &handle->condition, &stream_.mutex ); // block until signaled
     }
 
@@ -1429,7 +1430,7 @@ void RtApiCore :: abortStream( void )
   }
 
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
-  handle->drainCounter = 1;
+  handle->drainCounter = 2;
 
   stopStream();
 }
@@ -1450,10 +1451,10 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
 
   // Check if we were draining the stream and signal is finished.
   if ( handle->drainCounter > 3 ) {
-    if ( handle->internalDrain == false )
-      pthread_cond_signal( &handle->condition );
-    else
+    if ( handle->internalDrain == true )
       stopStream();
+    else // external call to stopStream()
+      pthread_cond_signal( &handle->condition );
     return SUCCESS;
   }
 
@@ -2359,7 +2360,7 @@ void RtApiJack :: stopStream( void )
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
     if ( handle->drainCounter == 0 ) {
-      handle->drainCounter = 1;
+      handle->drainCounter = 2;
       pthread_cond_wait( &handle->condition, &stream_.mutex ); // block until signaled
     }
   }
@@ -2380,7 +2381,7 @@ void RtApiJack :: abortStream( void )
   }
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
-  handle->drainCounter = 1;
+  handle->drainCounter = 2;
 
   stopStream();
 }
@@ -2419,9 +2420,8 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 
   // Check if we were draining the stream and signal is finished.
   if ( handle->drainCounter > 3 ) {
-    if ( handle->internalDrain == true ) {
+    if ( handle->internalDrain == true )
       pthread_create( &threadId, NULL, jackStopStream, info );
-    }
     else
       pthread_cond_signal( &handle->condition );
     return SUCCESS;
@@ -2464,7 +2464,7 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
   unsigned long bufferBytes = nframes * sizeof( jack_default_audio_sample_t );
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
-    if ( handle->drainCounter > 0 ) { // write zeros to the output stream
+    if ( handle->drainCounter > 1 ) { // write zeros to the output stream
 
       for ( unsigned int i=0; i<stream_.nDeviceChannels[0]; i++ ) {
         jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer( handle->ports[0][i], (jack_nframes_t) nframes );
@@ -3119,6 +3119,8 @@ void RtApiAsio :: closeStream()
   stream_.state = STREAM_CLOSED;
 }
 
+bool stopThreadCalled = false;
+
 void RtApiAsio :: startStream()
 {
   verifyStream();
@@ -3128,7 +3130,7 @@ void RtApiAsio :: startStream()
     return;
   }
 
-  MUTEX_LOCK( &stream_.mutex );
+  //MUTEX_LOCK( &stream_.mutex );
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   ASIOError result = ASIOStart();
@@ -3140,11 +3142,14 @@ void RtApiAsio :: startStream()
 
   handle->drainCounter = 0;
   handle->internalDrain = false;
+  ResetEvent( handle->condition );
   stream_.state = STREAM_RUNNING;
   asioXRun = false;
 
  unlock:
-  MUTEX_UNLOCK( &stream_.mutex );
+  //MUTEX_UNLOCK( &stream_.mutex );
+
+  stopThreadCalled = false;
 
   if ( result == ASE_OK ) return;
   error( RtError::SYSTEM_ERROR );
@@ -3159,23 +3164,27 @@ void RtApiAsio :: stopStream()
     return;
   }
 
+  /*
   MUTEX_LOCK( &stream_.mutex );
 
   if ( stream_.state == STREAM_STOPPED ) {
     MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
+  */
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     if ( handle->drainCounter == 0 ) {
-      handle->drainCounter = 1;
-      MUTEX_UNLOCK( &stream_.mutex );
-      WaitForMultipleObjects( 1, &handle->condition, FALSE, INFINITE );  // block until signaled
-      ResetEvent( handle->condition );
-      MUTEX_LOCK( &stream_.mutex );
+      handle->drainCounter = 2;
+      //      MUTEX_UNLOCK( &stream_.mutex );
+      WaitForSingleObject( handle->condition, INFINITE );  // block until signaled
+      //ResetEvent( handle->condition );
+      //      MUTEX_LOCK( &stream_.mutex );
     }
   }
+
+  stream_.state = STREAM_STOPPED;
 
   ASIOError result = ASIOStop();
   if ( result != ASE_OK ) {
@@ -3183,8 +3192,7 @@ void RtApiAsio :: stopStream()
     errorText_ = errorStream_.str();
   }
 
-  stream_.state = STREAM_STOPPED;
-  MUTEX_UNLOCK( &stream_.mutex );
+  //  MUTEX_UNLOCK( &stream_.mutex );
 
   if ( result == ASE_OK ) return;
   error( RtError::SYSTEM_ERROR );
@@ -3204,13 +3212,30 @@ void RtApiAsio :: abortStream()
   // continuing sound, even when the device buffers are completely
   // disposed.  So now, calling abort is the same as calling stop.
   // AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
-  // handle->drainCounter = 1;
+  // handle->drainCounter = 2;
   stopStream();
+}
+
+// This function will be called by a spawned thread when the user
+// callback function signals that the stream should be stopped or
+// aborted.  It is necessary to handle it this way because the
+// callbackEvent() function must return before the ASIOStop()
+// function will return.
+extern "C" unsigned __stdcall asioStopStream( void *ptr )
+{
+  CallbackInfo *info = (CallbackInfo *) ptr;
+  RtApiAsio *object = (RtApiAsio *) info->object;
+
+  object->stopStream();
+
+  _endthreadex( 0 );
+  return 0;
 }
 
 bool RtApiAsio :: callbackEvent( long bufferIndex )
 {
   if ( stream_.state == STREAM_STOPPED ) return SUCCESS;
+  if ( stopThreadCalled ) return SUCCESS;
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAsio::callbackEvent(): the stream is closed ... this shouldn't happen!";
     error( RtError::WARNING );
@@ -3220,19 +3245,23 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
   CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
 
-  // Check if we were draining the stream and signal is finished.
+  // Check if we were draining the stream and signal if finished.
   if ( handle->drainCounter > 3 ) {
     if ( handle->internalDrain == false )
       SetEvent( handle->condition );
-    else
-      stopStream();
+    else { // spawn a thread to stop the stream
+      unsigned threadId;
+      stopThreadCalled = true;
+      stream_.callbackInfo.thread = _beginthreadex( NULL, 0, &asioStopStream,
+                                                    &stream_.callbackInfo, 0, &threadId );
+    }
     return SUCCESS;
   }
 
-  MUTEX_LOCK( &stream_.mutex );
+  /*MUTEX_LOCK( &stream_.mutex );
 
   // The state might change while waiting on a mutex.
-  if ( stream_.state == STREAM_STOPPED ) goto unlock;
+  if ( stream_.state == STREAM_STOPPED ) goto unlock; */
 
   // Invoke user callback to get fresh output data UNLESS we are
   // draining stream.
@@ -3251,8 +3280,12 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
     handle->drainCounter = callback( stream_.userBuffer[0], stream_.userBuffer[1],
                                      stream_.bufferSize, streamTime, status, info->userData );
     if ( handle->drainCounter == 2 ) {
-      MUTEX_UNLOCK( &stream_.mutex );
-      abortStream();
+      //      MUTEX_UNLOCK( &stream_.mutex );
+      //      abortStream();
+      unsigned threadId;
+      stopThreadCalled = true;
+      stream_.callbackInfo.thread = _beginthreadex( NULL, 0, &asioStopStream,
+                                                    &stream_.callbackInfo, 0, &threadId );
       return SUCCESS;
     }
     else if ( handle->drainCounter == 1 )
@@ -3352,7 +3385,7 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
   // drivers apparently do not function correctly without it.
   ASIOOutputReady();
 
-  MUTEX_UNLOCK( &stream_.mutex );
+  //  MUTEX_UNLOCK( &stream_.mutex );
 
   RtApi::tickStreamTime();
   return SUCCESS;
@@ -3707,7 +3740,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
 
   // Get sample rate and format information.
   std::vector<unsigned int> rates;
-  if ( inCaps.dwChannels == 2 ) {
+  if ( inCaps.dwChannels >= 2 ) {
     if ( inCaps.dwFormats & WAVE_FORMAT_1S16 ) info.nativeFormats |= RTAUDIO_SINT16;
     if ( inCaps.dwFormats & WAVE_FORMAT_2S16 ) info.nativeFormats |= RTAUDIO_SINT16;
     if ( inCaps.dwFormats & WAVE_FORMAT_4S16 ) info.nativeFormats |= RTAUDIO_SINT16;
@@ -4236,18 +4269,20 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, firstChannel );
 
   // Setup the callback thread.
-  unsigned threadId;
-  stream_.callbackInfo.object = (void *) this;
-  stream_.callbackInfo.isRunning = true;
-  stream_.callbackInfo.thread = _beginthreadex( NULL, 0, &callbackHandler,
-                                                &stream_.callbackInfo, 0, &threadId );
-  if ( stream_.callbackInfo.thread == 0 ) {
-    errorText_ = "RtApiDs::probeDeviceOpen: error creating callback thread!";
-    goto error;
-  }
+  if ( stream_.callbackInfo.isRunning == false ) {
+    unsigned threadId;
+    stream_.callbackInfo.isRunning = true;
+    stream_.callbackInfo.object = (void *) this;
+    stream_.callbackInfo.thread = _beginthreadex( NULL, 0, &callbackHandler,
+                                                  &stream_.callbackInfo, 0, &threadId );
+    if ( stream_.callbackInfo.thread == 0 ) {
+      errorText_ = "RtApiDs::probeDeviceOpen: error creating callback thread!";
+      goto error;
+    }
 
-  // Boost DS thread priority
-  SetThreadPriority( (HANDLE) stream_.callbackInfo.thread, THREAD_PRIORITY_HIGHEST );
+    // Boost DS thread priority
+    SetThreadPriority( (HANDLE) stream_.callbackInfo.thread, THREAD_PRIORITY_HIGHEST );
+  }
   return SUCCESS;
 
  error:
@@ -4347,7 +4382,7 @@ void RtApiDs :: startStream()
     return;
   }
 
-  MUTEX_LOCK( &stream_.mutex );
+  //MUTEX_LOCK( &stream_.mutex );
   
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
 
@@ -4389,10 +4424,11 @@ void RtApiDs :: startStream()
 
   handle->drainCounter = 0;
   handle->internalDrain = false;
+  ResetEvent( handle->condition );
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  MUTEX_UNLOCK( &stream_.mutex );
+  //  MUTEX_UNLOCK( &stream_.mutex );
 
   if ( FAILED( result ) ) error( RtError::SYSTEM_ERROR );
 }
@@ -4406,12 +4442,14 @@ void RtApiDs :: stopStream()
     return;
   }
 
+  /*
   MUTEX_LOCK( &stream_.mutex );
 
   if ( stream_.state == STREAM_STOPPED ) {
     MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
+  */
 
   HRESULT result = 0;
   LPVOID audioPtr;
@@ -4419,12 +4457,14 @@ void RtApiDs :: stopStream()
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     if ( handle->drainCounter == 0 ) {
-      handle->drainCounter = 1;
-      MUTEX_UNLOCK( &stream_.mutex );
-      WaitForMultipleObjects( 1, &handle->condition, FALSE, INFINITE );  // block until signaled
-      ResetEvent( handle->condition );
-      MUTEX_LOCK( &stream_.mutex );
+      handle->drainCounter = 2;
+      //      MUTEX_UNLOCK( &stream_.mutex );
+      WaitForSingleObject( handle->condition, INFINITE );  // block until signaled
+      //ResetEvent( handle->condition );
+      //      MUTEX_LOCK( &stream_.mutex );
     }
+
+    stream_.state = STREAM_STOPPED;
 
     // Stop the buffer and clear memory
     LPDIRECTSOUNDBUFFER buffer = (LPDIRECTSOUNDBUFFER) handle->buffer[0];
@@ -4464,6 +4504,8 @@ void RtApiDs :: stopStream()
     audioPtr = NULL;
     dataLen = 0;
 
+    stream_.state = STREAM_STOPPED;
+
     result = buffer->Stop();
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") stopping input buffer!";
@@ -4497,8 +4539,7 @@ void RtApiDs :: stopStream()
 
  unlock:
   timeEndPeriod( 1 ); // revert to normal scheduler frequency on lesser windows.
-  stream_.state = STREAM_STOPPED;
-  MUTEX_UNLOCK( &stream_.mutex );
+  //  MUTEX_UNLOCK( &stream_.mutex );
 
   if ( FAILED( result ) ) error( RtError::SYSTEM_ERROR );
 }
@@ -4513,7 +4554,7 @@ void RtApiDs :: abortStream()
   }
 
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
-  handle->drainCounter = 1;
+  handle->drainCounter = 2;
 
   stopStream();
 }
@@ -4543,6 +4584,7 @@ void RtApiDs :: callbackEvent()
     return;
   }
 
+  /*
   MUTEX_LOCK( &stream_.mutex );
 
   // The state might change while waiting on a mutex.
@@ -4550,6 +4592,7 @@ void RtApiDs :: callbackEvent()
     MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
+  */
 
   // Invoke user callback to get fresh output data UNLESS we are
   // draining stream.
@@ -4568,7 +4611,7 @@ void RtApiDs :: callbackEvent()
     handle->drainCounter = callback( stream_.userBuffer[0], stream_.userBuffer[1],
                                      stream_.bufferSize, streamTime, status, info->userData );
     if ( handle->drainCounter == 2 ) {
-      MUTEX_UNLOCK( &stream_.mutex );
+      //      MUTEX_UNLOCK( &stream_.mutex );
       abortStream();
       return;
     }
@@ -4900,7 +4943,7 @@ void RtApiDs :: callbackEvent()
   }
 
  unlock:
-  MUTEX_UNLOCK( &stream_.mutex );
+  //  MUTEX_UNLOCK( &stream_.mutex );
 
   RtApi::tickStreamTime();
 }
@@ -5432,43 +5475,47 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   char name[64];
   snd_ctl_t *chandle;
 
-  // Count cards and devices
-  card = -1;
-  snd_card_next( &card );
-  while ( card >= 0 ) {
-    sprintf( name, "hw:%d", card );
-    result = snd_ctl_open( &chandle, name, SND_CTL_NONBLOCK );
-    if ( result < 0 ) {
-      errorStream_ << "RtApiAlsa::probeDeviceOpen: control open, card = " << card << ", " << snd_strerror( result ) << ".";
-      errorText_ = errorStream_.str();
+  if ( options && options->flags & RTAUDIO_ALSA_USE_DEFAULT )
+    snprintf(name, sizeof(name), "%s", "default");
+  else {
+    // Count cards and devices
+    card = -1;
+    snd_card_next( &card );
+    while ( card >= 0 ) {
+      sprintf( name, "hw:%d", card );
+      result = snd_ctl_open( &chandle, name, SND_CTL_NONBLOCK );
+      if ( result < 0 ) {
+        errorStream_ << "RtApiAlsa::probeDeviceOpen: control open, card = " << card << ", " << snd_strerror( result ) << ".";
+        errorText_ = errorStream_.str();
+        return FAILURE;
+      }
+      subdevice = -1;
+      while( 1 ) {
+        result = snd_ctl_pcm_next_device( chandle, &subdevice );
+        if ( result < 0 ) break;
+        if ( subdevice < 0 ) break;
+        if ( nDevices == device ) {
+          sprintf( name, "hw:%d,%d", card, subdevice );
+          snd_ctl_close( chandle );
+          goto foundDevice;
+        }
+        nDevices++;
+      }
+      snd_ctl_close( chandle );
+      snd_card_next( &card );
+    }
+
+    if ( nDevices == 0 ) {
+      // This should not happen because a check is made before this function is called.
+      errorText_ = "RtApiAlsa::probeDeviceOpen: no devices found!";
       return FAILURE;
     }
-    subdevice = -1;
-    while( 1 ) {
-      result = snd_ctl_pcm_next_device( chandle, &subdevice );
-      if ( result < 0 ) break;
-      if ( subdevice < 0 ) break;
-      if ( nDevices == device ) {
-        sprintf( name, "hw:%d,%d", card, subdevice );
-        snd_ctl_close( chandle );
-        goto foundDevice;
-      }
-      nDevices++;
+
+    if ( device >= nDevices ) {
+      // This should not happen because a check is made before this function is called.
+      errorText_ = "RtApiAlsa::probeDeviceOpen: device ID is invalid!";
+      return FAILURE;
     }
-    snd_ctl_close( chandle );
-    snd_card_next( &card );
-  }
-
-  if ( nDevices == 0 ) {
-    // This should not happen because a check is made before this function is called.
-    errorText_ = "RtApiAlsa::probeDeviceOpen: no devices found!";
-    return FAILURE;
-  }
-
-  if ( device >= nDevices ) {
-    // This should not happen because a check is made before this function is called.
-    errorText_ = "RtApiAlsa::probeDeviceOpen: device ID is invalid!";
-    return FAILURE;
   }
 
  foundDevice:
@@ -5671,13 +5718,8 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     return FAILURE;
   }
 
-  // Set the buffer number, which in ALSA is referred to as the "period".
-  int totalSize, dir = 0;
-  unsigned int periods = 0;
-  if ( options ) periods = options->numberOfBuffers;
-  totalSize = *bufferSize * periods;
-
   // Set the buffer (or period) size.
+  int dir = 0;
   snd_pcm_uframes_t periodSize = *bufferSize;
   result = snd_pcm_hw_params_set_period_size_near( phandle, hw_params, &periodSize, &dir );
   if ( result < 0 ) {
@@ -5688,10 +5730,11 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
   *bufferSize = periodSize;
 
+  // Set the buffer number, which in ALSA is referred to as the "period".
+  unsigned int periods = 0;
   if ( options && options->flags & RTAUDIO_MINIMIZE_LATENCY ) periods = 2;
-  else periods = totalSize / *bufferSize;
-  // Even though the hardware might allow 1 buffer, it won't work reliably.
-  if ( periods < 2 ) periods = 2;
+  if ( options && options->numberOfBuffers > 0 ) periods = options->numberOfBuffers;
+  if ( periods < 2 ) periods = 4; // a fairly safe default value
   result = snd_pcm_hw_params_set_periods_near( phandle, hw_params, &periods, &dir );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
@@ -6020,12 +6063,13 @@ void RtApiAlsa :: stopStream()
     return;
   }
 
+  stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( stream_.state == STREAM_STOPPED ) {
-    MUTEX_UNLOCK( &stream_.mutex );
-    return;
-  }
+  //if ( stream_.state == STREAM_STOPPED ) {
+  //  MUTEX_UNLOCK( &stream_.mutex );
+  //  return;
+  //}
 
   int result = 0;
   AlsaHandle *apiInfo = (AlsaHandle *) stream_.apiHandle;
@@ -6068,12 +6112,13 @@ void RtApiAlsa :: abortStream()
     return;
   }
 
+  stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( stream_.state == STREAM_STOPPED ) {
-    MUTEX_UNLOCK( &stream_.mutex );
-    return;
-  }
+  //if ( stream_.state == STREAM_STOPPED ) {
+  //  MUTEX_UNLOCK( &stream_.mutex );
+  //  return;
+  //}
 
   int result = 0;
   AlsaHandle *apiInfo = (AlsaHandle *) stream_.apiHandle;
@@ -7254,7 +7299,7 @@ void RtApi :: error( RtError::Type type )
   errorStream_.str(""); // clear the ostringstream
   if ( type == RtError::WARNING && showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
-  else
+  else if ( type != RtError::WARNING )
     throw( RtError( errorText_, type ) );
 }
 
