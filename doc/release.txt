@@ -2,12 +2,13 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2011.
 
-v4.0.9: (11 August 2011)
+v4.0.9: (14 August 2011)
 - fix for ASIO problem enumerating devices after opening duplex stream (Oliver Larkin)
 - fix for OS-X problems setting sample rate and bits-per-sample
 - updates for OS-X "Lion"
 - updates for wide character support in Windows DS (UNICODE)
 - fix for possible ALSA callback thread hang (thanks to Tristan Matthews)
+- fix for DS getDeviceCount bug (vector erase problem)
 
 v4.0.8: (12 April 2011)
 - fix for MinGW4 problem enumerating and setting sample rates (iasiothiscallresolver, Dmitry Kostjuchenko)
