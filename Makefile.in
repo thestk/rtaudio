@@ -8,7 +8,7 @@ OBJECTS	= RtAudio.o @objects@
 
 STATIC = librtaudio.a
 SHARED = @sharedlib@
-RELEASE = 4.0.9
+RELEASE = 4.0.10
 MAJOR = 4
 LIBRARIES = $(STATIC) $(SHARED)
 
