@@ -10,7 +10,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2011 Gary P. Scavone
+    Copyright (c) 2001-2012 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.10
+// RtAudio: Version 4.0.11
 
 #include "RtAudio.h"
 #include <iostream>
@@ -415,6 +415,8 @@ struct CoreHandle {
   CoreHandle()
     :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
+
+ThreadHandle threadId;
 
 RtApiCore:: RtApiCore()
 {
@@ -1355,7 +1357,7 @@ void RtApiCore :: startStream( void )
     return;
   }
 
-  MUTEX_LOCK( &stream_.mutex );
+  //MUTEX_LOCK( &stream_.mutex );
 
   OSStatus result = noErr;
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
@@ -1385,7 +1387,7 @@ void RtApiCore :: startStream( void )
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  MUTEX_UNLOCK( &stream_.mutex );
+  //MUTEX_UNLOCK( &stream_.mutex );
 
   if ( result == noErr ) return;
   error( RtError::SYSTEM_ERROR );
@@ -1400,12 +1402,14 @@ void RtApiCore :: stopStream( void )
     return;
   }
 
+  /*
   MUTEX_LOCK( &stream_.mutex );
 
   if ( stream_.state == STREAM_STOPPED ) {
     MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
+  */
 
   OSStatus result = noErr;
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
@@ -1416,9 +1420,9 @@ void RtApiCore :: stopStream( void )
       pthread_cond_wait( &handle->condition, &stream_.mutex ); // block until signaled
     }
 
-    MUTEX_UNLOCK( &stream_.mutex );
+    //MUTEX_UNLOCK( &stream_.mutex );
     result = AudioDeviceStop( handle->id[0], callbackHandler );
-    MUTEX_LOCK( &stream_.mutex );
+    //MUTEX_LOCK( &stream_.mutex );
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping callback procedure on device (" << stream_.device[0] << ").";
       errorText_ = errorStream_.str();
@@ -1428,9 +1432,9 @@ void RtApiCore :: stopStream( void )
 
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
 
-    MUTEX_UNLOCK( &stream_.mutex );
+    //MUTEX_UNLOCK( &stream_.mutex );
     result = AudioDeviceStop( handle->id[1], callbackHandler );
-    MUTEX_LOCK( &stream_.mutex );
+    //MUTEX_LOCK( &stream_.mutex );
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping input callback procedure on device (" << stream_.device[1] << ").";
       errorText_ = errorStream_.str();
@@ -1441,7 +1445,7 @@ void RtApiCore :: stopStream( void )
   stream_.state = STREAM_STOPPED;
 
  unlock:
-  MUTEX_UNLOCK( &stream_.mutex );
+  //MUTEX_UNLOCK( &stream_.mutex );
 
   if ( result == noErr ) return;
   error( RtError::SYSTEM_ERROR );
@@ -1462,11 +1466,26 @@ void RtApiCore :: abortStream( void )
   stopStream();
 }
 
+// This function will be called by a spawned thread when the user
+// callback function signals that the stream should be stopped or
+// aborted.  It is better to handle it this way because the
+// callbackEvent() function probably should return before the AudioDeviceStop()
+// function is called.
+extern "C" void *coreStopStream( void *ptr )
+{
+  CallbackInfo *info = (CallbackInfo *) ptr;
+  RtApiCore *object = (RtApiCore *) info->object;
+
+  object->stopStream();
+
+  pthread_exit( NULL );
+}
+
 bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
                                  const AudioBufferList *inBufferList,
                                  const AudioBufferList *outBufferList )
 {
-  if ( stream_.state == STREAM_STOPPED ) return SUCCESS;
+  if ( stream_.state == STREAM_STOPPED || stream_.state == STREAM_STOPPING ) return SUCCESS;
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiCore::callbackEvent(): the stream is closed ... this shouldn't happen!";
     error( RtError::WARNING );
@@ -1478,13 +1497,18 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
 
   // Check if we were draining the stream and signal is finished.
   if ( handle->drainCounter > 3 ) {
-    if ( handle->internalDrain == true )
-      stopStream();
+
+    if ( handle->internalDrain == true ) {
+      stream_.state = STREAM_STOPPING;
+      pthread_create( &threadId, NULL, coreStopStream, info );
+      //stopStream();
+    }
     else // external call to stopStream()
       pthread_cond_signal( &handle->condition );
     return SUCCESS;
   }
 
+  /*
   MUTEX_LOCK( &stream_.mutex );
 
   // The state might change while waiting on a mutex.
@@ -1492,6 +1516,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
     MUTEX_UNLOCK( &stream_.mutex );
     return SUCCESS;
   }
+  */
 
   AudioDeviceID outputDevice = handle->id[0];
 
@@ -1514,14 +1539,15 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
     int cbReturnValue = callback( stream_.userBuffer[0], stream_.userBuffer[1],
                                   stream_.bufferSize, streamTime, status, info->userData );
     if ( cbReturnValue == 2 ) {
-      MUTEX_UNLOCK( &stream_.mutex );
+      //MUTEX_UNLOCK( &stream_.mutex );
       handle->drainCounter = 2;
       abortStream();
       return SUCCESS;
     }
-    else if ( cbReturnValue == 1 )
+    else if ( cbReturnValue == 1 ) {
       handle->drainCounter = 1;
       handle->internalDrain = true;
+    }
   }
 
   if ( stream_.mode == OUTPUT || ( stream_.mode == DUPLEX && deviceId == outputDevice ) ) {
@@ -1719,7 +1745,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
   }
 
  unlock:
-  MUTEX_UNLOCK( &stream_.mutex );
+  //MUTEX_UNLOCK( &stream_.mutex );
 
   RtApi::tickStreamTime();
   return SUCCESS;
@@ -2487,9 +2513,10 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
       pthread_create( &id, NULL, jackStopStream, info );
       return SUCCESS;
     }
-    else if ( cbReturnValue == 1 )
+    else if ( cbReturnValue == 1 ) {
       handle->drainCounter = 1;
       handle->internalDrain = true;
+    }
   }
 
   jack_default_audio_sample_t *jackbuffer;
@@ -3321,9 +3348,10 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
                                                     &stream_.callbackInfo, 0, &threadId );
       return SUCCESS;
     }
-    else if ( cbReturnValue == 1 )
+    else if ( cbReturnValue == 1 ) {
       handle->drainCounter = 1;
       handle->internalDrain = true;
+    }
   }
 
   unsigned int nChannels, bufferBytes, i, j;
@@ -4653,9 +4681,10 @@ void RtApiDs :: callbackEvent()
       abortStream();
       return;
     }
-    else if ( cbReturnValue == 1 )
+    else if ( cbReturnValue == 1 ) {
       handle->drainCounter = 1;
       handle->internalDrain = true;
+    }
   }
 
   HRESULT result;

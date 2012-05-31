@@ -10,7 +10,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2011 Gary P. Scavone
+    Copyright (c) 2001-2012 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -42,7 +42,7 @@
   \file RtAudio.h
  */
 
-// RtAudio: Version 4.0.10
+// RtAudio: Version 4.0.11
 
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
@@ -599,6 +599,7 @@ protected:
 
   enum StreamState {
     STREAM_STOPPED,
+    STREAM_STOPPING,
     STREAM_RUNNING,
     STREAM_CLOSED = -50
   };
