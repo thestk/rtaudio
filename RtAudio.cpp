@@ -106,6 +106,10 @@ void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis ) throw()
 
 void RtAudio :: openRtApi( RtAudio::Api api )
 {
+  if (rtapi_)
+    delete rtapi_;
+  rtapi_ = 0;
+
 #if defined(__UNIX_JACK__)
   if ( api == UNIX_JACK )
     rtapi_ = new RtApiJack();
@@ -1080,7 +1084,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     // We'll try higher bit rates first and then work our way down.
     std::vector< std::pair<UInt32, UInt32>  > physicalFormats;
-    formatFlags = description.mFormatFlags | kLinearPCMFormatFlagIsFloat & ~kLinearPCMFormatFlagIsSignedInteger;
+    formatFlags = (description.mFormatFlags | kLinearPCMFormatFlagIsFloat) & ~kLinearPCMFormatFlagIsSignedInteger;
     physicalFormats.push_back( std::pair<Float32, UInt32>( 32, formatFlags ) );
     formatFlags = (description.mFormatFlags | kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked) & ~kLinearPCMFormatFlagIsFloat;
     physicalFormats.push_back( std::pair<Float32, UInt32>( 32, formatFlags ) );
@@ -1507,14 +1511,16 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
       handle->xrun[1] = false;
     }
 
-    handle->drainCounter = callback( stream_.userBuffer[0], stream_.userBuffer[1],
-                                     stream_.bufferSize, streamTime, status, info->userData );
-    if ( handle->drainCounter == 2 ) {
+    int cbReturnValue = callback( stream_.userBuffer[0], stream_.userBuffer[1],
+                                  stream_.bufferSize, streamTime, status, info->userData );
+    if ( cbReturnValue == 2 ) {
       MUTEX_UNLOCK( &stream_.mutex );
+      handle->drainCounter = 2;
       abortStream();
       return SUCCESS;
     }
-    else if ( handle->drainCounter == 1 )
+    else if ( cbReturnValue == 1 )
+      handle->drainCounter = 1;
       handle->internalDrain = true;
   }
 
@@ -1901,6 +1907,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   }
 
   if ( device >= nDevices ) {
+    jack_client_close( client );
     errorText_ = "RtApiJack::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
   }
@@ -2471,15 +2478,17 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
       status |= RTAUDIO_INPUT_OVERFLOW;
       handle->xrun[1] = false;
     }
-    handle->drainCounter = callback( stream_.userBuffer[0], stream_.userBuffer[1],
-                                     stream_.bufferSize, streamTime, status, info->userData );
-    if ( handle->drainCounter == 2 ) {
+    int cbReturnValue = callback( stream_.userBuffer[0], stream_.userBuffer[1],
+                                  stream_.bufferSize, streamTime, status, info->userData );
+    if ( cbReturnValue == 2 ) {
       MUTEX_UNLOCK( &stream_.mutex );
       ThreadHandle id;
+      handle->drainCounter = 2;
       pthread_create( &id, NULL, jackStopStream, info );
       return SUCCESS;
     }
-    else if ( handle->drainCounter == 1 )
+    else if ( cbReturnValue == 1 )
+      handle->drainCounter = 1;
       handle->internalDrain = true;
   }
 
@@ -3300,18 +3309,20 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
       status |= RTAUDIO_INPUT_OVERFLOW;
       asioXRun = false;
     }
-    handle->drainCounter = callback( stream_.userBuffer[0], stream_.userBuffer[1],
+    int cbReturnValue = callback( stream_.userBuffer[0], stream_.userBuffer[1],
                                      stream_.bufferSize, streamTime, status, info->userData );
-    if ( handle->drainCounter == 2 ) {
+    if ( cbReturnValue == 2 ) {
       //      MUTEX_UNLOCK( &stream_.mutex );
       //      abortStream();
       unsigned threadId;
       stopThreadCalled = true;
+      handle->drainCounter = 2;
       stream_.callbackInfo.thread = _beginthreadex( NULL, 0, &asioStopStream,
                                                     &stream_.callbackInfo, 0, &threadId );
       return SUCCESS;
     }
-    else if ( handle->drainCounter == 1 )
+    else if ( cbReturnValue == 1 )
+      handle->drainCounter = 1;
       handle->internalDrain = true;
   }
 
@@ -4634,14 +4645,16 @@ void RtApiDs :: callbackEvent()
       status |= RTAUDIO_INPUT_OVERFLOW;
       handle->xrun[1] = false;
     }
-    handle->drainCounter = callback( stream_.userBuffer[0], stream_.userBuffer[1],
-                                     stream_.bufferSize, streamTime, status, info->userData );
-    if ( handle->drainCounter == 2 ) {
+    int cbReturnValue = callback( stream_.userBuffer[0], stream_.userBuffer[1],
+                                  stream_.bufferSize, streamTime, status, info->userData );
+    if ( cbReturnValue == 2 ) {
       //      MUTEX_UNLOCK( &stream_.mutex );
+      handle->drainCounter = 2;
       abortStream();
       return;
     }
-    else if ( handle->drainCounter == 1 )
+    else if ( cbReturnValue == 1 )
+      handle->drainCounter = 1;
       handle->internalDrain = true;
   }
 
@@ -4908,7 +4921,7 @@ void RtApiDs :: callbackEvent()
       }
     }
     else { // mode == INPUT
-      while ( safeReadPointer < endRead ) {
+      while ( safeReadPointer < endRead && stream_.callbackInfo.isRunning ) {
         // See comments for playback.
         double millis = (endRead - safeReadPointer) * 1000.0;
         millis /= ( formatBytes(stream_.deviceFormat[1]) * stream_.nDeviceChannels[1] * stream_.sampleRate);
@@ -5268,6 +5281,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   // Thus, use the saved results.
   if ( stream_.state != STREAM_CLOSED &&
        ( stream_.device[0] == device || stream_.device[1] == device ) ) {
+    snd_ctl_close( chandle );
     if ( device >= devices_.size() ) {
       errorText_ = "RtApiAlsa::getDeviceInfo: device ID was not present before stream was opened.";
       error( RtError::WARNING );
@@ -5672,6 +5686,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   // If we get here, no supported format was found.
+  snd_pcm_close( phandle );
   errorStream_ << "RtApiAlsa::probeDeviceOpen: pcm device " << device << " data format not supported by RtAudio.";
   errorText_ = errorStream_.str();
   return FAILURE;
@@ -5769,6 +5784,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // If attempting to setup a duplex stream, the bufferSize parameter
   // MUST be the same in both directions!
   if ( stream_.mode == OUTPUT && mode == INPUT && *bufferSize != stream_.bufferSize ) {
+    snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: system error setting buffer size for duplex stream on device (" << name << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -5855,6 +5871,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     apiInfo = (AlsaHandle *) stream_.apiHandle;
   }
   apiInfo->handles[mode] = phandle;
+  phandle = 0;
 
   // Allocate necessary internal buffers.
   unsigned long bufferBytes;
@@ -5961,6 +5978,8 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     delete apiInfo;
     stream_.apiHandle = 0;
   }
+
+  if ( phandle) snd_pcm_close( phandle );
 
   for ( int i=0; i<2; i++ ) {
     if ( stream_.userBuffer[i] ) {
