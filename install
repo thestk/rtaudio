@@ -1,4 +1,4 @@
-RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
+RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
 
 By Gary P. Scavone, 2001-2012.
 
@@ -17,6 +17,7 @@ A few options can be passed to configure, including:
 
   --enable-debug = enable various debug output
   --with-alsa = choose native ALSA API support (linux only)
+  --with-pulse = choose native PulseAudio API support (linux only)
   --with-oss = choose OSS API support (linux only)
   --with-jack = choose JACK server support (linux or Macintosh OS-X)
   --with-core = choose CoreAudio API support (Macintosh OS-X only)

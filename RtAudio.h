@@ -210,6 +210,7 @@ class RtAudio
   enum Api {
     UNSPECIFIED,    /*!< Search for a working compiled API. */
     LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
+    LINUX_PULSE,    /*!< The Linux PulseAudio API. */
     LINUX_OSS,      /*!< The Linux Open Sound System API. */
     UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
     MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
@@ -511,7 +512,7 @@ class RtAudio
   typedef unsigned long ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
 
-#elif defined(__LINUX_ALSA__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
+#elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
   // Using pthread library for various flavors of unix.
   #include <pthread.h>
 
@@ -552,7 +553,7 @@ struct CallbackInfo {
 // Note that RtApi is an abstract base class and cannot be
 // explicitly instantiated.  The class RtAudio will create an
 // instance of an RtApi subclass (RtApiOss, RtApiAlsa,
-// RtApiJack, RtApiCore, RtApiAl, RtApiDs, or RtApiAsio).
+// RtApiJack, RtApiCore, RtApiDs, or RtApiAsio).
 //
 // **************************************************************** //
 
@@ -905,6 +906,38 @@ public:
   std::vector<RtAudio::DeviceInfo> devices_;
   void saveDeviceInfo( void );
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options );
+};
+
+#endif
+
+#if defined(__LINUX_PULSE__)
+
+class RtApiPulse: public RtApi
+{
+public:
+  ~RtApiPulse();
+  RtAudio::Api getCurrentApi() { return RtAudio::LINUX_PULSE; };
+  unsigned int getDeviceCount( void );
+  RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
+  void closeStream( void );
+  void startStream( void );
+  void stopStream( void );
+  void abortStream( void );
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesireable results!
+  void callbackEvent( void );
+
+  private:
+
+  std::vector<RtAudio::DeviceInfo> devices_;
+  void saveDeviceInfo( void );
+  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options );

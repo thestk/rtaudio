@@ -111,7 +111,7 @@ int main( int argc, char *argv[] )
   pausetime = PAUSETIME * 1000;
 
   // Set our stream parameters for a duplex stream.
-  bufferFrames = 256;
+  bufferFrames = 512;
   RtAudio::StreamParameters oParams, iParams;
   oParams.deviceId = oDevice;
   oParams.nChannels = mydata.channels;

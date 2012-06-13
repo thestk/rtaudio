@@ -2,11 +2,20 @@
 
 Many thanks to the following people for providing bug fixes and improvements:
 <UL>
+<LI>Stefan Arisona</LI>
+<LI>Vincent B&eacute;nony</LI>
+<LI>Rasmus Ekman</LI>
 <LI>Anders Ervik</LI>
 <LI>Robin Davies (Windows DS and ASIO)</LI>
+<LI>Martin Koegler</LI>
+<LI>Dmitry Kostjuchenko</LI>
+<LI>Oliver Larkin</LI>
 <LI>Antoine Lefebvre</LI>
+<LI>Carlos Luna</LI>
 <LI>Dominic Mazzoni</LI>
 <LI>Tristan Matthews</LI>
+<LI>Peter Meerwald (PulseAudio)</LI>
+<LI>Benjamin Schroeder</LI>
 <LI>Ryan Williams (Windows non-MS compiler ASIO support)</LI>
 <LI>Ed Wildgoose (Linux ALSA and Jack)</LI>
 
