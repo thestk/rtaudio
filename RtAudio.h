@@ -557,6 +557,36 @@ struct CallbackInfo {
 //
 // **************************************************************** //
 
+#pragma pack(push, 1)
+class S24 {
+
+ protected:
+  unsigned char c3[3];
+
+ public:
+  S24() {}
+
+  S24& operator = ( const int& i ) {
+    c3[0] = (i & 0x000000ff);
+    c3[1] = (i & 0x0000ff00) >> 8;
+    c3[2] = (i & 0x00ff0000) >> 16;
+    return *this;
+  }
+
+  S24( const S24& v ) { *this = v; }
+  S24( const double& d ) { *this = (int) d; }
+  S24( const float& f ) { *this = (int) f; }
+  S24( const signed short& s ) { *this = (int) s; }
+  S24( const char& c ) { *this = (int) c; }
+
+  int asInt() {
+    int i = c3[0] | (c3[1] << 8) | (c3[2] << 16);
+    if (i & 0x800000) i |= ~0xffffff;
+    return i;
+  }
+};
+#pragma pack(pop)
+
 #if defined( HAVE_GETTIMEOFDAY )
   #include <sys/time.h>
 #endif
@@ -655,6 +685,7 @@ protected:
       :apiHandle(0), deviceBuffer(0) { device[0] = 11111; device[1] = 11111; }
   };
 
+  typedef S24 Int24;
   typedef signed short Int16;
   typedef signed int Int32;
   typedef float Float32;

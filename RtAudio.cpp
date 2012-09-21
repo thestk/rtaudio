@@ -2094,8 +2094,17 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   // Get the latency of the JACK port.
   ports = jack_get_ports( client, deviceName.c_str(), NULL, flag );
-  if ( ports[ firstChannel ] )
-    stream_.latency[mode] = jack_port_get_latency( jack_port_by_name( client, ports[ firstChannel ] ) );
+  if ( ports[ firstChannel ] ) {
+    // Added by Ge Wang
+    jack_latency_callback_mode_t cbmode = (mode == INPUT ? JackCaptureLatency : JackPlaybackLatency);
+    // the range (usually the min and max are equal)
+    jack_latency_range_t latrange; latrange.min = latrange.max = 0;
+    // get the latency range
+    jack_port_get_latency_range( jack_port_by_name( client, ports[firstChannel] ), cbmode, &latrange );
+    // be optimistic, use the min!
+    stream_.latency[mode] = latrange.min;
+    //stream_.latency[mode] = jack_port_get_latency( jack_port_by_name( client, ports[ firstChannel ] ) );
+  }
   free( ports );
 
   // The jack server always uses 32-bit floating-point data.
@@ -2708,6 +2717,8 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
     info.nativeFormats |= RTAUDIO_FLOAT32;
   else if ( channelInfo.type == ASIOSTFloat64MSB || channelInfo.type == ASIOSTFloat64LSB )
     info.nativeFormats |= RTAUDIO_FLOAT64;
+  else if ( channelInfo.type == ASIOSTInt24MSB || channelInfo.type == ASIOSTInt24LSB )
+    info.nativeFormats |= RTAUDIO_SINT24;
 
   if ( info.outputChannels > 0 )
     if ( getDefaultOutputDevice() == device ) info.isDefaultOutput = true;
@@ -2859,6 +2870,10 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   else if ( channelInfo.type == ASIOSTFloat64MSB || channelInfo.type == ASIOSTFloat64LSB ) {
     stream_.deviceFormat[mode] = RTAUDIO_FLOAT64;
     if ( channelInfo.type == ASIOSTFloat64MSB ) stream_.doByteSwap[mode] = true;
+  }
+  else if ( channelInfo.type == ASIOSTInt24MSB || channelInfo.type == ASIOSTInt24LSB ) {
+    stream_.deviceFormat[mode] = RTAUDIO_SINT24;
+    if ( channelInfo.type == ASIOSTInt24MSB ) stream_.doByteSwap[mode] = true;
   }
 
   if ( stream_.deviceFormat[mode] == 0 ) {
@@ -3879,7 +3894,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   // Determine the device buffer size. By default, we'll use the value
   // defined above (32K), but we will grow it to make allowances for
   // very large software buffer sizes.
-  DWORD dsBufferSize = MINIMUM_DEVICE_BUFFER_SIZE;;
+  DWORD dsBufferSize = MINIMUM_DEVICE_BUFFER_SIZE;
   DWORD dsPointerLeadTime = 0;
 
   void *ohandle = 0, *bhandle = 0;
@@ -5875,8 +5890,8 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       if ( priority < min ) priority = min;
       else if ( priority > max ) priority = max;
       param.sched_priority = priority;
-      pthread_attr_setschedparam( &attr, &param );
       pthread_attr_setschedpolicy( &attr, SCHED_RR );
+      pthread_attr_setschedparam( &attr, &param );
     }
     else
       pthread_attr_setschedpolicy( &attr, SCHED_OTHER );
@@ -7741,11 +7756,12 @@ unsigned int RtApi :: formatBytes( RtAudioFormat format )
 {
   if ( format == RTAUDIO_SINT16 )
     return 2;
-  else if ( format == RTAUDIO_SINT24 || format == RTAUDIO_SINT32 ||
-            format == RTAUDIO_FLOAT32 )
+  else if ( format == RTAUDIO_SINT32 || format == RTAUDIO_FLOAT32 )
     return 4;
   else if ( format == RTAUDIO_FLOAT64 )
     return 8;
+  else if ( format == RTAUDIO_SINT24 )
+    return 3;
   else if ( format == RTAUDIO_SINT8 )
     return 1;
 
@@ -7878,11 +7894,11 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       }
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
-      Int32 *in = (Int32 *)inBuffer;
+      Int24 *in = (Int24 *)inBuffer;
       scale = 1.0 / 8388607.5;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float64) (in[info.inOffset[j]] & 0x00ffffff);
+          out[info.outOffset[j]] = (Float64) (in[info.inOffset[j]].asInt());
           out[info.outOffset[j]] += 0.5;
           out[info.outOffset[j]] *= scale;
         }
@@ -7956,11 +7972,11 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       }
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
-      Int32 *in = (Int32 *)inBuffer;
+      Int24 *in = (Int24 *)inBuffer;
       scale = (Float32) ( 1.0 / 8388607.5 );
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float32) (in[info.inOffset[j]] & 0x00ffffff);
+          out[info.outOffset[j]] = (Float32) (in[info.inOffset[j]].asInt());
           out[info.outOffset[j]] += 0.5;
           out[info.outOffset[j]] *= scale;
         }
@@ -8027,11 +8043,11 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
         out += info.outJump;
       }
     }
-    else if (info.inFormat == RTAUDIO_SINT24) { // Hmmm ... we could just leave it in the lower 3 bytes
-      Int32 *in = (Int32 *)inBuffer;
+    else if (info.inFormat == RTAUDIO_SINT24) {
+      Int24 *in = (Int24 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) in[info.inOffset[j]];
+          out[info.outOffset[j]] = (Int32) in[info.inOffset[j]].asInt();
           out[info.outOffset[j]] <<= 8;
         }
         in += info.inJump;
@@ -8071,13 +8087,13 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
   }
   else if (info.outFormat == RTAUDIO_SINT24) {
-    Int32 *out = (Int32 *)outBuffer;
+    Int24 *out = (Int24 *)outBuffer;
     if (info.inFormat == RTAUDIO_SINT8) {
       signed char *in = (signed char *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) in[info.inOffset[j]];
-          out[info.outOffset[j]] <<= 16;
+          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] << 16);
+          //out[info.outOffset[j]] <<= 16;
         }
         in += info.inJump;
         out += info.outJump;
@@ -8087,8 +8103,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Int16 *in = (Int16 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) in[info.inOffset[j]];
-          out[info.outOffset[j]] <<= 8;
+          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] << 8);
+          //out[info.outOffset[j]] <<= 8;
         }
         in += info.inJump;
         out += info.outJump;
@@ -8096,7 +8112,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
       // Channel compensation and/or (de)interleaving only.
-      Int32 *in = (Int32 *)inBuffer;
+      Int24 *in = (Int24 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
           out[info.outOffset[j]] = in[info.inOffset[j]];
@@ -8109,8 +8125,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Int32 *in = (Int32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) in[info.inOffset[j]];
-          out[info.outOffset[j]] >>= 8;
+          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] >> 8);
+          //out[info.outOffset[j]] >>= 8;
         }
         in += info.inJump;
         out += info.outJump;
@@ -8162,10 +8178,10 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       }
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
-      Int32 *in = (Int32 *)inBuffer;
+      Int24 *in = (Int24 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) ((in[info.inOffset[j]] >> 8) & 0x0000ffff);
+          out[info.outOffset[j]] = (Int16) (in[info.inOffset[j]].asInt() >> 8);
         }
         in += info.inJump;
         out += info.outJump;
@@ -8226,10 +8242,10 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       }
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
-      Int32 *in = (Int32 *)inBuffer;
+      Int24 *in = (Int24 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) ((in[info.inOffset[j]] >> 16) & 0x000000ff);
+          out[info.outOffset[j]] = (signed char) (in[info.inOffset[j]].asInt() >> 16);
         }
         in += info.inJump;
         out += info.outJump;
@@ -8268,9 +8284,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
   }
 }
 
-  //static inline uint16_t bswap_16(uint16_t x) { return (x>>8) | (x<<8); }
-  //static inline uint32_t bswap_32(uint32_t x) { return (bswap_16(x&0xffff)<<16) | (bswap_16(x>>16)); }
-  //static inline uint64_t bswap_64(uint64_t x) { return (((unsigned long long)bswap_32(x&0xffffffffull))<<32) | (bswap_32(x>>32)); }
+//static inline uint16_t bswap_16(uint16_t x) { return (x>>8) | (x<<8); }
+//static inline uint32_t bswap_32(uint32_t x) { return (bswap_16(x&0xffff)<<16) | (bswap_16(x>>16)); }
+//static inline uint64_t bswap_64(uint64_t x) { return (((unsigned long long)bswap_32(x&0xffffffffull))<<32) | (bswap_32(x>>32)); }
 
 void RtApi :: byteSwapBuffer( char *buffer, unsigned int samples, RtAudioFormat format )
 {
@@ -8289,8 +8305,7 @@ void RtApi :: byteSwapBuffer( char *buffer, unsigned int samples, RtAudioFormat 
       ptr += 2;
     }
   }
-  else if ( format == RTAUDIO_SINT24 ||
-            format == RTAUDIO_SINT32 ||
+  else if ( format == RTAUDIO_SINT32 ||
             format == RTAUDIO_FLOAT32 ) {
     for ( unsigned int i=0; i<samples; i++ ) {
       // Swap 1st and 4th bytes.
@@ -8306,6 +8321,17 @@ void RtApi :: byteSwapBuffer( char *buffer, unsigned int samples, RtAudioFormat 
 
       // Increment 3 more bytes.
       ptr += 3;
+    }
+  }
+  else if ( format == RTAUDIO_SINT24 ) {
+    for ( unsigned int i=0; i<samples; i++ ) {
+      // Swap 1st and 3rd bytes.
+      val = *(ptr);
+      *(ptr) = *(ptr+2);
+      *(ptr+2) = val;
+
+      // Increment 2 more bytes.
+      ptr += 2;
     }
   }
   else if ( format == RTAUDIO_FLOAT64 ) {
