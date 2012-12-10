@@ -537,10 +537,12 @@ struct CallbackInfo {
   void *userData;
   void *apiInfo;   // void pointer for API specific callback information
   bool isRunning;
+  bool doRealtime;
+  int priority;
 
   // Default constructor.
   CallbackInfo()
-    :object(0), callback(0), userData(0), apiInfo(0), isRunning(false) {}
+  :object(0), callback(0), userData(0), apiInfo(0), isRunning(false), doRealtime(false) {}
 };
 
 // **************************************************************** //
