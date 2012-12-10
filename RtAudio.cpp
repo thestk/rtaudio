@@ -5160,6 +5160,12 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
     snd_card_next( &card );
   }
 
+  result = snd_ctl_open( &handle, "default", 0 );
+  if (result == 0) {
+    nDevices++;
+    snd_ctl_close( handle );
+  }
+
   return nDevices;
 }
 
@@ -5206,6 +5212,15 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_card_next( &card );
   }
 
+  result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
+  if ( result == 0 ) {
+    if ( nDevices == device ) {
+      strcpy( name, "default" );
+      goto foundDevice;
+    }
+    nDevices++;
+  }
+
   if ( nDevices == 0 ) {
     errorText_ = "RtApiAlsa::getDeviceInfo: no devices found!";
     error( RtError::INVALID_USE );
@@ -5239,16 +5254,18 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   snd_pcm_hw_params_t *params;
   snd_pcm_hw_params_alloca( &params );
 
-  // First try for playback
+  // First try for playback unless default device (which has subdev -1)
   stream = SND_PCM_STREAM_PLAYBACK;
-  snd_pcm_info_set_device( pcminfo, subdevice );
-  snd_pcm_info_set_subdevice( pcminfo, 0 );
   snd_pcm_info_set_stream( pcminfo, stream );
+  if ( subdevice != -1 ) {
+    snd_pcm_info_set_device( pcminfo, subdevice );
+    snd_pcm_info_set_subdevice( pcminfo, 0 );
 
-  result = snd_ctl_pcm_info( chandle, pcminfo );
-  if ( result < 0 ) {
-    // Device probably doesn't support playback.
-    goto captureProbe;
+    result = snd_ctl_pcm_info( chandle, pcminfo );
+    if ( result < 0 ) {
+      // Device probably doesn't support playback.
+      goto captureProbe;
+    }
   }
 
   result = snd_pcm_open( &phandle, name, stream, openMode | SND_PCM_NONBLOCK );
@@ -5283,16 +5300,18 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   snd_pcm_close( phandle );
 
  captureProbe:
-  // Now try for capture
   stream = SND_PCM_STREAM_CAPTURE;
   snd_pcm_info_set_stream( pcminfo, stream );
 
-  result = snd_ctl_pcm_info( chandle, pcminfo );
-  snd_ctl_close( chandle );
-  if ( result < 0 ) {
-    // Device probably doesn't support capture.
-    if ( info.outputChannels == 0 ) return info;
-    goto probeParameters;
+  // Now try for capture unless default device (with subdev = -1)
+  if ( subdevice != -1 ) {
+    result = snd_ctl_pcm_info( chandle, pcminfo );
+    snd_ctl_close( chandle );
+    if ( result < 0 ) {
+      // Device probably doesn't support capture.
+      if ( info.outputChannels == 0 ) return info;
+      goto probeParameters;
+    }
   }
 
   result = snd_pcm_open( &phandle, name, stream, openMode | SND_PCM_NONBLOCK);
@@ -5481,6 +5500,15 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       }
       snd_ctl_close( chandle );
       snd_card_next( &card );
+    }
+
+    result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
+    if ( result == 0 ) {
+      if ( nDevices == device ) {
+        strcpy( name, "default" );
+        goto foundDevice;
+      }
+      nDevices++;
     }
 
     if ( nDevices == 0 ) {
@@ -6474,7 +6502,7 @@ void RtApiPulse::callbackEvent( void )
   RtAudioCallback callback = (RtAudioCallback) stream_.callbackInfo.callback;
   double streamTime = getStreamTime();
   RtAudioStreamStatus status = 0;
-  int doStopStream = callback( stream_.userBuffer[0], stream_.userBuffer[1],
+  int doStopStream = callback( stream_.userBuffer[OUTPUT], stream_.userBuffer[INPUT],
                                stream_.bufferSize, streamTime, status,
                                stream_.callbackInfo.userData );
 
@@ -6484,50 +6512,52 @@ void RtApiPulse::callbackEvent( void )
   }
 
   MUTEX_LOCK( &stream_.mutex );
+  void *pulse_in = stream_.doConvertBuffer[INPUT] ? stream_.deviceBuffer : stream_.userBuffer[INPUT];
+  void *pulse_out = stream_.doConvertBuffer[OUTPUT] ? stream_.deviceBuffer : stream_.userBuffer[OUTPUT];
 
   if ( stream_.state != STREAM_RUNNING )
     goto unlock;
 
   int pa_error;
   size_t bytes;
-  switch ( stream_.mode ) {
-  case INPUT:
-    bytes = stream_.nUserChannels[1] * stream_.bufferSize * formatBytes( stream_.userFormat );
-    if ( pa_simple_read( pah->s_rec, stream_.userBuffer[1], bytes, &pa_error ) < 0 ) {
-      errorStream_ << "RtApiPulse::callbackEvent: audio read error, " <<
-        pa_strerror( pa_error ) << ".";
-      errorText_ = errorStream_.str();
-      error( RtError::WARNING );
-    }
-    break;
-  case OUTPUT:
-    bytes = stream_.nUserChannels[0] * stream_.bufferSize * formatBytes( stream_.userFormat );
-    if ( pa_simple_write( pah->s_play, stream_.userBuffer[0], bytes, &pa_error ) < 0 ) {
+  if (stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
+    if ( stream_.doConvertBuffer[OUTPUT] ) {
+        convertBuffer( stream_.deviceBuffer,
+                       stream_.userBuffer[OUTPUT],
+                       stream_.convertInfo[OUTPUT] );
+        bytes = stream_.nDeviceChannels[OUTPUT] * stream_.bufferSize *
+                formatBytes( stream_.deviceFormat[OUTPUT] );
+    } else
+        bytes = stream_.nUserChannels[OUTPUT] * stream_.bufferSize *
+                formatBytes( stream_.userFormat );
+
+    if ( pa_simple_write( pah->s_play, pulse_out, bytes, &pa_error ) < 0 ) {
       errorStream_ << "RtApiPulse::callbackEvent: audio write error, " <<
         pa_strerror( pa_error ) << ".";
       errorText_ = errorStream_.str();
       error( RtError::WARNING );
     }
-    break;
-  case DUPLEX:
-    bytes = stream_.nUserChannels[1] * stream_.bufferSize * formatBytes( stream_.userFormat );
-    if ( pa_simple_read( pah->s_rec, stream_.userBuffer[1], bytes, &pa_error ) < 0 ) {
+  }
+
+  if ( stream_.mode == INPUT || stream_.mode == DUPLEX) {
+    if ( stream_.doConvertBuffer[INPUT] )
+      bytes = stream_.nDeviceChannels[INPUT] * stream_.bufferSize *
+        formatBytes( stream_.deviceFormat[INPUT] );
+    else
+      bytes = stream_.nUserChannels[INPUT] * stream_.bufferSize *
+        formatBytes( stream_.userFormat );
+            
+    if ( pa_simple_read( pah->s_rec, pulse_in, bytes, &pa_error ) < 0 ) {
       errorStream_ << "RtApiPulse::callbackEvent: audio read error, " <<
         pa_strerror( pa_error ) << ".";
       errorText_ = errorStream_.str();
       error( RtError::WARNING );
     }
-    bytes = stream_.nUserChannels[0] * stream_.bufferSize * formatBytes( stream_.userFormat );
-    if ( pa_simple_write( pah->s_play, stream_.userBuffer[0], bytes, &pa_error ) < 0) {
-      errorStream_ << "RtApiPulse::callbackEvent: audio write error, " <<
-        pa_strerror( pa_error ) << ".";
-      errorText_ = errorStream_.str();
-      error( RtError::WARNING );
+    if ( stream_.doConvertBuffer[INPUT] ) {
+      convertBuffer( stream_.userBuffer[INPUT],
+                     stream_.deviceBuffer,
+                     stream_.convertInfo[INPUT] );
     }
-    break;
-  default:
-    // ERROR
-    break;
   }
 
  unlock:
@@ -6676,20 +6706,16 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     return false;
   }
 
-  if ( options && ( options->flags & RTAUDIO_NONINTERLEAVED ) ) {
-    errorText_ = "RtApiPulse::probeDeviceOpen: only interleaved audio data supported.";
-    return false;
-  }
-
-  stream_.userInterleaved = true;
-  stream_.nBuffers = 1;
-
+  // Set interleaving parameters.
+  if ( options && options->flags & RTAUDIO_NONINTERLEAVED ) stream_.userInterleaved = false;
+  else stream_.userInterleaved = true;
   stream_.deviceInterleaved[mode] = true;
+  stream_.nBuffers = 1;
   stream_.doByteSwap[mode] = false;
-  stream_.doConvertBuffer[mode] = false;
+  stream_.doConvertBuffer[mode] = channels > 1 && !stream_.userInterleaved;
   stream_.deviceFormat[mode] = stream_.userFormat;
   stream_.nUserChannels[mode] = channels;
-  stream_.nDeviceChannels[mode] = channels;
+  stream_.nDeviceChannels[mode] = channels + firstChannel;
   stream_.channelOffset[mode] = 0;
 
   // Allocate necessary internal buffers.
@@ -6700,6 +6726,34 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     goto error;
   }
   stream_.bufferSize = *bufferSize;
+
+  if ( stream_.doConvertBuffer[mode] ) {
+
+    bool makeBuffer = true;
+    bufferBytes = stream_.nDeviceChannels[mode] * formatBytes( stream_.deviceFormat[mode] );
+    if ( mode == INPUT ) {
+      if ( stream_.mode == OUTPUT && stream_.deviceBuffer ) {
+        unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
+        if ( bufferBytes <= bytesOut ) makeBuffer = false;
+      }
+    }
+
+    if ( makeBuffer ) {
+      bufferBytes *= *bufferSize;
+      if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
+      stream_.deviceBuffer = (char *) calloc( bufferBytes, 1 );
+      if ( stream_.deviceBuffer == NULL ) {
+        errorText_ = "RtApiPulse::probeDeviceOpen: error allocating device buffer memory.";
+        goto error;
+      }
+    }
+  }
+  
+  stream_.device[mode] = device;
+  stream_.state = STREAM_STOPPED;
+
+  // Setup the buffer conversion information structure.
+  if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, firstChannel );
 
   if ( !stream_.apiHandle ) {
     PulseAudioHandle *pah = new PulseAudioHandle;

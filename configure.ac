@@ -2,10 +2,24 @@
 AC_INIT(RtAudio, 4.0, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
-AC_CONFIG_FILES([rtaudio-config Makefile tests/Makefile])
+AC_CONFIG_FILES([rtaudio-config librtaudio.pc Makefile tests/Makefile])
 
 # Fill GXX with something before test.
 AC_SUBST( GXX, ["no"] )
+
+dnl Check for pkg-config program, used for configuring some libraries.
+m4_define_default([PKG_PROG_PKG_CONFIG],
+[AC_MSG_CHECKING([pkg-config])
+AC_MSG_RESULT([no])])
+
+PKG_PROG_PKG_CONFIG
+
+dnl If the pkg-config autoconf support isn't installed, define its
+dnl autoconf macro to disable any packages depending on it.
+m4_define_default([PKG_CHECK_MODULES],
+[AC_MSG_CHECKING([$1])
+AC_MSG_RESULT([no])
+$4])
 
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
@@ -58,6 +72,7 @@ esac
 
 # Checks for package options and external software
 AC_SUBST( api, [""] )
+AC_SUBST( req, [""] )
 AC_MSG_CHECKING(for audio API)
 case $host in
   *-*-netbsd*)
@@ -77,14 +92,17 @@ case $host in
   # Look for ALSA flag
   AC_ARG_WITH(alsa, [  --with-alsa = choose native ALSA API support (linux only)], [
     api="$api -D__LINUX_ALSA__"
+    req="$req alsa"
     AC_MSG_RESULT(using ALSA)
     AC_CHECK_LIB(asound, snd_pcm_open, , AC_MSG_ERROR(ALSA support requires the asound library!))], )
 
   # Look for PULSE flag
   AC_ARG_WITH(pulse, [  --with-pulse = choose PulseAudio API support (linux only)], [
     api="$api -D__LINUX_PULSE__"
+    req="$req libpulse-simple"
     AC_MSG_RESULT(using PulseAudio)
-    AC_CHECK_LIB(pulse-simple, pa_simple_new, , AC_MSG_ERROR(PulseAudio support requires the pulse-simple library!))], )
+    PKG_CHECK_MODULES([PULSE], [libpulse-simple], , AC_MSG_ERROR(PulseAudio support requires the pulse-simple library!))
+        LIBS="$LIBS `pkg-config --libs libpulse-simple`" ], )
 
   # Look for OSS flag
   AC_ARG_WITH(oss, [  --with-oss = choose OSS API support (linux only)], [
@@ -95,6 +113,7 @@ case $host in
   if [test "$api" == "";] then
     AC_MSG_RESULT(using ALSA)
     AC_SUBST( api, [-D__LINUX_ALSA__] )
+    req="$req alsa"
     AC_CHECK_LIB(asound, snd_pcm_open, , AC_MSG_ERROR(ALSA support requires the asound library!))
   fi
 
