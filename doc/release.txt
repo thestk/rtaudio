@@ -2,6 +2,14 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2012.
 
+v4.0.12: (?? December 2012)
+- updates to PulseAudio API support (thanks to Peter Meerwald and Tristan Matthews)
+- updates for pkg-config support in configure script
+- 24-bit format changed to true 24-bit format, not sub-bytes of 32-bits (thanks to Marc Britton)
+- bug fixes to make sure stream status is closed if error during probeDeviceOpen
+- updates / fixes to SCHED_RR code in ALSA (thanks to Marc Lindahl)
+- various changes to avoid global variables (thanks to Martin Koegler)
+
 v4.0.11: (14 June 2012)
 - fixes for memory leaks in ALSA (thanks to Martin Koegler)
 - PulseAudio API support added (thanks to Peter Meerwald and Tristan Matthews)

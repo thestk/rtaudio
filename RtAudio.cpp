@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.11
+// RtAudio: Version 4.0.12
 
 #include "RtAudio.h"
 #include <iostream>
@@ -189,11 +189,12 @@ void RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
                             RtAudioFormat format, unsigned int sampleRate,
                             unsigned int *bufferFrames,
                             RtAudioCallback callback, void *userData,
-                            RtAudio::StreamOptions *options )
+                            RtAudio::StreamOptions *options,
+                            RtAudioErrorCallback errorCallback )
 {
   return rtapi_->openStream( outputParameters, inputParameters, format,
                              sampleRate, bufferFrames, callback,
-                             userData, options );
+                             userData, options, errorCallback );
 }
 
 // *************************************************** //
@@ -224,31 +225,37 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
                           RtAudioFormat format, unsigned int sampleRate,
                           unsigned int *bufferFrames,
                           RtAudioCallback callback, void *userData,
-                          RtAudio::StreamOptions *options )
+                          RtAudio::StreamOptions *options,
+                          RtAudioErrorCallback errorCallback )
 {
   if ( stream_.state != STREAM_CLOSED ) {
     errorText_ = "RtApi::openStream: a stream is already open!";
     error( RtError::INVALID_USE );
+    return;
   }
 
   if ( oParams && oParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL output StreamParameters structure cannot have an nChannels value less than one.";
     error( RtError::INVALID_USE );
+    return;
   }
 
   if ( iParams && iParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL input StreamParameters structure cannot have an nChannels value less than one.";
     error( RtError::INVALID_USE );
+    return;
   }
 
   if ( oParams == NULL && iParams == NULL ) {
     errorText_ = "RtApi::openStream: input and output StreamParameters structures are both NULL!";
     error( RtError::INVALID_USE );
+    return;
   }
 
   if ( formatBytes(format) == 0 ) {
     errorText_ = "RtApi::openStream: 'format' parameter value is undefined.";
     error( RtError::INVALID_USE );
+    return;
   }
 
   unsigned int nDevices = getDeviceCount();
@@ -258,6 +265,7 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     if ( oParams->deviceId >= nDevices ) {
       errorText_ = "RtApi::openStream: output device parameter value is invalid.";
       error( RtError::INVALID_USE );
+      return;
     }
   }
 
@@ -267,6 +275,7 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     if ( iParams->deviceId >= nDevices ) {
       errorText_ = "RtApi::openStream: input device parameter value is invalid.";
       error( RtError::INVALID_USE );
+      return;
     }
   }
 
@@ -277,7 +286,10 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
     result = probeDeviceOpen( oParams->deviceId, OUTPUT, oChannels, oParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
-    if ( result == false ) error( RtError::SYSTEM_ERROR );
+    if ( result == false ) {
+      error( RtError::SYSTEM_ERROR );
+      return;
+    }
   }
 
   if ( iChannels > 0 ) {
@@ -287,11 +299,13 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     if ( result == false ) {
       if ( oChannels > 0 ) closeStream();
       error( RtError::SYSTEM_ERROR );
+      return;
     }
   }
 
   stream_.callbackInfo.callback = (void *) callback;
   stream_.callbackInfo.userData = userData;
+  stream_.callbackInfo.errorCallback = (void *) errorCallback;
 
   if ( options ) options->numberOfBuffers = stream_.nBuffers;
   stream_.state = STREAM_STOPPED;
@@ -315,10 +329,10 @@ void RtApi :: closeStream( void )
   return;
 }
 
-bool RtApi :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
-                               unsigned int firstChannel, unsigned int sampleRate,
-                               RtAudioFormat format, unsigned int *bufferSize,
-                               RtAudio::StreamOptions *options )
+bool RtApi :: probeDeviceOpen( unsigned int /*device*/, StreamMode /*mode*/, unsigned int /*channels*/,
+                               unsigned int /*firstChannel*/, unsigned int /*sampleRate*/,
+                               RtAudioFormat /*format*/, unsigned int * /*bufferSize*/,
+                               RtAudio::StreamOptions * /*options*/ )
 {
   // MUST be implemented in subclasses!
   return FAILURE;
@@ -422,8 +436,6 @@ struct CoreHandle {
   CoreHandle()
     :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
-
-ThreadHandle threadId;
 
 RtApiCore:: RtApiCore()
 {
@@ -543,11 +555,13 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   if ( nDevices == 0 ) {
     errorText_ = "RtApiCore::getDeviceInfo: no devices found!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   if ( device >= nDevices ) {
     errorText_ = "RtApiCore::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   AudioDeviceID deviceList[ nDevices ];
@@ -736,13 +750,13 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   return info;
 }
 
-OSStatus callbackHandler( AudioDeviceID inDevice,
-                          const AudioTimeStamp* inNow,
-                          const AudioBufferList* inInputData,
-                          const AudioTimeStamp* inInputTime,
-                          AudioBufferList* outOutputData,
-                          const AudioTimeStamp* inOutputTime, 
-                          void* infoPointer )
+static OSStatus callbackHandler( AudioDeviceID inDevice,
+                                 const AudioTimeStamp* /*inNow*/,
+                                 const AudioBufferList* inInputData,
+                                 const AudioTimeStamp* /*inInputTime*/,
+                                 AudioBufferList* outOutputData,
+                                 const AudioTimeStamp* /*inOutputTime*/,
+                                 void* infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
 
@@ -753,10 +767,10 @@ OSStatus callbackHandler( AudioDeviceID inDevice,
     return kAudioHardwareNoError;
 }
 
-OSStatus xrunListener( AudioObjectID inDevice,
-                         UInt32 nAddresses,
-                         const AudioObjectPropertyAddress properties[],
-                         void* handlePointer )
+static OSStatus xrunListener( AudioObjectID /*inDevice*/,
+                              UInt32 nAddresses,
+                              const AudioObjectPropertyAddress properties[],
+                              void* handlePointer )
 {
   CoreHandle *handle = (CoreHandle *) handlePointer;
   for ( UInt32 i=0; i<nAddresses; i++ ) {
@@ -771,10 +785,10 @@ OSStatus xrunListener( AudioObjectID inDevice,
   return kAudioHardwareNoError;
 }
 
-OSStatus rateListener( AudioObjectID inDevice,
-                       UInt32 nAddresses,
-                       const AudioObjectPropertyAddress properties[],
-                       void* ratePointer )
+static OSStatus rateListener( AudioObjectID inDevice,
+                              UInt32 /*nAddresses*/,
+                              const AudioObjectPropertyAddress /*properties*/[],
+                              void* ratePointer )
 {
 
   Float64 *rate = (Float64 *) ratePointer;
@@ -1300,6 +1314,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.deviceBuffer = 0;
   }
 
+  stream_.state = STREAM_CLOSED;
   return FAILURE;
 }
 
@@ -1459,7 +1474,7 @@ void RtApiCore :: abortStream( void )
 // aborted.  It is better to handle it this way because the
 // callbackEvent() function probably should return before the AudioDeviceStop()
 // function is called.
-extern "C" void *coreStopStream( void *ptr )
+static void *coreStopStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiCore *object = (RtApiCore *) info->object;
@@ -1484,6 +1499,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
 
   // Check if we were draining the stream and signal is finished.
   if ( handle->drainCounter > 3 ) {
+    ThreadHandle threadId;
 
     stream_.state = STREAM_STOPPING;
     if ( handle->internalDrain == true )
@@ -1821,8 +1837,7 @@ struct JackHandle {
     :client(0), drainCounter(0), internalDrain(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
 
-ThreadHandle threadId;
-void jackSilentError( const char * ) {};
+static void jackSilentError( const char * ) {};
 
 RtApiJack :: RtApiJack()
 {
@@ -1911,6 +1926,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
     jack_client_close( client );
     errorText_ = "RtApiJack::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   // Get the current jack server sample rate.
@@ -1961,7 +1977,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   return info;
 }
 
-int jackCallbackHandler( jack_nframes_t nframes, void *infoPointer )
+static int jackCallbackHandler( jack_nframes_t nframes, void *infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
 
@@ -1975,7 +1991,7 @@ int jackCallbackHandler( jack_nframes_t nframes, void *infoPointer )
 // server signals that it is shutting down.  It is necessary to handle
 // it this way because the jackShutdown() function must return before
 // the jack_deactivate() function (in closeStream()) will return.
-extern "C" void *jackCloseStream( void *ptr )
+static void *jackCloseStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiJack *object = (RtApiJack *) info->object;
@@ -1984,7 +2000,7 @@ extern "C" void *jackCloseStream( void *ptr )
 
   pthread_exit( NULL );
 }
-void jackShutdown( void *infoPointer )
+static void jackShutdown( void *infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
   RtApiJack *object = (RtApiJack *) info->object;
@@ -1996,11 +2012,12 @@ void jackShutdown( void *infoPointer )
   // other problem occurred and we should close the stream.
   if ( object->isStreamRunning() == false ) return;
 
+  ThreadHandle threadId;
   pthread_create( &threadId, NULL, jackCloseStream, info );
   std::cerr << "\nRtApiJack: the Jack server is shutting down this client ... stream stopped and closed!!\n" << std::endl;
 }
 
-int jackXrun( void *infoPointer )
+static int jackXrun( void *infoPointer )
 {
   JackHandle *handle = (JackHandle *) infoPointer;
 
@@ -2418,7 +2435,7 @@ void RtApiJack :: abortStream( void )
 // aborted.  It is necessary to handle it this way because the
 // callbackEvent() function must return before the jack_deactivate()
 // function will return.
-extern "C" void *jackStopStream( void *ptr )
+static void *jackStopStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiJack *object = (RtApiJack *) info->object;
@@ -2446,6 +2463,7 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 
   // Check if we were draining the stream and signal is finished.
   if ( handle->drainCounter > 3 ) {
+    ThreadHandle threadId;
 
     stream_.state = STREAM_STOPPING;
     if ( handle->internalDrain == true )
@@ -2565,11 +2583,11 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 #include "asiodrivers.h"
 #include <cmath>
 
-AsioDrivers drivers;
-ASIOCallbacks asioCallbacks;
-ASIODriverInfo driverInfo;
-CallbackInfo *asioCallbackInfo;
-bool asioXRun;
+static AsioDrivers drivers;
+static ASIOCallbacks asioCallbacks;
+static ASIODriverInfo driverInfo;
+static CallbackInfo *asioCallbackInfo;
+static bool asioXRun;
 
 struct AsioHandle {
   int drainCounter;       // Tracks callback counts when draining
@@ -2583,8 +2601,8 @@ struct AsioHandle {
 
 // Function declarations (definitions at end of section)
 static const char* getAsioErrorString( ASIOError result );
-void sampleRateChanged( ASIOSampleRate sRate );
-long asioMessages( long selector, long value, void* message, double* opt );
+static void sampleRateChanged( ASIOSampleRate sRate );
+static long asioMessages( long selector, long value, void* message, double* opt );
 
 RtApiAsio :: RtApiAsio()
 {
@@ -2627,11 +2645,13 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   if ( nDevices == 0 ) {
     errorText_ = "RtApiAsio::getDeviceInfo: no devices found!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   if ( device >= nDevices ) {
     errorText_ = "RtApiAsio::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   // If a stream is already open, we cannot probe other devices.  Thus, use the saved results.
@@ -2730,7 +2750,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   return info;
 }
 
-void bufferSwitch( long index, ASIOBool processNow )
+static void bufferSwitch( long index, ASIOBool processNow )
 {
   RtApiAsio *object = (RtApiAsio *) asioCallbackInfo->object;
   object->callbackEvent( index );
@@ -3230,7 +3250,7 @@ void RtApiAsio :: abortStream()
 // aborted.  It is necessary to handle it this way because the
 // callbackEvent() function must return before the ASIOStop()
 // function will return.
-extern "C" unsigned __stdcall asioStopStream( void *ptr )
+static unsigned __stdcall asioStopStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiAsio *object = (RtApiAsio *) info->object;
@@ -3393,7 +3413,7 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
   return SUCCESS;
 }
 
-void sampleRateChanged( ASIOSampleRate sRate )
+static void sampleRateChanged( ASIOSampleRate sRate )
 {
   // The ASIO documentation says that this usually only happens during
   // external sync.  Audio processing is not stopped by the driver,
@@ -3413,7 +3433,7 @@ void sampleRateChanged( ASIOSampleRate sRate )
   std::cerr << "\nRtApiAsio: driver reports sample rate changed to " << sRate << " ... stream stopped!!!\n" << std::endl;
 }
 
-long asioMessages( long selector, long value, void* message, double* opt )
+static long asioMessages( long selector, long value, void* message, double* opt )
 {
   long ret = 0;
 
@@ -3491,7 +3511,7 @@ static const char* getAsioErrorString( ASIOError result )
     const char*message;
   };
 
-  static Messages m[] = 
+  static const Messages m[] = 
     {
       {   ASE_NotPresent,    "Hardware input or output is not present or available." },
       {   ASE_HWMalfunction,  "Hardware is malfunctioning." },
@@ -3572,7 +3592,7 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
 
 static const char* getErrorString( int code );
 
-extern "C" unsigned __stdcall callbackHandler( void *ptr );
+static unsigned __stdcall callbackHandler( void *ptr );
 
 struct DsDevice {
   LPGUID id[2];
@@ -3584,7 +3604,10 @@ struct DsDevice {
   : found(false) { validId[0] = false; validId[1] = false; }
 };
 
-std::vector< DsDevice > dsDevices;
+struct DsProbeData {
+  bool isInput;
+  std::vector<struct DsDevice>* dsDevices;
+};
 
 RtApiDs :: RtApiDs()
 {
@@ -3622,8 +3645,10 @@ unsigned int RtApiDs :: getDeviceCount( void )
     dsDevices[i].found = false;
 
   // Query DirectSound devices.
-  bool isInput = false;
-  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &isInput );
+  struct DsProbeData probeInfo;
+  probeInfo.isInput = false;
+  probeInfo.dsDevices = &dsDevices;
+  HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &probeInfo );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
@@ -3631,8 +3656,8 @@ unsigned int RtApiDs :: getDeviceCount( void )
   }
 
   // Query DirectSoundCapture devices.
-  isInput = true;
-  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &isInput );
+  probeInfo.isInput = true;
+  result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &probeInfo );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating input devices!";
     errorText_ = errorStream_.str();
@@ -3661,12 +3686,14 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
     if ( dsDevices.size() == 0 ) {
       errorText_ = "RtApiDs::getDeviceInfo: no devices found!";
       error( RtError::INVALID_USE );
+      return info;
     }
   }
 
   if ( device >= dsDevices.size() ) {
     errorText_ = "RtApiDs::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   HRESULT result;
@@ -4321,6 +4348,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     stream_.deviceBuffer = 0;
   }
 
+  stream_.state = STREAM_CLOSED;
   return FAILURE;
 }
 
@@ -4642,12 +4670,14 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
         error( RtError::SYSTEM_ERROR );
+        return;
       }
       result = dsCaptureBuffer->GetCurrentPosition( NULL, &startSafeReadPointer );
       if ( FAILED( result ) ) {
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
         errorText_ = errorStream_.str();
         error( RtError::SYSTEM_ERROR );
+        return;
       }
       while ( true ) {
         result = dsWriteBuffer->GetCurrentPosition( NULL, &safeWritePointer );
@@ -4655,12 +4685,14 @@ void RtApiDs :: callbackEvent()
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
           errorText_ = errorStream_.str();
           error( RtError::SYSTEM_ERROR );
+          return;
         }
         result = dsCaptureBuffer->GetCurrentPosition( NULL, &safeReadPointer );
         if ( FAILED( result ) ) {
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
           errorText_ = errorStream_.str();
           error( RtError::SYSTEM_ERROR );
+          return;
         }
         if ( safeWritePointer != startSafeWritePointer && safeReadPointer != startSafeReadPointer ) break;
         Sleep( 1 );
@@ -4681,6 +4713,7 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
         error( RtError::SYSTEM_ERROR );
+        return;
       }
       handle->bufferPointer[0] = safeWritePointer + handle->dsPointerLeadTime[0];
       if ( handle->bufferPointer[0] >= handle->dsBufferSize[0] ) handle->bufferPointer[0] -= handle->dsBufferSize[0];
@@ -4731,6 +4764,7 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
         error( RtError::SYSTEM_ERROR );
+        return;
       }
 
       // We will copy our output buffer into the region between
@@ -4771,6 +4805,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") locking buffer during playback!";
       errorText_ = errorStream_.str();
       error( RtError::SYSTEM_ERROR );
+      return;
     }
 
     // Copy our buffer into the DS buffer
@@ -4783,6 +4818,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") unlocking buffer during playback!";
       errorText_ = errorStream_.str();
       error( RtError::SYSTEM_ERROR );
+      return;
     }
     nextWritePointer = ( nextWritePointer + bufferSize1 + bufferSize2 ) % dsBufferSize;
     handle->bufferPointer[0] = nextWritePointer;
@@ -4817,6 +4853,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
       errorText_ = errorStream_.str();
       error( RtError::SYSTEM_ERROR );
+      return;
     }
 
     if ( safeReadPointer < (DWORD)nextReadPointer ) safeReadPointer += dsBufferSize; // unwrap offset
@@ -4877,6 +4914,7 @@ void RtApiDs :: callbackEvent()
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
           errorText_ = errorStream_.str();
           error( RtError::SYSTEM_ERROR );
+          return;
         }
       
         if ( safeReadPointer < (DWORD)nextReadPointer ) safeReadPointer += dsBufferSize; // unwrap offset
@@ -4890,6 +4928,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") locking capture buffer!";
       errorText_ = errorStream_.str();
       error( RtError::SYSTEM_ERROR );
+      return;
     }
 
     if ( duplexPrerollBytes <= 0 ) {
@@ -4910,6 +4949,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") unlocking capture buffer!";
       errorText_ = errorStream_.str();
       error( RtError::SYSTEM_ERROR );
+      return;
     }
     handle->bufferPointer[1] = nextReadPointer;
 
@@ -4931,7 +4971,7 @@ void RtApiDs :: callbackEvent()
 // Definitions for utility functions and callbacks
 // specific to the DirectSound implementation.
 
-extern "C" unsigned __stdcall callbackHandler( void *ptr )
+static unsigned __stdcall callbackHandler( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiDs *object = (RtApiDs *) info->object;
@@ -4947,7 +4987,7 @@ extern "C" unsigned __stdcall callbackHandler( void *ptr )
 
 #include "tchar.h"
 
-std::string convertTChar( LPCTSTR name )
+static std::string convertTChar( LPCTSTR name )
 {
 #if defined( UNICODE ) || defined( _UNICODE )
   int length = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
@@ -4965,11 +5005,12 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR module,
                                           LPVOID lpContext )
 {
-  bool *isInput = (bool *) lpContext;
+  struct DsProbeData& probeInfo = *(struct DsProbeData*) lpContext;
+  std::vector<struct DsDevice>& dsDevices = *probeInfo.dsDevices;
 
   HRESULT hr;
   bool validDevice = false;
-  if ( *isInput == true ) {
+  if ( probeInfo.isInput == true ) {
     DSCCAPS caps;
     LPDIRECTSOUNDCAPTURE object;
 
@@ -5001,13 +5042,14 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
 
   // If good device, then save its name and guid.
   std::string name = convertTChar( description );
-  if ( name == "Primary Sound Driver" || name == "Primary Sound Capture Driver" )
+  //if ( name == "Primary Sound Driver" || name == "Primary Sound Capture Driver" )
+  if ( lpguid == NULL )
     name = "Default Device";
   if ( validDevice ) {
     for ( unsigned int i=0; i<dsDevices.size(); i++ ) {
       if ( dsDevices[i].name == name ) {
         dsDevices[i].found = true;
-        if ( *isInput ) {
+        if ( probeInfo.isInput ) {
           dsDevices[i].id[1] = lpguid;
           dsDevices[i].validId[1] = true;
         }
@@ -5022,7 +5064,7 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
     DsDevice device;
     device.name = name;
     device.found = true;
-    if ( *isInput ) {
+    if ( probeInfo.isInput ) {
       device.id[1] = lpguid;
       device.validId[1] = true;
     }
@@ -5111,7 +5153,7 @@ struct AlsaHandle {
     :synchronized(false), runnable(false) { xrun[0] = false; xrun[1] = false; }
 };
 
-extern "C" void *alsaCallbackHandler( void * ptr );
+static void *alsaCallbackHandler( void * ptr );
 
 RtApiAlsa :: RtApiAlsa()
 {
@@ -5224,11 +5266,13 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   if ( nDevices == 0 ) {
     errorText_ = "RtApiAlsa::getDeviceInfo: no devices found!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   if ( device >= nDevices ) {
     errorText_ = "RtApiAlsa::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
  foundDevice:
@@ -5961,6 +6005,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.deviceBuffer = 0;
   }
 
+  stream_.state = STREAM_CLOSED;
   return FAILURE;
 }
 
@@ -6335,7 +6380,7 @@ void RtApiAlsa :: callbackEvent()
   if ( doStopStream == 1 ) this->stopStream();
 }
 
-extern "C" void *alsaCallbackHandler( void *ptr )
+static void *alsaCallbackHandler( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiAlsa *object = (RtApiAlsa *) info->object;
@@ -6369,9 +6414,8 @@ extern "C" void *alsaCallbackHandler( void *ptr )
 #include <pulse/simple.h>
 #include <cstdio>
 
-namespace {
-const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
-                                               44100, 48000, 96000, 0}; }
+static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
+                                                      44100, 48000, 96000, 0};
 
 struct rtaudio_pa_format_mapping_t {
   RtAudioFormat rtaudio_format;
@@ -6423,7 +6467,7 @@ RtAudio::DeviceInfo RtApiPulse::getDeviceInfo( unsigned int device )
   return info;
 }
 
-extern "C" void *pulseaudio_callback( void * user )
+static void *pulseaudio_callback( void * user )
 {
   CallbackInfo *cbi = static_cast<CallbackInfo *>( user );
   RtApiPulse *context = static_cast<RtApiPulse *>( cbi->object );
@@ -6618,6 +6662,7 @@ void RtApiPulse::stopStream( void )
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
       error( RtError::SYSTEM_ERROR );
+      return;
     }
   }
 
@@ -6651,6 +6696,7 @@ void RtApiPulse::abortStream( void )
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
       error( RtError::SYSTEM_ERROR );
+      return;
     }
   }
 
@@ -6748,9 +6794,8 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
       }
     }
   }
-  
+
   stream_.device[mode] = device;
-  stream_.state = STREAM_STOPPED;
 
   // Setup the buffer conversion information structure.
   if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, firstChannel );
@@ -6797,8 +6842,6 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
   else
     stream_.mode = DUPLEX;
 
-  stream_.state = STREAM_STOPPED;
-
   if ( !stream_.callbackInfo.isRunning ) {
     stream_.callbackInfo.object = this;
     stream_.callbackInfo.isRunning = true;
@@ -6807,11 +6850,30 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
       goto error;
     }
   }
+
+  stream_.state = STREAM_STOPPED;
   return true;
  
  error:
-  closeStream();
-  return false;
+  if ( pah && stream_.callbackInfo.isRunning ) {
+    pthread_cond_destroy( &pah->runnable_cv );
+    delete pah;
+    stream_.apiHandle = 0;
+  }
+
+  for ( int i=0; i<2; i++ ) {
+    if ( stream_.userBuffer[i] ) {
+      free( stream_.userBuffer[i] );
+      stream_.userBuffer[i] = 0;
+    }
+  }
+
+  if ( stream_.deviceBuffer ) {
+    free( stream_.deviceBuffer );
+    stream_.deviceBuffer = 0;
+  }
+
+  return FAILURE;
 }
 
 //******************** End of __LINUX_PULSE__ *********************//
@@ -6827,7 +6889,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
 #include <errno.h>
 #include <math.h>
 
-extern "C" void *ossCallbackHandler(void * ptr);
+static void *ossCallbackHandler(void * ptr);
 
 // A structure to hold various information related to the OSS API
 // implementation.
@@ -6898,12 +6960,14 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
     close( mixerfd );
     errorText_ = "RtApiOss::getDeviceInfo: no devices found!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   if ( device >= nDevices ) {
     close( mixerfd );
     errorText_ = "RtApiOss::getDeviceInfo: device ID is invalid!";
     error( RtError::INVALID_USE );
+    return info;
   }
 
   oss_audioinfo ainfo;
@@ -7734,7 +7798,7 @@ void RtApiOss :: callbackEvent()
   if ( doStopStream == 1 ) this->stopStream();
 }
 
-extern "C" void *ossCallbackHandler( void *ptr )
+static void *ossCallbackHandler( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiOss *object = (RtApiOss *) info->object;
@@ -7763,6 +7827,28 @@ extern "C" void *ossCallbackHandler( void *ptr )
 void RtApi :: error( RtError::Type type )
 {
   errorStream_.str(""); // clear the ostringstream
+
+  RtAudioErrorCallback errorCallback = (RtAudioErrorCallback) stream_.callbackInfo.errorCallback;
+  if ( errorCallback ) {
+    // abortStream() can generate new error messages. Ignore them. Just keep original one.
+    static bool firstErrorOccured = false;
+
+    if ( firstErrorOccured )
+      return;
+
+    firstErrorOccured = true;
+    const std::string errorMessage = errorText_;
+
+    if ( type != RtError::WARNING && stream_.state != STREAM_STOPPED) {
+      stream_.callbackInfo.isRunning = false; // exit from the thread
+      abortStream();
+    }
+
+    errorCallback( type, errorMessage );
+    firstErrorOccured = false;
+    return;
+  }
+
   if ( type == RtError::WARNING && showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
   else if ( type != RtError::WARNING )
@@ -7792,6 +7878,7 @@ void RtApi :: clearStreamInfo()
   stream_.callbackInfo.callback = 0;
   stream_.callbackInfo.userData = 0;
   stream_.callbackInfo.isRunning = false;
+  stream_.callbackInfo.errorCallback = 0;
   for ( int i=0; i<2; i++ ) {
     stream_.device[i] = 11111;
     stream_.doConvertBuffer[i] = false;
