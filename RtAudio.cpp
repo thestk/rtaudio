@@ -10,7 +10,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2012 Gary P. Scavone
+    Copyright (c) 2001-2013 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -4991,8 +4991,8 @@ static std::string convertTChar( LPCTSTR name )
 {
 #if defined( UNICODE ) || defined( _UNICODE )
   int length = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
-  std::string s( length, 0 );
-  length = WideCharToMultiByte(CP_UTF8, 0, name, wcslen(name), &s[0], length, NULL, NULL);
+  std::string s( length-1, '\0' );
+  WideCharToMultiByte(CP_UTF8, 0, name, -1, &s[0], length, NULL, NULL);
 #else
   std::string s( name );
 #endif

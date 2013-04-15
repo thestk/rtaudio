@@ -27,6 +27,8 @@ int main()
   std::vector< RtAudio::Api > apis;
   RtAudio :: getCompiledApi( apis );
 
+  std::cout << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
+
   std::cout << "\nCompiled APIs:\n";
   for ( unsigned int i=0; i<apis.size(); i++ )
     std::cout << "  " << apiMap[ apis[i] ] << std::endl;

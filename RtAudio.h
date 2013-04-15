@@ -10,7 +10,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2012 Gary P. Scavone
+    Copyright (c) 2001-2013 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -42,14 +42,15 @@
   \file RtAudio.h
  */
 
-// RtAudio: Version 4.0.12
-
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
 #include <string>
 #include <vector>
 #include "RtError.h"
+
+// RtAudio version
+static const std::string VERSION( "4.0.12" );
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -319,6 +320,9 @@ class RtAudio
     StreamOptions()
     : flags(0), numberOfBuffers(0), priority(0) {}
   };
+
+  //! A static function to determine the current RtAudio version.
+  static std::string getVersion( void ) { return VERSION; } 
 
   //! A static function to determine the available compiled audio APIs.
   /*!
