@@ -6,7 +6,7 @@ This distribution of RtAudio contains the following:
 
 doc:      RtAudio documentation (see doc/html/index.html)
 tests:    example RtAudio programs
-include:  header and source files necessary for ASIO & DS compilation
+include:  header and source files necessary for ASIO, DS & OSS compilation
 tests/Windows: Visual C++ .net test program workspace and projects
 
 OVERVIEW:

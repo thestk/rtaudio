@@ -15,24 +15,21 @@ RtAudio is a set of C++ classes that provide a common API (Application Programmi
 
 RtAudio incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording).  Available audio devices and their capabilities can be enumerated and then specified when opening a stream.  Where applicable, multiple API support can be compiled and a particular API specified when creating an RtAudio instance.  See the \ref apinotes section for information specific to each of the supported audio APIs.
 
-\section whatsnew What's New (Version 4.0)
+\section whatsnew Latest Updates (Version 4.0.12)
 
-RtAudio V4 represents a significant rewrite of the code and includes a number of API and functionality changes from previous versions. A partial list of the changes includes:
-- new support for non-interleaved user data
-- additional input/output parameter specifications, including channel offset
-- new support for dynamic connection of devices
-- new support for stream time
-- revised callback arguments, including separate input and output buffer arguments
-- revised C++ exception handling
-- updated support for OSS version 4.0
-- discontinued support of blocking functionality
-- discontinued support of SGI
-
-Devices are now re-enumerated every time the RtAudio::getDeviceCount(), RtAudio::getDeviceInfo(), and RtAudio::openStream() functions are called.  This allows for the proper identification of hot-pluggable (USB, Firewire, ...) devices that are connected after an RtAudio instance is created.
+- new functionality to allow error reporting via a client-supplied function (thanks to Pavel Mogilevskiy)
+- new function to return the version number
+- updated RtAudio.cpp and ASIO files for UNICODE support (thanks to Renaud Schoonbroodt)
+- updates to PulseAudio API support (thanks to Peter Meerwald and Tristan Matthews)
+- updates for pkg-config support in configure script
+- 24-bit format changed to true 24-bit format, not sub-bytes of 32-bits (thanks to Marc Britton)
+- bug fixes to make sure stream status is closed if error during probeDeviceOpen
+- updates / fixes to SCHED_RR code in ALSA (thanks to Marc Lindahl)
+- various changes to avoid global variables (thanks to Martin Koegler)
 
 \section download Download
 
-Latest Release (?? December 2012): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.0.12.tar.gz">Version 4.0.12</A>
+Latest Release (16 April 2013): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.0.12.tar.gz">Version 4.0.12</A>
 
 \section documentation Documentation Links
 

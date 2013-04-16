@@ -2,7 +2,9 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2013.
 
-v4.0.12: (?? April 2013)
+v4.0.12: (16 April 2013)
+- new functionality to allow error reporting via a client-supplied function (thanks to Pavel Mogilevskiy)
+- new function to return the version number
 - updated RtAudio.cpp and ASIO files for UNICODE support (thanks to Renaud Schoonbroodt)
 - updates to PulseAudio API support (thanks to Peter Meerwald and Tristan Matthews)
 - updates for pkg-config support in configure script

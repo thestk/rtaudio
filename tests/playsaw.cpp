@@ -88,7 +88,7 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
   for ( i=0; i<nBufferFrames; i++ ) {
     for ( j=0; j<channels; j++ ) {
-      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE);
+      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE * 0.5);
       lastValues[j] += BASE_RATE * (j+1+(j*0.1));
       if ( lastValues[j] >= 1.0 ) lastValues[j] -= 2.0;
     }
@@ -116,7 +116,7 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
   for ( j=0; j<channels; j++ ) {
     increment = BASE_RATE * (j+1+(j*0.1));
     for ( i=0; i<nBufferFrames; i++ ) {
-      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE);
+      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE * 0.5);
       lastValues[j] += increment;
       if ( lastValues[j] >= 1.0 ) lastValues[j] -= 2.0;
     }
