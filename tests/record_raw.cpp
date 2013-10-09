@@ -11,7 +11,6 @@
 
 #include "RtAudio.h"
 #include <stdio.h>
-#include <iostream.h>
 
 /*
 typedef char  MY_TYPE;
@@ -66,8 +65,7 @@ int main(int argc, char *argv[])
     audio = new RtAudio(&stream, 0, 0, device, chans,
                         FORMAT, fs, &buffer_size, 8);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     exit(EXIT_FAILURE);
   }
 
@@ -78,8 +76,7 @@ int main(int argc, char *argv[])
     buffer = (MY_TYPE *) audio->getStreamBuffer(stream);
     audio->startStream(stream);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -89,8 +86,7 @@ int main(int argc, char *argv[])
     try {
       audio->tickStream(stream);
     }
-    catch (RtAudioError &m) {
-      m.printMessage();
+    catch (RtError &) {
       goto cleanup;
     }
 
@@ -101,8 +97,7 @@ int main(int argc, char *argv[])
   try {
     audio->stopStream(stream);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
   }
 
  cleanup:

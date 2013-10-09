@@ -73,8 +73,7 @@ int main(int argc, char *argv[])
     audio = new RtAudio(&stream, device, chans, 0, 0,
                         FORMAT, fs, &buffer_size, 4);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     exit(EXIT_FAILURE);
   }
 
@@ -85,8 +84,7 @@ int main(int argc, char *argv[])
     buffer = (MY_TYPE *) audio->getStreamBuffer(stream);
     audio->startStream(stream);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -104,8 +102,7 @@ int main(int argc, char *argv[])
       //cout << "frames until no block = " << audio->streamWillBlock(stream) << endl;
       audio->tickStream(stream);
     }
-    catch (RtAudioError &m) {
-      m.printMessage();
+    catch (RtError &) {
       goto cleanup;
     }
 
@@ -115,8 +112,7 @@ int main(int argc, char *argv[])
   try {
     audio->stopStream(stream);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
   }
 
  cleanup:

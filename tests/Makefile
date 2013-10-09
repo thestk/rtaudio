@@ -5,16 +5,16 @@ RM = /bin/rm
 
 ifeq ($(OS),Linux) # These are for Linux
 	INSTR = info play_saw record_raw in_out play_raw twostreams call_saw call_inout call_twostreams
-	CC = g++ -Wall -D__LINUX_OSS_# -g -pg -O3
+	CC = g++ -Wall -D__LINUX_OSS__# -g -pg -O3
 	LIBRARY = -lpthread
-#	CC = g++ -g -Wall -D__LINUX_ALSA_ # -g -pg -O3
+#	CC = g++ -g -Wall -D__LINUX_ALSA__ # -g -pg -O3
 #	LIBRARY = -lpthread -lasound
 	INCLUDE = -I../
 endif
 
 ifeq ($(OS),IRIX) # These are for SGI
 	INSTR = info play_saw record_raw in_out play_raw twostreams call_saw call_inout call_twostreams
-	CC = CC -D__IRIX_AL_ # -g -fullwarn -D__SGI_CC__ -O2
+	CC = CC -D__IRIX_AL__ # -g -fullwarn -D__SGI_CC__ -O2
 	LIBRARY = -laudio -lpthread
 	INCLUDE = -I../
 endif

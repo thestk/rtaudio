@@ -1,7 +1,7 @@
 /******************************************/
 /*
   RtAudio - realtime sound I/O C++ class
-  Version 2.0 by Gary P. Scavone, 2001-2002.
+  by Gary P. Scavone, 2001-2002.
 */
 /******************************************/
 
@@ -21,11 +21,12 @@ const RtAudio::RTAUDIO_FORMAT RtAudio :: RTAUDIO_SINT32 = 8;
 const RtAudio::RTAUDIO_FORMAT RtAudio :: RTAUDIO_FLOAT32 = 16;
 const RtAudio::RTAUDIO_FORMAT RtAudio :: RTAUDIO_FLOAT64 = 32;
 
-#if defined(__WINDOWS_DS_)
+#if defined(__WINDOWS_DS__)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
   typedef unsigned THREAD_RETURN;
+  typedef unsigned (__stdcall THREAD_FUNCTION)(void *);
 #else // pthread API
   #define MUTEX_INITIALIZE(A) pthread_mutex_init(A, NULL)
   #define MUTEX_LOCK(A)       pthread_mutex_lock(A)
@@ -45,11 +46,11 @@ RtAudio :: RtAudio()
 
   if (nDevices <= 0) {
     sprintf(message, "RtAudio: no audio devices found!");
-    error(RtAudioError::NO_DEVICES_FOUND);
-  }
+    error(RtError::NO_DEVICES_FOUND);
+ }
 }
 
-RtAudio :: RtAudio(int *streamID,
+RtAudio :: RtAudio(int *streamId,
                    int outputDevice, int outputChannels,
                    int inputDevice, int inputChannels,
                    RTAUDIO_FORMAT format, int sampleRate,
@@ -59,14 +60,14 @@ RtAudio :: RtAudio(int *streamID,
 
   if (nDevices <= 0) {
     sprintf(message, "RtAudio: no audio devices found!");
-    error(RtAudioError::NO_DEVICES_FOUND);
+    error(RtError::NO_DEVICES_FOUND);
   }
 
   try {
-    *streamID = openStream(outputDevice, outputChannels, inputDevice, inputChannels,
+    *streamId = openStream(outputDevice, outputChannels, inputDevice, inputChannels,
                            format, sampleRate, bufferSize, numberOfBuffers);
   }
-  catch (RtAudioError &exception) {
+  catch (RtError &exception) {
     // deallocate the RTAUDIO_DEVICE structures
     if (devices) free(devices);
     error(exception.getType());
@@ -92,25 +93,25 @@ int RtAudio :: openStream(int outputDevice, int outputChannels,
 
   if (outputChannels < 1 && inputChannels < 1) {
     sprintf(message,"RtAudio: one or both 'channel' parameters must be greater than zero.");
-    error(RtAudioError::INVALID_PARAMETER);
+    error(RtError::INVALID_PARAMETER);
   }
 
   if ( formatBytes(format) == 0 ) {
     sprintf(message,"RtAudio: 'format' parameter value is undefined.");
-    error(RtAudioError::INVALID_PARAMETER);
+    error(RtError::INVALID_PARAMETER);
   }
 
   if ( outputChannels > 0 ) {
     if (outputDevice >= nDevices || outputDevice < 0) {
       sprintf(message,"RtAudio: 'outputDevice' parameter value (%d) is invalid.", outputDevice);
-      error(RtAudioError::INVALID_PARAMETER);
+      error(RtError::INVALID_PARAMETER);
     }
   }
 
   if ( inputChannels > 0 ) {
     if (inputDevice >= nDevices || inputDevice < 0) {
       sprintf(message,"RtAudio: 'inputDevice' parameter value (%d) is invalid.", inputDevice);
-      error(RtAudioError::INVALID_PARAMETER);
+      error(RtError::INVALID_PARAMETER);
     }
   }
 
@@ -118,10 +119,11 @@ int RtAudio :: openStream(int outputDevice, int outputChannels,
   RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) calloc(1, sizeof(RTAUDIO_STREAM));
   if (stream == NULL) {
     sprintf(message, "RtAudio: memory allocation error!");
-    error(RtAudioError::MEMORY_ERROR);
+    error(RtError::MEMORY_ERROR);
   }
   streams[++streamKey] = (void *) stream;
   stream->mode = UNINITIALIZED;
+  MUTEX_INITIALIZE(&stream->mutex);
 
   bool result = SUCCESS;
   int device;
@@ -183,16 +185,14 @@ int RtAudio :: openStream(int outputDevice, int outputChannels,
     }
   }
 
-  if ( result == SUCCESS ) {
-    MUTEX_INITIALIZE(&stream->mutex);
+  if ( result == SUCCESS )
     return streamKey;
-  }
 
   // If we get here, all attempted probes failed.  Close any opened
   // devices and delete the allocated stream.
   closeStream(streamKey);
   sprintf(message,"RtAudio: no devices found for given parameters.");
-  error(RtAudioError::INVALID_PARAMETER);
+  error(RtError::INVALID_PARAMETER);
 
   return -1;
 }
@@ -206,7 +206,7 @@ void RtAudio :: getDeviceInfo(int device, RTAUDIO_DEVICE *info)
 {
   if (device >= nDevices || device < 0) {
     sprintf(message, "RtAudio: invalid device specifier (%d)!", device);
-    error(RtAudioError::INVALID_DEVICE);
+    error(RtError::INVALID_DEVICE);
   }
 
   // If the device wasn't successfully probed before, try it again.
@@ -243,9 +243,9 @@ void RtAudio :: getDeviceInfo(int device, RTAUDIO_DEVICE *info)
   return;
 }
 
-char * const RtAudio :: getStreamBuffer(int streamID)
+char * const RtAudio :: getStreamBuffer(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   return stream->userBuffer;
 }
@@ -255,27 +255,23 @@ char * const RtAudio :: getStreamBuffer(int streamID)
 // variable persistence during thread startup.
 struct {
   RtAudio *object;
-  int streamID;
+  int streamId;
 } thread_info;
 
-#if defined(__WINDOWS_DS_)
-  extern "C" unsigned __stdcall callbackHandler(void *ptr);
-#else
-  extern "C" void *callbackHandler(void *ptr);
-#endif
+extern "C" THREAD_RETURN THREAD_TYPE callbackHandler(void * ptr);
 
-void RtAudio :: setStreamCallback(int streamID, RTAUDIO_CALLBACK callback, void *userData)
+void RtAudio :: setStreamCallback(int streamId, RTAUDIO_CALLBACK callback, void *userData)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   stream->callback = callback;
   stream->userData = userData;
   stream->usingCallback = true;
   thread_info.object = this;
-  thread_info.streamID = streamID;
+  thread_info.streamId = streamId;
 
   int err = 0;
-#if defined(__WINDOWS_DS_)
+#if defined(__WINDOWS_DS__)
   unsigned thread_id;
   stream->thread = _beginthreadex(NULL, 0, &callbackHandler,
                                   &stream->usingCallback, 0, &thread_id);
@@ -290,7 +286,7 @@ void RtAudio :: setStreamCallback(int streamID, RTAUDIO_CALLBACK callback, void 
   if (err) {
     stream->usingCallback = false;
     sprintf(message, "RtAudio: error starting callback thread!");
-    error(RtAudioError::THREAD_ERROR);
+    error(RtError::THREAD_ERROR);
   }
 }
 
@@ -300,13 +296,15 @@ void RtAudio :: setStreamCallback(int streamID, RTAUDIO_CALLBACK callback, void 
 //
 // *************************************************** //
 
-#if defined(__LINUX_ALSA_)
+#if defined(__LINUX_ALSA__)
+
+#define MAX_DEVICES 16
 
 void RtAudio :: initialize(void)
 {
-  int card, err, device;
-  int devices_per_card[32] = {0};
+  int card, result, device;
   char name[32];
+  char deviceNames[MAX_DEVICES][32];
   snd_ctl_t *handle;
   snd_ctl_card_info_t *info;
   snd_ctl_card_info_alloca(&info);
@@ -315,34 +313,34 @@ void RtAudio :: initialize(void)
   nDevices = 0;
   card = -1;
   snd_card_next(&card);
-  while (card >= 0) {
+  while ( card >= 0 ) {
     sprintf(name, "hw:%d", card);
-    err = snd_ctl_open(&handle, name, 0);
-    if (err < 0) {
-      sprintf(message, "RtAudio: ALSA control open (%i): %s.", card, snd_strerror(err));
-      error(RtAudioError::WARNING);
+    result = snd_ctl_open(&handle, name, 0);
+    if (result < 0) {
+      sprintf(message, "RtAudio: ALSA control open (%i): %s.", card, snd_strerror(result));
+      error(RtError::WARNING);
       goto next_card;
 		}
-    err = snd_ctl_card_info(handle, info);
-		if (err < 0) {
-      sprintf(message, "RtAudio: ALSA control hardware info (%i): %s.", card, snd_strerror(err));
-      error(RtAudioError::WARNING);
+    result = snd_ctl_card_info(handle, info);
+		if (result < 0) {
+      sprintf(message, "RtAudio: ALSA control hardware info (%i): %s.", card, snd_strerror(result));
+      error(RtError::WARNING);
       goto next_card;
 		}
 		device = -1;
 		while (1) {
-      err = snd_ctl_pcm_next_device(handle, &device);
-			if (err < 0) {
-        sprintf(message, "RtAudio: ALSA control next device (%i): %s.", card, snd_strerror(err));
-        error(RtAudioError::WARNING);
+      result = snd_ctl_pcm_next_device(handle, &device);
+			if (result < 0) {
+        sprintf(message, "RtAudio: ALSA control next device (%i): %s.", card, snd_strerror(result));
+        error(RtError::WARNING);
         break;
       }
 			if (device < 0)
         break;
-      nDevices++;
-      devices_per_card[card]++;
+      sprintf( deviceNames[nDevices++], "hw:%d,%d", card, device );
+      if ( nDevices > MAX_DEVICES ) break;
     }
-
+    if ( nDevices > MAX_DEVICES ) break;
   next_card:
     snd_ctl_close(handle);
     snd_card_next(&card);
@@ -354,22 +352,13 @@ void RtAudio :: initialize(void)
   devices = (RTAUDIO_DEVICE *) calloc(nDevices, sizeof(RTAUDIO_DEVICE));
   if (devices == NULL) {
     sprintf(message, "RtAudio: memory allocation error!");
-    error(RtAudioError::MEMORY_ERROR);
+    error(RtError::MEMORY_ERROR);
   }
 
   // Write device ascii identifiers to device structures and then
   // probe the device capabilities.
-  card = 0;
-  device = 0;
   for (int i=0; i<nDevices; i++) {
-    if (devices_per_card[card])
-      sprintf(devices[i].name, "hw:%d,%d", card, device);
-    if (devices_per_card[card] <= device+1) {
-      card++;
-      device = 0;
-    }
-    else
-      device++;
+    strncpy(devices[i].name, deviceNames[i], 32);
     probeDeviceInfo(&devices[i]);
   }
 
@@ -389,7 +378,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   if (err < 0) {
     sprintf(message, "RtAudio: ALSA pcm playback open (%s): %s.",
             info->name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto capture_probe;
   }
 
@@ -402,7 +391,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA hardware probe error (%s): %s.",
             info->name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto capture_probe;
   }
 
@@ -419,7 +408,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   if (err < 0) {
     sprintf(message, "RtAudio: ALSA pcm capture open (%s): %s.",
             info->name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     if (info->maxOutputChannels == 0)
       // didn't open for playback either ... device invalid
       return;
@@ -432,7 +421,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA hardware probe error (%s): %s.",
             info->name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     if (info->maxOutputChannels > 0)
       goto probe_parameters;
     else
@@ -456,9 +445,11 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   snd_pcm_close(handle);
 
  probe_parameters:
-  // At this point, we just need to figure out the supported data formats and sample rates.
-  // We'll proceed by openning the device in the direction with the maximum number of channels,
-  // or playback if they are equal.  This might limit our sample rate options, but so be it.
+  // At this point, we just need to figure out the supported data
+  // formats and sample rates.  We'll proceed by opening the device in
+  // the direction with the maximum number of channels, or playback if
+  // they are equal.  This might limit our sample rate options, but so
+  // be it.
 
   if (info->maxOutputChannels >= info->maxInputChannels)
     stream = SND_PCM_STREAM_PLAYBACK;
@@ -469,7 +460,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   if (err < 0) {
     sprintf(message, "RtAudio: ALSA pcm (%s) won't reopen during probe: %s.",
             info->name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -479,7 +470,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA hardware reopen probe error (%s): %s.",
             info->name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -533,7 +524,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA PCM device (%s) data format not supported by RtAudio.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -569,7 +560,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   if (err < 0) {
     sprintf(message,"RtAudio: ALSA pcm device (%s) won't open: %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -581,7 +572,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error getting parameter handle (%s): %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -599,7 +590,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       snd_pcm_close(handle);
       sprintf(message, "RtAudio: ALSA error setting access ( (%s): %s.",
               name, snd_strerror(err));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
     stream->deInterleave[mode] = true;
@@ -667,7 +658,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   // If we get here, no supported format was found.
   sprintf(message,"RtAudio: ALSA pcm device (%s) data format not supported by RtAudio.", name);
   snd_pcm_close(handle);
-  error(RtAudioError::WARNING);
+  error(RtError::WARNING);
   return FAILURE;
 
  set_format:
@@ -676,7 +667,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error setting format (%s): %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -690,7 +681,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       snd_pcm_close(handle);
       sprintf(message, "RtAudio: ALSA error getting format endian-ness (%s): %s.",
               name, snd_strerror(err));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
   }
@@ -703,7 +694,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: channels (%d) not supported by device (%s).",
             channels, name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -717,7 +708,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error setting channels (%d) on device (%s): %s.",
             device_channels, name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -727,7 +718,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error setting sample rate (%d) on device (%s): %s.",
             sampleRate, name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -744,7 +735,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error setting periods (%s): %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -757,7 +748,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error setting period size (%s): %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -769,7 +760,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error installing hardware configuration (%s): %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -788,7 +779,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     snd_pcm_close(handle);
     sprintf(message, "RtAudio: ALSA error installing software configuration (%s): %s.",
             name, snd_strerror(err));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
   */
@@ -871,13 +862,13 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     stream->userBuffer = 0;
   }
   sprintf(message, "RtAudio: ALSA error allocating buffer memory (%s).", name);
-  error(RtAudioError::WARNING);
+  error(RtError::WARNING);
   return FAILURE;
 }
 
-void RtAudio :: cancelStreamCallback(int streamID)
+void RtAudio :: cancelStreamCallback(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   if (stream->usingCallback) {
     stream->usingCallback = false;
@@ -889,18 +880,18 @@ void RtAudio :: cancelStreamCallback(int streamID)
   }
 }
 
-void RtAudio :: closeStream(int streamID)
+void RtAudio :: closeStream(int streamId)
 {
   // We don't want an exception to be thrown here because this
   // function is called by our class destructor.  So, do our own
-  // streamID check.
-  if ( streams.find( streamID ) == streams.end() ) {
+  // streamId check.
+  if ( streams.find( streamId ) == streams.end() ) {
     sprintf(message, "RtAudio: invalid stream identifier!");
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamID];
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamId];
 
   if (stream->usingCallback) {
     pthread_cancel(stream->thread);
@@ -929,14 +920,14 @@ void RtAudio :: closeStream(int streamID)
     free(stream->deviceBuffer);
 
   free(stream);
-  streams.erase(streamID);
+  streams.erase(streamId);
 }
 
-void RtAudio :: startStream(int streamID)
+void RtAudio :: startStream(int streamId)
 {
   // This method calls snd_pcm_prepare if the device isn't already in that state.
 
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -953,7 +944,7 @@ void RtAudio :: startStream(int streamID)
         sprintf(message, "RtAudio: ALSA error preparing pcm device (%s): %s.",
                 devices[stream->device[0]].name, snd_strerror(err));
         MUTEX_UNLOCK(&stream->mutex);
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
     }
   }
@@ -966,7 +957,7 @@ void RtAudio :: startStream(int streamID)
         sprintf(message, "RtAudio: ALSA error preparing pcm device (%s): %s.",
                 devices[stream->device[1]].name, snd_strerror(err));
         MUTEX_UNLOCK(&stream->mutex);
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
     }
   }
@@ -976,9 +967,9 @@ void RtAudio :: startStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-void RtAudio :: stopStream(int streamID)
+void RtAudio :: stopStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -992,7 +983,7 @@ void RtAudio :: stopStream(int streamID)
       sprintf(message, "RtAudio: ALSA error draining pcm device (%s): %s.",
               devices[stream->device[0]].name, snd_strerror(err));
       MUTEX_UNLOCK(&stream->mutex);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -1002,7 +993,7 @@ void RtAudio :: stopStream(int streamID)
       sprintf(message, "RtAudio: ALSA error draining pcm device (%s): %s.",
               devices[stream->device[1]].name, snd_strerror(err));
       MUTEX_UNLOCK(&stream->mutex);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   stream->state = STREAM_STOPPED;
@@ -1011,9 +1002,9 @@ void RtAudio :: stopStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-void RtAudio :: abortStream(int streamID)
+void RtAudio :: abortStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -1027,7 +1018,7 @@ void RtAudio :: abortStream(int streamID)
       sprintf(message, "RtAudio: ALSA error draining pcm device (%s): %s.",
               devices[stream->device[0]].name, snd_strerror(err));
       MUTEX_UNLOCK(&stream->mutex);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -1037,7 +1028,7 @@ void RtAudio :: abortStream(int streamID)
       sprintf(message, "RtAudio: ALSA error draining pcm device (%s): %s.",
               devices[stream->device[1]].name, snd_strerror(err));
       MUTEX_UNLOCK(&stream->mutex);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   stream->state = STREAM_STOPPED;
@@ -1046,9 +1037,9 @@ void RtAudio :: abortStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-int RtAudio :: streamWillBlock(int streamID)
+int RtAudio :: streamWillBlock(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -1062,7 +1053,7 @@ int RtAudio :: streamWillBlock(int streamID)
       sprintf(message, "RtAudio: ALSA error getting available frames for device (%s): %s.",
               devices[stream->device[0]].name, snd_strerror(err));
       MUTEX_UNLOCK(&stream->mutex);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -1074,7 +1065,7 @@ int RtAudio :: streamWillBlock(int streamID)
       sprintf(message, "RtAudio: ALSA error getting available frames for device (%s): %s.",
               devices[stream->device[1]].name, snd_strerror(err));
       MUTEX_UNLOCK(&stream->mutex);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
     if (frames > err) frames = err;
   }
@@ -1087,9 +1078,9 @@ int RtAudio :: streamWillBlock(int streamID)
   return frames;
 }
 
-void RtAudio :: tickStream(int streamID)
+void RtAudio :: tickStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   int stopStream = 0;
   if (stream->state == STREAM_STOPPED) {
@@ -1146,20 +1137,20 @@ void RtAudio :: tickStream(int streamID)
         snd_pcm_state_t state = snd_pcm_state(stream->handle[0]);
         if (state == SND_PCM_STATE_XRUN) {
           sprintf(message, "RtAudio: ALSA underrun detected.");
-          error(RtAudioError::WARNING);
+          error(RtError::WARNING);
           err = snd_pcm_prepare(stream->handle[0]);
           if (err < 0) {
             sprintf(message, "RtAudio: ALSA error preparing handle after underrun: %s.",
                     snd_strerror(err));
             MUTEX_UNLOCK(&stream->mutex);
-            error(RtAudioError::DRIVER_ERROR);
+            error(RtError::DRIVER_ERROR);
           }
         }
         else {
           sprintf(message, "RtAudio: ALSA error, current state is %s.",
                   snd_pcm_state_name(state));
           MUTEX_UNLOCK(&stream->mutex);
-          error(RtAudioError::DRIVER_ERROR);
+          error(RtError::DRIVER_ERROR);
         }
         goto unlock;
       }
@@ -1167,7 +1158,7 @@ void RtAudio :: tickStream(int streamID)
         sprintf(message, "RtAudio: ALSA audio write error for device (%s): %s.",
                 devices[stream->device[0]].name, snd_strerror(err));
         MUTEX_UNLOCK(&stream->mutex);
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
     }
   }
@@ -1203,20 +1194,20 @@ void RtAudio :: tickStream(int streamID)
         snd_pcm_state_t state = snd_pcm_state(stream->handle[1]);
         if (state == SND_PCM_STATE_XRUN) {
           sprintf(message, "RtAudio: ALSA overrun detected.");
-          error(RtAudioError::WARNING);
+          error(RtError::WARNING);
           err = snd_pcm_prepare(stream->handle[1]);
           if (err < 0) {
             sprintf(message, "RtAudio: ALSA error preparing handle after overrun: %s.",
                     snd_strerror(err));
             MUTEX_UNLOCK(&stream->mutex);
-            error(RtAudioError::DRIVER_ERROR);
+            error(RtError::DRIVER_ERROR);
           }
         }
         else {
           sprintf(message, "RtAudio: ALSA error, current state is %s.",
                   snd_pcm_state_name(state));
           MUTEX_UNLOCK(&stream->mutex);
-          error(RtAudioError::DRIVER_ERROR);
+          error(RtError::DRIVER_ERROR);
         }
         goto unlock;
       }
@@ -1224,7 +1215,7 @@ void RtAudio :: tickStream(int streamID)
         sprintf(message, "RtAudio: ALSA audio read error for device (%s): %s.",
                 devices[stream->device[1]].name, snd_strerror(err));
         MUTEX_UNLOCK(&stream->mutex);
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
     }
 
@@ -1241,13 +1232,13 @@ void RtAudio :: tickStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 
   if (stream->usingCallback && stopStream)
-    this->stopStream(streamID);
+    this->stopStream(streamId);
 }
 
 extern "C" void *callbackHandler(void *ptr)
 {
   RtAudio *object = thread_info.object;
-  int stream = thread_info.streamID;
+  int stream = thread_info.streamId;
   bool *usingCallback = (bool *) ptr;
 
   while ( *usingCallback ) {
@@ -1255,7 +1246,7 @@ extern "C" void *callbackHandler(void *ptr)
     try {
       object->tickStream(stream);
     }
-    catch (RtAudioError &exception) {
+    catch (RtError &exception) {
       fprintf(stderr, "\nCallback thread error (%s) ... closing thread.\n\n",
               exception.getMessage());
       break;
@@ -1265,9 +1256,9 @@ extern "C" void *callbackHandler(void *ptr)
   return 0;
 }
 
-//******************** End of __LINUX_ALSA_ *********************//
+//******************** End of __LINUX_ALSA__ *********************//
 
-#elif defined(__LINUX_OSS_)
+#elif defined(__LINUX_OSS__)
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1313,13 +1304,13 @@ void RtAudio :: initialize(void)
       }
       else {
         sprintf(message, "RtAudio: cannot read value of symbolic link %s.", DAC_NAME);
-        error(RtAudioError::SYSTEM_ERROR);
+        error(RtError::SYSTEM_ERROR);
       }
     }
   }
   else {
     sprintf(message, "RtAudio: cannot stat %s.", DAC_NAME);
-    error(RtAudioError::SYSTEM_ERROR);
+    error(RtError::SYSTEM_ERROR);
   }
 
   // The OSS API doesn't provide a routine for determining the number
@@ -1354,14 +1345,14 @@ void RtAudio :: initialize(void)
             continue;
           else {
             sprintf(message, "RtAudio: OSS record device (%s) is busy.", device_name);
-            error(RtAudioError::WARNING);
+            error(RtError::WARNING);
             // still count it for now
           }
         }
       }
       else {
         sprintf(message, "RtAudio: OSS playback device (%s) is busy.", device_name);
-        error(RtAudioError::WARNING);
+        error(RtError::WARNING);
         // still count it for now
       }
     }
@@ -1373,11 +1364,11 @@ void RtAudio :: initialize(void)
 
   if (nDevices == 0) return;
 
-  //  Allocate the DEVICE_CONTROL structures.
+  //  Allocate the RTAUDIO_DEVICE structures.
   devices = (RTAUDIO_DEVICE *) calloc(nDevices, sizeof(RTAUDIO_DEVICE));
   if (devices == NULL) {
     sprintf(message, "RtAudio: memory allocation error!");
-    error(RtAudioError::MEMORY_ERROR);
+    error(RtError::MEMORY_ERROR);
   }
 
   // Write device ascii identifiers to device control structure and then probe capabilities.
@@ -1405,7 +1396,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
               info->name);
     else
       sprintf(message, "RtAudio: OSS playback device (%s) open error.", info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto capture_probe;
   }
 
@@ -1447,7 +1438,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
               info->name);
     else
       sprintf(message, "RtAudio: OSS capture device (%s) open error.", info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     if (info->maxOutputChannels == 0)
       // didn't open for playback either ... device invalid
       return;
@@ -1530,7 +1521,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     // We've got some sort of conflict ... abort
     sprintf(message, "RtAudio: OSS device (%s) won't reopen during probe.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -1541,7 +1532,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     close(fd);
     sprintf(message, "RtAudio: OSS device (%s) won't revert to previous channel setting.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -1549,7 +1540,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     close(fd);
     sprintf(message, "RtAudio: OSS device (%s) can't get supported audio formats.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -1588,7 +1579,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     close(fd);
     sprintf(message, "RtAudio: OSS device (%s) data format not supported by RtAudio.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -1598,7 +1589,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     close(fd);
     sprintf(message, "RtAudio: OSS device (%s) error setting data format.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -1630,7 +1621,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     close(fd);
     sprintf(message, "RtAudio: OSS device (%s) error setting sample rate.",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
   info->sampleRates[1] = speed;
@@ -1979,13 +1970,13 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     close(stream->handle[0]);
     stream->handle[0] = 0;
   }
-  error(RtAudioError::WARNING);
+  error(RtError::WARNING);
   return FAILURE;
 }
 
-void RtAudio :: cancelStreamCallback(int streamID)
+void RtAudio :: cancelStreamCallback(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   if (stream->usingCallback) {
     stream->usingCallback = false;
@@ -1997,18 +1988,18 @@ void RtAudio :: cancelStreamCallback(int streamID)
   }
 }
 
-void RtAudio :: closeStream(int streamID)
+void RtAudio :: closeStream(int streamId)
 {
   // We don't want an exception to be thrown here because this
   // function is called by our class destructor.  So, do our own
-  // streamID check.
-  if ( streams.find( streamID ) == streams.end() ) {
+  // streamId check.
+  if ( streams.find( streamId ) == streams.end() ) {
     sprintf(message, "RtAudio: invalid stream identifier!");
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamID];
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamId];
 
   if (stream->usingCallback) {
     pthread_cancel(stream->thread);
@@ -2037,21 +2028,21 @@ void RtAudio :: closeStream(int streamID)
     free(stream->deviceBuffer);
 
   free(stream);
-  streams.erase(streamID);
+  streams.erase(streamId);
 }
 
-void RtAudio :: startStream(int streamID)
+void RtAudio :: startStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   stream->state = STREAM_RUNNING;
 
   // No need to do anything else here ... OSS automatically starts when fed samples.
 }
 
-void RtAudio :: stopStream(int streamID)
+void RtAudio :: stopStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -2064,7 +2055,7 @@ void RtAudio :: stopStream(int streamID)
     if (err < -1) {
       sprintf(message, "RtAudio: OSS error stopping device (%s).",
               devices[stream->device[0]].name);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   else {
@@ -2072,7 +2063,7 @@ void RtAudio :: stopStream(int streamID)
     if (err < -1) {
       sprintf(message, "RtAudio: OSS error stopping device (%s).",
               devices[stream->device[1]].name);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   stream->state = STREAM_STOPPED;
@@ -2081,9 +2072,9 @@ void RtAudio :: stopStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-void RtAudio :: abortStream(int streamID)
+void RtAudio :: abortStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -2096,7 +2087,7 @@ void RtAudio :: abortStream(int streamID)
     if (err < -1) {
       sprintf(message, "RtAudio: OSS error aborting device (%s).",
               devices[stream->device[0]].name);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   else {
@@ -2104,7 +2095,7 @@ void RtAudio :: abortStream(int streamID)
     if (err < -1) {
       sprintf(message, "RtAudio: OSS error aborting device (%s).",
               devices[stream->device[1]].name);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   stream->state = STREAM_STOPPED;
@@ -2113,13 +2104,13 @@ void RtAudio :: abortStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-int RtAudio :: streamWillBlock(int streamID)
+int RtAudio :: streamWillBlock(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
-  int bytes, channels = 0, frames = 0;
+  int bytes = 0, channels = 0, frames = 0;
   if (stream->state == STREAM_STOPPED)
     goto unlock;
 
@@ -2151,9 +2142,9 @@ int RtAudio :: streamWillBlock(int streamID)
   return frames;
 }
 
-void RtAudio :: tickStream(int streamID)
+void RtAudio :: tickStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   int stopStream = 0;
   if (stream->state == STREAM_STOPPED) {
@@ -2200,7 +2191,7 @@ void RtAudio :: tickStream(int streamID)
       // This could be an underrun, but the basic OSS API doesn't provide a means for determining that.
       sprintf(message, "RtAudio: OSS audio write error for device (%s).",
               devices[stream->device[0]].name);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -2225,7 +2216,7 @@ void RtAudio :: tickStream(int streamID)
       // This could be an overrun, but the basic OSS API doesn't provide a means for determining that.
       sprintf(message, "RtAudio: OSS audio read error for device (%s).",
               devices[stream->device[1]].name);
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // Do byte swapping if necessary.
@@ -2241,13 +2232,13 @@ void RtAudio :: tickStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 
   if (stream->usingCallback && stopStream)
-    this->stopStream(streamID);
+    this->stopStream(streamId);
 }
 
 extern "C" void *callbackHandler(void *ptr)
 {
   RtAudio *object = thread_info.object;
-  int stream = thread_info.streamID;
+  int stream = thread_info.streamId;
   bool *usingCallback = (bool *) ptr;
 
   while ( *usingCallback ) {
@@ -2255,7 +2246,7 @@ extern "C" void *callbackHandler(void *ptr)
     try {
       object->tickStream(stream);
     }
-    catch (RtAudioError &exception) {
+    catch (RtError &exception) {
       fprintf(stderr, "\nCallback thread error (%s) ... closing thread.\n\n",
               exception.getMessage());
       break;
@@ -2265,9 +2256,9 @@ extern "C" void *callbackHandler(void *ptr)
   return 0;
 }
 
-//******************** End of __LINUX_OSS_ *********************//
+//******************** End of __LINUX_OSS__ *********************//
 
-#elif defined(__WINDOWS_DS_) // Windows DirectSound API
+#elif defined(__WINDOWS_DS__) // Windows DirectSound API
 
 #include <dsound.h>
 
@@ -2305,7 +2296,7 @@ void RtAudio :: initialize(void)
   if ( FAILED(result) ) {
     sprintf(message, "RtAudio: Unable to enumerate through sound playback devices: %s.",
             getErrorString(result));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   // Count DirectSoundCapture devices.
@@ -2313,7 +2304,7 @@ void RtAudio :: initialize(void)
   if ( FAILED(result) ) {
     sprintf(message, "RtAudio: Unable to enumerate through sound capture devices: %s.",
             getErrorString(result));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   count = ins + outs;
@@ -2331,7 +2322,7 @@ void RtAudio :: initialize(void)
   if ( FAILED(result) ) {
     sprintf(message, "RtAudio: Unable to enumerate through sound playback devices: %s.",
             getErrorString(result));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   // Get capture device info and check capabilities.
@@ -2339,7 +2330,7 @@ void RtAudio :: initialize(void)
   if ( FAILED(result) ) {
     sprintf(message, "RtAudio: Unable to enumerate through sound capture devices: %s.",
             getErrorString(result));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   // Parse the devices and check validity.  Devices are considered
@@ -2369,7 +2360,7 @@ void RtAudio :: initialize(void)
   devices = (RTAUDIO_DEVICE *) calloc(nDevices, sizeof(RTAUDIO_DEVICE));
   if (devices == NULL) {
     sprintf(message, "RtAudio: memory allocation error!");
-    error(RtAudioError::MEMORY_ERROR);
+    error(RtError::MEMORY_ERROR);
   }
 
   // Initialize the GUIDs to NULL for later validation.
@@ -2412,7 +2403,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   if ( index >= nDevices ) {
     sprintf(message, "RtAudio: device (%s) indexing error in DirectSound probeDeviceInfo().",
             info->name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
@@ -2426,7 +2417,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   if ( FAILED(result) ) {
     sprintf(message, "RtAudio: Could not create DirectSound capture object (%s): %s.",
             info->name, getErrorString(result));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto playback_probe;
   }
 
@@ -2437,7 +2428,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     input->Release();
     sprintf(message, "RtAudio: Could not get DirectSound capture capabilities (%s): %s.",
             info->name, getErrorString(result));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto playback_probe;
   }
 
@@ -2501,7 +2492,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
   if ( FAILED(result) ) {
     sprintf(message, "RtAudio: Could not create DirectSound playback object (%s): %s.",
             info->name, getErrorString(result));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto check_parameters;
   }
 
@@ -2511,7 +2502,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     output->Release();
     sprintf(message, "RtAudio: Could not get DirectSound playback capabilities (%s): %s.",
             info->name, getErrorString(result));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     goto check_parameters;
   }
 
@@ -2535,7 +2526,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
         info->nSampleRates = -1; /* continuous range */
         sprintf(message, "RtAudio: bogus sample rates reported by DirectSound driver ... using defaults (%s).",
                 info->name);
-        error(RtAudioError::WARNING);
+        error(RtError::WARNING);
       }
       else {
         info->nSampleRates = 1;
@@ -2548,7 +2539,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
       info->nSampleRates = -1;
       sprintf(message, "RtAudio: bogus sample rates reported by DirectSound driver ... using range (%s).",
               info->name);
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else info->nSampleRates = 2;
   }
@@ -2648,7 +2639,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   else {
     sprintf(message, "RtAudio: no reported data formats for DirectSound device (%s).",
             devices[device].name);
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -2656,6 +2647,9 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
 
   if ( mode == PLAYBACK ) {
+
+    if ( devices[device].maxOutputChannels < channels )
+      return FAILURE;
 
     LPGUID id = devices[device].id[0];
     LPDIRECTSOUND  object;
@@ -2666,7 +2660,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Could not create DirectSound playback object (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2676,7 +2670,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to set DirectSound cooperative level (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2693,7 +2687,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to access DS primary buffer (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2703,7 +2697,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to set DS primary buffer format (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2729,7 +2723,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
         object->Release();
         sprintf(message, "RtAudio: Unable to create secondary DS buffer (%s): %s.",
                 devices[device].name, getErrorString(result));
-        error(RtAudioError::WARNING);
+        error(RtError::WARNING);
         return FAILURE;
       }
     }
@@ -2746,7 +2740,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to lock DS buffer (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2759,7 +2753,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to unlock DS buffer(%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2770,6 +2764,9 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
 
   if ( mode == RECORD ) {
 
+    if ( devices[device].maxInputChannels < channels )
+      return FAILURE;
+
     LPGUID id = devices[device].id[1];
     LPDIRECTSOUNDCAPTURE  object;
     LPDIRECTSOUNDCAPTUREBUFFER buffer;
@@ -2779,7 +2776,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Could not create DirectSound capture object (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2798,7 +2795,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to create DS capture buffer (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2808,7 +2805,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to lock DS capture buffer (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2821,7 +2818,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       object->Release();
       sprintf(message, "RtAudio: Unable to unlock DS capture buffer (%s): %s.",
               devices[device].name, getErrorString(result));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -2927,13 +2924,13 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   }
   sprintf(message, "RtAudio: error allocating buffer memory (%s).",
           devices[device].name);
-  error(RtAudioError::WARNING);
+  error(RtError::WARNING);
   return FAILURE;
 }
 
-void RtAudio :: cancelStreamCallback(int streamID)
+void RtAudio :: cancelStreamCallback(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   if (stream->usingCallback) {
     stream->usingCallback = false;
@@ -2945,18 +2942,18 @@ void RtAudio :: cancelStreamCallback(int streamID)
   }
 }
 
-void RtAudio :: closeStream(int streamID)
+void RtAudio :: closeStream(int streamId)
 {
   // We don't want an exception to be thrown here because this
   // function is called by our class destructor.  So, do our own
-  // streamID check.
-  if ( streams.find( streamID ) == streams.end() ) {
+  // streamId check.
+  if ( streams.find( streamId ) == streams.end() ) {
     sprintf(message, "RtAudio: invalid stream identifier!");
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamID];
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamId];
 
   if (stream->usingCallback) {
     stream->usingCallback = false;
@@ -2993,12 +2990,12 @@ void RtAudio :: closeStream(int streamID)
     free(stream->deviceBuffer);
 
   free(stream);
-  streams.erase(streamID);
+  streams.erase(streamId);
 }
 
-void RtAudio :: startStream(int streamID)
+void RtAudio :: startStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -3012,7 +3009,7 @@ void RtAudio :: startStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to start DS buffer (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -3022,7 +3019,7 @@ void RtAudio :: startStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to start DS capture buffer (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   stream->state = STREAM_RUNNING;
@@ -3031,9 +3028,9 @@ void RtAudio :: startStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-void RtAudio :: stopStream(int streamID)
+void RtAudio :: stopStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -3071,7 +3068,7 @@ void RtAudio :: stopStream(int streamID)
       if ( FAILED(result) ) {
         sprintf(message, "RtAudio: Unable to get current DS position (%s): %s.",
                 devices[stream->device[0]].name, getErrorString(result));
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
 
       if ( currentPos < nextWritePos ) currentPos += dsBufferSize; // unwrap offset
@@ -3089,7 +3086,7 @@ void RtAudio :: stopStream(int streamID)
         if ( FAILED(result) ) {
           sprintf(message, "RtAudio: Unable to get current DS position (%s): %s.",
                   devices[stream->device[0]].name, getErrorString(result));
-          error(RtAudioError::DRIVER_ERROR);
+          error(RtError::DRIVER_ERROR);
         }
         if ( currentPos < nextWritePos ) currentPos += dsBufferSize; // unwrap offset
       }
@@ -3100,7 +3097,7 @@ void RtAudio :: stopStream(int streamID)
       if ( FAILED(result) ) {
         sprintf(message, "RtAudio: Unable to lock DS buffer during playback (%s): %s.",
                 devices[stream->device[0]].name, getErrorString(result));
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
 
       // Zero the free space
@@ -3112,7 +3109,7 @@ void RtAudio :: stopStream(int streamID)
       if ( FAILED(result) ) {
         sprintf(message, "RtAudio: Unable to unlock DS buffer during playback (%s): %s.",
                 devices[stream->device[0]].name, getErrorString(result));
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
       nextWritePos = (nextWritePos + bufferSize1 + bufferSize2) % dsBufferSize;
       stream->handle[0].bufferPointer = nextWritePos;
@@ -3131,7 +3128,7 @@ void RtAudio :: stopStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to stop DS capture buffer (%s): %s",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     dsBufferSize = stream->bufferSize * stream->nDeviceChannels[1];
@@ -3143,7 +3140,7 @@ void RtAudio :: stopStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to lock DS capture buffer (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // Zero the DS buffer
@@ -3154,7 +3151,7 @@ void RtAudio :: stopStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to unlock DS capture buffer (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // If we start recording again, we must begin at beginning of buffer.
@@ -3165,9 +3162,9 @@ void RtAudio :: stopStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-void RtAudio :: abortStream(int streamID)
+void RtAudio :: abortStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -3184,7 +3181,7 @@ void RtAudio :: abortStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to stop DS buffer (%s): %s",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     dsBufferSize = stream->bufferSize * stream->nDeviceChannels[0];
@@ -3196,7 +3193,7 @@ void RtAudio :: abortStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to lock DS buffer (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // Zero the DS buffer
@@ -3207,7 +3204,7 @@ void RtAudio :: abortStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to unlock DS buffer (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // If we start playing again, we must begin at beginning of buffer.
@@ -3223,7 +3220,7 @@ void RtAudio :: abortStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to stop DS capture buffer (%s): %s",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     dsBufferSize = stream->bufferSize * stream->nDeviceChannels[1];
@@ -3235,7 +3232,7 @@ void RtAudio :: abortStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to lock DS capture buffer (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // Zero the DS buffer
@@ -3246,7 +3243,7 @@ void RtAudio :: abortStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to unlock DS capture buffer (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // If we start recording again, we must begin at beginning of buffer.
@@ -3258,19 +3255,20 @@ void RtAudio :: abortStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-int RtAudio :: streamWillBlock(int streamID)
+int RtAudio :: streamWillBlock(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
+  int channels;
   int frames = 0;
-  int channels = 1;
   if (stream->state == STREAM_STOPPED)
     goto unlock;
 
   HRESULT result;
   DWORD currentPos, safePos;
+  channels = 1;
   if (stream->mode == PLAYBACK || stream->mode == DUPLEX) {
 
     LPDIRECTSOUNDBUFFER dsBuffer = (LPDIRECTSOUNDBUFFER) stream->handle[0].buffer;
@@ -3284,7 +3282,7 @@ int RtAudio :: streamWillBlock(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to get current DS position (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     if ( currentPos < nextWritePos ) currentPos += dsBufferSize; // unwrap offset
@@ -3305,7 +3303,7 @@ int RtAudio :: streamWillBlock(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to get current DS capture position (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     if ( safePos < nextReadPos ) safePos += dsBufferSize; // unwrap offset
@@ -3330,9 +3328,9 @@ int RtAudio :: streamWillBlock(int streamID)
   return frames;
 }
 
-void RtAudio :: tickStream(int streamID)
+void RtAudio :: tickStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   int stopStream = 0;
   if (stream->state == STREAM_STOPPED) {
@@ -3346,13 +3344,18 @@ void RtAudio :: tickStream(int streamID)
   MUTEX_LOCK(&stream->mutex);
 
   // The state might change while waiting on a mutex.
-  if (stream->state == STREAM_STOPPED)
-    goto unlock;
+  if (stream->state == STREAM_STOPPED) {
+    MUTEX_UNLOCK(&stream->mutex);
+    if (stream->usingCallback && stopStream)
+      this->stopStream(streamId);
+  }
 
   HRESULT result;
   DWORD currentPos, safePos;
-  LPVOID buffer1, buffer2;
-  DWORD bufferSize1, bufferSize2;
+  LPVOID buffer1 = NULL;
+  LPVOID buffer2 = NULL;
+  DWORD bufferSize1 = 0;
+  DWORD bufferSize2 = 0;
   char *buffer;
   long buffer_bytes;
   if (stream->mode == PLAYBACK || stream->mode == DUPLEX) {
@@ -3381,7 +3384,7 @@ void RtAudio :: tickStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to get current DS position (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     if ( currentPos < nextWritePos ) currentPos += dsBufferSize; // unwrap offset
@@ -3408,7 +3411,7 @@ void RtAudio :: tickStream(int streamID)
       if ( FAILED(result) ) {
         sprintf(message, "RtAudio: Unable to get current DS position (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
       if ( currentPos < nextWritePos ) currentPos += dsBufferSize; // unwrap offset
     }
@@ -3419,7 +3422,7 @@ void RtAudio :: tickStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to lock DS buffer during playback (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // Copy our buffer into the DS buffer
@@ -3431,7 +3434,7 @@ void RtAudio :: tickStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to unlock DS buffer during playback (%s): %s.",
               devices[stream->device[0]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
     nextWritePos = (nextWritePos + bufferSize1 + bufferSize2) % dsBufferSize;
     stream->handle[0].bufferPointer = nextWritePos;
@@ -3460,7 +3463,7 @@ void RtAudio :: tickStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to get current DS capture position (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     if ( safePos < nextReadPos ) safePos += dsBufferSize; // unwrap offset
@@ -3479,7 +3482,7 @@ void RtAudio :: tickStream(int streamID)
       if ( FAILED(result) ) {
         sprintf(message, "RtAudio: Unable to get current DS capture position (%s): %s.",
                 devices[stream->device[1]].name, getErrorString(result));
-        error(RtAudioError::DRIVER_ERROR);
+        error(RtError::DRIVER_ERROR);
       }
       
       if ( safePos < nextReadPos ) safePos += dsBufferSize; // unwrap offset
@@ -3491,7 +3494,7 @@ void RtAudio :: tickStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to lock DS buffer during capture (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
 
     // Copy our buffer into the DS buffer
@@ -3504,7 +3507,7 @@ void RtAudio :: tickStream(int streamID)
     if ( FAILED(result) ) {
       sprintf(message, "RtAudio: Unable to unlock DS buffer during capture (%s): %s.",
               devices[stream->device[1]].name, getErrorString(result));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
     stream->handle[1].bufferPointer = nextReadPos;
 
@@ -3515,11 +3518,10 @@ void RtAudio :: tickStream(int streamID)
       convertStreamBuffer(stream, RECORD);
   }
 
- unlock:
   MUTEX_UNLOCK(&stream->mutex);
 
   if (stream->usingCallback && stopStream)
-    this->stopStream(streamID);
+    this->stopStream(streamId);
 }
 
 // Definitions for utility functions and callbacks
@@ -3528,14 +3530,14 @@ void RtAudio :: tickStream(int streamID)
 extern "C" unsigned __stdcall callbackHandler(void *ptr)
 {
   RtAudio *object = thread_info.object;
-  int stream = thread_info.streamID;
+  int stream = thread_info.streamId;
   bool *usingCallback = (bool *) ptr;
 
   while ( *usingCallback ) {
     try {
       object->tickStream(stream);
     }
-    catch (RtAudioError &exception) {
+    catch (RtError &exception) {
       fprintf(stderr, "\nCallback thread error (%s) ... closing thread.\n\n",
               exception.getMessage());
       break;
@@ -3657,9 +3659,9 @@ static char* getErrorString(int code)
 	}
 }
 
-//******************** End of __WINDOWS_DS_ *********************//
+//******************** End of __WINDOWS_DS__ *********************//
 
-#elif defined(__IRIX_AL_) // SGI's AL API for IRIX
+#elif defined(__IRIX_AL__) // SGI's AL API for IRIX
 
 #include <unistd.h>
 #include <errno.h>
@@ -3675,7 +3677,7 @@ void RtAudio :: initialize(void)
   if (nDevices < 0) {
     sprintf(message, "RtAudio: AL error counting devices: %s.",
             alGetErrorString(oserror()));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   if (nDevices <= 0) return;
@@ -3685,11 +3687,11 @@ void RtAudio :: initialize(void)
   // Add one for our default input/output devices.
   nDevices++;
 
-  //  Allocate the DEVICE_CONTROL structures.
+  //  Allocate the RTAUDIO_DEVICE structures.
   devices = (RTAUDIO_DEVICE *) calloc(nDevices, sizeof(RTAUDIO_DEVICE));
   if (devices == NULL) {
     sprintf(message, "RtAudio: memory allocation error!");
-    error(RtAudioError::MEMORY_ERROR);
+    error(RtError::MEMORY_ERROR);
   }
 
   // Write device ascii identifiers to device info structure.
@@ -3706,14 +3708,14 @@ void RtAudio :: initialize(void)
   if (outs < 0) {
     sprintf(message, "RtAudio: AL error getting output devices: %s.",
             alGetErrorString(oserror()));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   for (i=0; i<outs; i++) {
     if (alGetParams(vls[i].i, pvs, 1) < 0) {
       sprintf(message, "RtAudio: AL error querying output devices: %s.",
               alGetErrorString(oserror()));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
     strncpy(devices[i+1].name, name, 32);
     devices[i+1].id[0] = vls[i].i;
@@ -3723,14 +3725,14 @@ void RtAudio :: initialize(void)
   if (ins < 0) {
     sprintf(message, "RtAudio: AL error getting input devices: %s.",
             alGetErrorString(oserror()));
-    error(RtAudioError::DRIVER_ERROR);
+    error(RtError::DRIVER_ERROR);
   }
 
   for (i=outs; i<ins+outs; i++) {
     if (alGetParams(vls[i].i, pvs, 1) < 0) {
       sprintf(message, "RtAudio: AL error querying input devices: %s.",
               alGetErrorString(oserror()));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
     strncpy(devices[i+1].name, name, 32);
     devices[i+1].id[1] = vls[i].i;
@@ -3753,7 +3755,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     if (result < 0) {
       sprintf(message, "RtAudio: AL error getting default output device id: %s.",
               alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else
       resource = value.i;
@@ -3768,7 +3770,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     if (result < 0) {
       sprintf(message, "RtAudio: AL error getting device (%s) channels: %s.",
               info->name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else {
       info->maxOutputChannels = value.i;
@@ -3779,7 +3781,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     if (result < 0) {
       sprintf(message, "RtAudio: AL error getting device (%s) rates: %s.",
               info->name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else {
       info->nSampleRates = 0;
@@ -3801,7 +3803,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     if (result < 0) {
       sprintf(message, "RtAudio: AL error getting default input device id: %s.",
               alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else
       resource = value.i;
@@ -3816,7 +3818,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     if (result < 0) {
       sprintf(message, "RtAudio: AL error getting device (%s) channels: %s.",
               info->name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else {
       info->maxInputChannels = value.i;
@@ -3827,7 +3829,7 @@ void RtAudio :: probeDeviceInfo(RTAUDIO_DEVICE *info)
     if (result < 0) {
       sprintf(message, "RtAudio: AL error getting device (%s) rates: %s.",
               info->name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
     }
     else {
       // In the case of the default device, these values will
@@ -3885,7 +3887,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   if ( !al_config ) {
     sprintf(message,"RtAudio: can't get AL config: %s.",
             alGetErrorString(oserror()));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -3894,7 +3896,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   if ( result < 0 ) {
     sprintf(message,"RtAudio: can't set %d channels in AL config: %s.",
             channels, alGetErrorString(oserror()));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -3908,7 +3910,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   if ( result < 0 ) {
     sprintf(message,"RtAudio: can't set buffer size (%ld) in AL config: %s.",
             buffer_size, alGetErrorString(oserror()));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -3944,7 +3946,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   if ( result == -1 ) {
     sprintf(message,"RtAudio: AL error setting sample format in AL config: %s.",
             alGetErrorString(oserror()));
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return FAILURE;
   }
 
@@ -3959,7 +3961,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     if ( result == -1 ) {
       sprintf(message,"RtAudio: AL error setting device (%s) in AL config: %s.",
               devices[device].name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -3968,7 +3970,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     if( !port ) {
       sprintf(message,"RtAudio: AL error opening output port: %s.",
               alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -3982,7 +3984,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       alClosePort(port);
       sprintf(message,"RtAudio: AL error setting sample rate (%d) for device (%s): %s.",
               sampleRate, devices[device].name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
   }
@@ -3997,7 +3999,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     if ( result == -1 ) {
       sprintf(message,"RtAudio: AL error setting device (%s) in AL config: %s.",
               devices[device].name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -4006,7 +4008,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
     if( !port ) {
       sprintf(message,"RtAudio: AL error opening input port: %s.",
               alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
 
@@ -4020,7 +4022,7 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
       alClosePort(port);
       sprintf(message,"RtAudio: AL error setting sample rate (%d) for device (%s): %s.",
               sampleRate, devices[device].name, alGetErrorString(oserror()));
-      error(RtAudioError::WARNING);
+      error(RtError::WARNING);
       return FAILURE;
     }
   }
@@ -4106,13 +4108,13 @@ bool RtAudio :: probeDeviceOpen(int device, RTAUDIO_STREAM *stream,
   }
   sprintf(message, "RtAudio: ALSA error allocating buffer memory for device (%s).",
           devices[device].name);
-  error(RtAudioError::WARNING);
+  error(RtError::WARNING);
   return FAILURE;
 }
 
-void RtAudio :: cancelStreamCallback(int streamID)
+void RtAudio :: cancelStreamCallback(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   if (stream->usingCallback) {
     stream->usingCallback = false;
@@ -4124,18 +4126,18 @@ void RtAudio :: cancelStreamCallback(int streamID)
   }
 }
 
-void RtAudio :: closeStream(int streamID)
+void RtAudio :: closeStream(int streamId)
 {
   // We don't want an exception to be thrown here because this
   // function is called by our class destructor.  So, do our own
-  // streamID check.
-  if ( streams.find( streamID ) == streams.end() ) {
+  // streamId check.
+  if ( streams.find( streamId ) == streams.end() ) {
     sprintf(message, "RtAudio: invalid stream identifier!");
-    error(RtAudioError::WARNING);
+    error(RtError::WARNING);
     return;
   }
 
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamID];
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) streams[streamId];
 
   if (stream->usingCallback) {
     pthread_cancel(stream->thread);
@@ -4157,12 +4159,12 @@ void RtAudio :: closeStream(int streamID)
     free(stream->deviceBuffer);
 
   free(stream);
-  streams.erase(streamID);
+  streams.erase(streamId);
 }
 
-void RtAudio :: startStream(int streamID)
+void RtAudio :: startStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   if (stream->state == STREAM_RUNNING)
     return;
@@ -4171,9 +4173,9 @@ void RtAudio :: startStream(int streamID)
   stream->state = STREAM_RUNNING;
 }
 
-void RtAudio :: stopStream(int streamID)
+void RtAudio :: stopStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -4191,7 +4193,7 @@ void RtAudio :: stopStream(int streamID)
     if (result == -1) {
       sprintf(message, "RtAudio: AL error draining stream device (%s): %s.",
               devices[stream->device[1]].name, alGetErrorString(oserror()));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
   stream->state = STREAM_STOPPED;
@@ -4200,9 +4202,9 @@ void RtAudio :: stopStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-void RtAudio :: abortStream(int streamID)
+void RtAudio :: abortStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -4216,7 +4218,7 @@ void RtAudio :: abortStream(int streamID)
     if (result == -1) {
       sprintf(message, "RtAudio: AL error aborting stream device (%s): %s.",
               devices[stream->device[0]].name, alGetErrorString(oserror()));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -4228,9 +4230,9 @@ void RtAudio :: abortStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 }
 
-int RtAudio :: streamWillBlock(int streamID)
+int RtAudio :: streamWillBlock(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   MUTEX_LOCK(&stream->mutex);
 
@@ -4244,7 +4246,7 @@ int RtAudio :: streamWillBlock(int streamID)
     if (err < 0) {
       sprintf(message, "RtAudio: AL error getting available frames for stream (%s): %s.",
               devices[stream->device[0]].name, alGetErrorString(oserror()));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
   }
 
@@ -4255,7 +4257,7 @@ int RtAudio :: streamWillBlock(int streamID)
     if (err < 0) {
       sprintf(message, "RtAudio: AL error getting available frames for stream (%s): %s.",
               devices[stream->device[1]].name, alGetErrorString(oserror()));
-      error(RtAudioError::DRIVER_ERROR);
+      error(RtError::DRIVER_ERROR);
     }
     if (frames > err) frames = err;
   }
@@ -4268,9 +4270,9 @@ int RtAudio :: streamWillBlock(int streamID)
   return frames;
 }
 
-void RtAudio :: tickStream(int streamID)
+void RtAudio :: tickStream(int streamId)
 {
-  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamID);
+  RTAUDIO_STREAM *stream = (RTAUDIO_STREAM *) verifyStream(streamId);
 
   int stopStream = 0;
   if (stream->state == STREAM_STOPPED) {
@@ -4343,13 +4345,13 @@ void RtAudio :: tickStream(int streamID)
   MUTEX_UNLOCK(&stream->mutex);
 
   if (stream->usingCallback && stopStream)
-    this->stopStream(streamID);
+    this->stopStream(streamId);
 }
 
 extern "C" void *callbackHandler(void *ptr)
 {
   RtAudio *object = thread_info.object;
-  int stream = thread_info.streamID;
+  int stream = thread_info.streamId;
   bool *usingCallback = (bool *) ptr;
 
   while ( *usingCallback ) {
@@ -4357,7 +4359,7 @@ extern "C" void *callbackHandler(void *ptr)
     try {
       object->tickStream(stream);
     }
-    catch (RtAudioError &exception) {
+    catch (RtError &exception) {
       fprintf(stderr, "\nCallback thread error (%s) ... closing thread.\n\n",
               exception.getMessage());
       break;
@@ -4367,7 +4369,7 @@ extern "C" void *callbackHandler(void *ptr)
   return 0;
 }
 
-//******************** End of __IRIX_AL_ *********************//
+//******************** End of __IRIX_AL__ *********************//
 
 #endif
 
@@ -4380,28 +4382,30 @@ extern "C" void *callbackHandler(void *ptr)
 
 // This method can be modified to control the behavior of error
 // message reporting and throwing.
-void RtAudio :: error(RtAudioError::TYPE type)
+void RtAudio :: error(RtError::TYPE type)
 {
-  if (type == RtAudioError::WARNING)
-    fprintf(stderr, "\n%s\n\n", message);
-  else if (type == RtAudioError::DEBUG_WARNING) {
+  if (type == RtError::WARNING) {
 #if defined(RTAUDIO_DEBUG)
+    fprintf(stderr, "\n%s\n\n", message);
+  else if (type == RtError::DEBUG_WARNING) {
     fprintf(stderr, "\n%s\n\n", message);
 #endif
   }
-  else
-    throw RtAudioError(message, type);
+  else {
+    fprintf(stderr, "\n%s\n\n", message);
+    throw RtError(message, type);
+  }
 }
 
-void *RtAudio :: verifyStream(int streamID)
+void *RtAudio :: verifyStream(int streamId)
 {
   // Verify the stream key.
-  if ( streams.find( streamID ) == streams.end() ) {
+  if ( streams.find( streamId ) == streams.end() ) {
     sprintf(message, "RtAudio: invalid stream identifier!");
-    error(RtAudioError::INVALID_STREAM);
+    error(RtError::INVALID_STREAM);
   }
 
-  return streams[streamID];
+  return streams[streamId];
 }
 
 void RtAudio :: clearDeviceInfo(RTAUDIO_DEVICE *info)
@@ -4435,7 +4439,7 @@ int RtAudio :: formatBytes(RTAUDIO_FORMAT format)
     return 1;
 
   sprintf(message,"RtAudio: undefined format in formatBytes().");
-  error(RtAudioError::WARNING);
+  error(RtError::WARNING);
 
   return 0;
 }
@@ -4977,21 +4981,21 @@ void RtAudio :: byteSwapBuffer(char *buffer, int samples, RTAUDIO_FORMAT format)
 
 // *************************************************** //
 //
-// RtAudioError class definition.
+// RtError class definition.
 //
 // *************************************************** //
 
-RtAudioError :: RtAudioError(const char *p, TYPE tipe)
+RtError :: RtError(const char *p, TYPE tipe)
 {
   type = tipe;
   strncpy(error_message, p, 256);
 }
 
-RtAudioError :: ~RtAudioError()
+RtError :: ~RtError()
 {
 }
 
-void RtAudioError :: printMessage()
+void RtError :: printMessage()
 {
   printf("\n%s\n\n", error_message);
 }

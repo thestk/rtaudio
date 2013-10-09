@@ -77,8 +77,7 @@ int main(int argc, char *argv[])
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     exit(EXIT_FAILURE);
   }
 
@@ -90,8 +89,7 @@ int main(int argc, char *argv[])
     buffer1 = (MY_TYPE *) audio->getStreamBuffer(stream1);
     buffer2 = (MY_TYPE *) audio->getStreamBuffer(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -101,8 +99,7 @@ int main(int argc, char *argv[])
   try {
     audio->startStream(stream1);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -119,8 +116,7 @@ int main(int argc, char *argv[])
     try {
       audio->tickStream(stream1);
     }
-    catch (RtAudioError &m) {
-      m.printMessage();
+    catch (RtError &) {
       goto cleanup;
     }
 
@@ -132,8 +128,7 @@ int main(int argc, char *argv[])
     audio->stopStream(stream1);
     audio->startStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -146,8 +141,7 @@ int main(int argc, char *argv[])
     try {
       audio->tickStream(stream2);
     }
-    catch (RtAudioError &m) {
-      m.printMessage();
+    catch (RtError &) {
       goto cleanup;
     }
 
@@ -163,8 +157,7 @@ int main(int argc, char *argv[])
     audio->startStream(stream1);
     audio->startStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -177,8 +170,7 @@ int main(int argc, char *argv[])
       memcpy(buffer1, buffer2, sizeof(MY_TYPE) * chans * buffer_size);
       audio->tickStream(stream1);
     }
-    catch (RtAudioError &m) {
-      m.printMessage();
+    catch (RtError &) {
       goto cleanup;
     }
 
@@ -190,8 +182,7 @@ int main(int argc, char *argv[])
     audio->stopStream(stream1);
     audio->stopStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
   }
 
  cleanup:

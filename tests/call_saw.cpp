@@ -92,8 +92,7 @@ int main(int argc, char *argv[])
     audio = new RtAudio(&stream, device, chans, 0, 0,
                         FORMAT, fs, &buffer_size, 4);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     exit(EXIT_FAILURE);
   }
 
@@ -103,8 +102,7 @@ int main(int argc, char *argv[])
     audio->setStreamCallback(stream, &saw, (void *)data);
     audio->startStream(stream);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -115,8 +113,7 @@ int main(int argc, char *argv[])
   try {
     audio->stopStream(stream);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
   }
 
  cleanup:
