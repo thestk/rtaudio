@@ -10,34 +10,34 @@
 /******************************************/
 
 #include "RtAudio.h"
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 
 /*
 typedef char  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT8
+#define FORMAT RTAUDIO_SINT8
 #define SCALE  127.0
 
 typedef signed short  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT16
+#define FORMAT RTAUDIO_SINT16
 #define SCALE  32767.0
 
 typedef signed long  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT24
+#define FORMAT RTAUDIO_SINT24
 #define SCALE  8388607.0
 
 typedef signed long  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT32
+#define FORMAT RTAUDIO_SINT32
 #define SCALE  2147483647.0
 */
 
 typedef float  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_FLOAT32
+#define FORMAT RTAUDIO_FLOAT32
 #define SCALE  1.0;
 
 /*
 typedef double  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_FLOAT64
+#define FORMAT RTAUDIO_FLOAT64
 #define SCALE  1.0;
 */
 
@@ -45,17 +45,17 @@ void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: play_raw N fs file <device>\n";
-  cout << "    where N = number of channels,\n";
-  cout << "    fs = the sample rate, \n";
-  cout << "    file = the raw file to play,\n";
-  cout << "    and device = the device to use (default = 0).\n\n";
+  std::cout << "\nuseage: play_raw N fs file <device>\n";
+  std::cout << "    where N = number of channels,\n";
+  std::cout << "    fs = the sample rate, \n";
+  std::cout << "    file = the raw file to play,\n";
+  std::cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
 int main(int argc, char *argv[])
 {
-  int chans, fs, buffer_size, count, stream, device = 0;
+  int chans, fs, buffer_size, count, device = 0;
   long counter = 0;
   MY_TYPE *buffer;
   char *file;
@@ -73,26 +73,28 @@ int main(int argc, char *argv[])
 
   fd = fopen(file,"rb");
   if (!fd) {
-    cout << "can't find file!\n";
+    std::cout << "can't find file!\n";
     exit(0);
   }
 
   // Open the realtime output device
   buffer_size = 512;
   try {
-    audio = new RtAudio(&stream, device, chans, 0, 0,
+    audio = new RtAudio(device, chans, 0, 0,
                         FORMAT, fs, &buffer_size, 2);
   }
-  catch (RtError &) {
+  catch (RtError &error) {
     fclose(fd);
+    error.printMessage();
     exit(EXIT_FAILURE);
   }
 
   try {
-    buffer = (MY_TYPE *) audio->getStreamBuffer(stream);
-    audio->startStream(stream);
+    buffer = (MY_TYPE *) audio->getStreamBuffer();
+    audio->startStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
@@ -101,9 +103,10 @@ int main(int argc, char *argv[])
 
     if (count == buffer_size) {
       try {
-        audio->tickStream(stream);
+        audio->tickStream();
       }
-      catch (RtError &) {
+      catch (RtError &error) {
+        error.printMessage();
         goto cleanup;
       }
     }
@@ -114,13 +117,14 @@ int main(int argc, char *argv[])
   }
 
   try {
-    audio->stopStream(stream);
+    audio->stopStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
   }
 
  cleanup:
-  audio->closeStream(stream);
+  audio->closeStream();
   delete audio;
   fclose(fd);
 

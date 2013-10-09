@@ -8,61 +8,70 @@
 /******************************************/
 
 #include "RtAudio.h"
-#include <iostream.h>
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
   RtAudio *audio;
-  RtAudio::RTAUDIO_DEVICE my_info;
+  RtAudioDeviceInfo info;
   try {
     audio = new RtAudio();
   }
-  catch (RtError &m) {
-    m.printMessage();
+  catch (RtError &error) {
+    error.printMessage();
     exit(EXIT_FAILURE);
   }
 
   int devices = audio->getDeviceCount();
-  cout << "\nFound " << devices << " devices ...\n";
+  std::cout << "\nFound " << devices << " device(s) ...\n";
 
   for (int i=1; i<=devices; i++) {
     try {
-      audio->getDeviceInfo(i, &my_info);
+      info = audio->getDeviceInfo(i);
     }
-    catch (RtError &m) {
-      m.printMessage();
+    catch (RtError &error) {
+      error.printMessage();
       break;
     }
 
-    cout << "\nname = " << my_info.name << '\n';
-    if (my_info.probed == true) {
-      cout << "probe successful\n";
-      cout << "maxOutputChans = " << my_info.maxOutputChannels << '\n';
-      cout << "minOutputChans = " << my_info.minOutputChannels << '\n';
-      cout << "maxInputChans = " << my_info.maxInputChannels << '\n';
-      cout << "minInputChans = " << my_info.minInputChannels << '\n';
-      cout << "maxDuplexChans = " << my_info.maxDuplexChannels << '\n';
-      cout << "minDuplexChans = " << my_info.minDuplexChannels << '\n';
-      if (my_info.hasDuplexSupport) cout << "duplex support = true\n";
-      else cout << "duplex support = false\n";
-      if (my_info.isDefault) cout << "is default device = true\n";
-      else cout << "is default device = false\n";
-      cout << "format = " << my_info.nativeFormats << '\n';
-      if (my_info.nSampleRates == -1) {
-        cout << "min_srate = " << my_info.sampleRates[0];
-        cout << ", max_srate = " << my_info.sampleRates[1] << '\n';
-      }
+    std::cout << "\nDevice Name = " << info.name << '\n';
+    if (info.probed == false)
+      std::cout << "Probe Status = UNsuccessful\n";
+    else {
+      std::cout << "Probe Status = Successful\n";
+      std::cout << "Output Channels = " << info.outputChannels << '\n';
+      std::cout << "Input Channels = " << info.inputChannels << '\n';
+      std::cout << "Duplex Channels = " << info.duplexChannels << '\n';
+      if (info.isDefault) std::cout << "This is the default device.\n";
+      else std::cout << "This is NOT the default device.\n";
+      if ( info.nativeFormats == 0 )
+        std::cout << "No natively supported data formats(?)!";
       else {
-        cout << "sample rates = ";
-        for (int j=0; j<my_info.nSampleRates; j++)
-          cout << my_info.sampleRates[j] << " ";
-        cout << endl;
+        std::cout << "Natively supported data formats:\n";
+        if ( info.nativeFormats & RTAUDIO_SINT8 )
+          std::cout << "  8-bit int\n";
+        if ( info.nativeFormats & RTAUDIO_SINT16 )
+          std::cout << "  16-bit int\n";
+        if ( info.nativeFormats & RTAUDIO_SINT24 )
+          std::cout << "  24-bit int\n";
+        if ( info.nativeFormats & RTAUDIO_SINT32 )
+          std::cout << "  32-bit int\n";
+        if ( info.nativeFormats & RTAUDIO_FLOAT32 )
+          std::cout << "  32-bit float\n";
+        if ( info.nativeFormats & RTAUDIO_FLOAT64 )
+          std::cout << "  64-bit float\n";
       }
+      if ( info.sampleRates.size() < 1 )
+        std::cout << "No supported sample rates found!";
+      else {
+        std::cout << "Supported sample rates = ";
+        for (unsigned int j=0; j<info.sampleRates.size(); j++)
+          std::cout << info.sampleRates[j] << " ";
+      }
+      std::cout << std::endl;
     }
-    else
-      cout << "probe unsuccessful\n";
   }
-  cout << endl;
+  std::cout << std::endl;
 
   delete audio;
   return 0;
