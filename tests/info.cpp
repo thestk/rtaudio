@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
   int devices = audio->getDeviceCount();
   cout << "\nFound " << devices << " devices ...\n";
 
-  for (int i=0; i<devices; i++) {
+  for (int i=1; i<=devices; i++) {
     try {
       audio->getDeviceInfo(i, &my_info);
     }
@@ -35,29 +35,32 @@ int main(int argc, char *argv[])
     }
 
     cout << "\nname = " << my_info.name << '\n';
-    if (my_info.probed == true)
+    if (my_info.probed == true) {
       cout << "probe successful\n";
+      cout << "maxOutputChans = " << my_info.maxOutputChannels << '\n';
+      cout << "minOutputChans = " << my_info.minOutputChannels << '\n';
+      cout << "maxInputChans = " << my_info.maxInputChannels << '\n';
+      cout << "minInputChans = " << my_info.minInputChannels << '\n';
+      cout << "maxDuplexChans = " << my_info.maxDuplexChannels << '\n';
+      cout << "minDuplexChans = " << my_info.minDuplexChannels << '\n';
+      if (my_info.hasDuplexSupport) cout << "duplex support = true\n";
+      else cout << "duplex support = false\n";
+      if (my_info.isDefault) cout << "is default device = true\n";
+      else cout << "is default device = false\n";
+      cout << "format = " << my_info.nativeFormats << '\n';
+      if (my_info.nSampleRates == -1) {
+        cout << "min_srate = " << my_info.sampleRates[0];
+        cout << ", max_srate = " << my_info.sampleRates[1] << '\n';
+      }
+      else {
+        cout << "sample rates = ";
+        for (int j=0; j<my_info.nSampleRates; j++)
+          cout << my_info.sampleRates[j] << " ";
+        cout << endl;
+      }
+    }
     else
       cout << "probe unsuccessful\n";
-    cout << "maxOutputChans = " << my_info.maxOutputChannels << '\n';
-    cout << "minOutputChans = " << my_info.minOutputChannels << '\n';
-    cout << "maxInputChans = " << my_info.maxInputChannels << '\n';
-    cout << "minInputChans = " << my_info.minInputChannels << '\n';
-    cout << "maxDuplexChans = " << my_info.maxDuplexChannels << '\n';
-    cout << "minDuplexChans = " << my_info.minDuplexChannels << '\n';
-    if (my_info.hasDuplexSupport)
-      cout << "duplex support = true\n";
-    else
-      cout << "duplex support = false\n";
-    cout << "format = " << my_info.nativeFormats << '\n';
-    if (my_info.nSampleRates == -1)
-      cout << "min_srate = " << my_info.sampleRates[0] << ", max_srate = " << my_info.sampleRates[1] << '\n';
-    else {
-      cout << "sample rates = ";
-      for (int j=0; j<my_info.nSampleRates; j++)
-        cout << my_info.sampleRates[j] << " ";
-      cout << endl;
-    }
   }
   cout << endl;
 

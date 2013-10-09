@@ -1,9 +1,41 @@
-/******************************************/
-/*
-  RtAudio - realtime sound I/O C++ class
-  by Gary P. Scavone, 2001-2002.
+/************************************************************************/
+/*! \class RtAudio
+    \brief Realtime audio i/o C++ class.
+
+    RtAudio provides a common API (Application Programming Interface)
+    for realtime audio input/output across Linux (native ALSA and
+    OSS), SGI, Macintosh OS X (CoreAudio), and Windows (DirectSound
+    and ASIO) operating systems.
+
+    RtAudio WWW site: http://www-ccrma.stanford.edu/~gary/rtaudio/
+
+    RtAudio: a realtime audio i/o C++ class
+    Copyright (c) 2001-2002 Gary P. Scavone
+
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation files
+    (the "Software"), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge,
+    publish, distribute, sublicense, and/or sell copies of the Software,
+    and to permit persons to whom the Software is furnished to do so,
+    subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    Any person wishing to distribute modifications to the Software is
+    requested to send the modifications to the original developer so that
+    they can be incorporated into the canonical version.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+    ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+    CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-/******************************************/
+/************************************************************************/
 
 #if !defined(__RTAUDIO_H)
 #define __RTAUDIO_H
@@ -15,7 +47,6 @@
   #include <pthread.h>
   #include <unistd.h>
 
-  #define THREAD_TYPE
   typedef snd_pcm_t *AUDIO_HANDLE;
   typedef int DEVICE_ID;
   typedef pthread_t THREAD_HANDLE;
@@ -25,7 +56,6 @@
   #include <pthread.h>
   #include <unistd.h>
 
-  #define THREAD_TYPE
   typedef int AUDIO_HANDLE;
   typedef int DEVICE_ID;
   typedef pthread_t THREAD_HANDLE;
@@ -43,8 +73,16 @@
     UINT bufferPointer;
   } AUDIO_HANDLE;
 
-  #define THREAD_TYPE __stdcall
   typedef LPGUID DEVICE_ID;
+  typedef unsigned long THREAD_HANDLE;
+  typedef CRITICAL_SECTION MUTEX;
+
+#elif defined(__WINDOWS_ASIO__)
+  #include <windows.h>
+  #include <process.h>
+
+  typedef int AUDIO_HANDLE;
+  typedef int DEVICE_ID;
   typedef unsigned long THREAD_HANDLE;
   typedef CRITICAL_SECTION MUTEX;
 
@@ -53,24 +91,43 @@
   #include <pthread.h>
   #include <unistd.h>
 
-  #define THREAD_TYPE
   typedef ALport AUDIO_HANDLE;
-  typedef int DEVICE_ID;
+  typedef long DEVICE_ID;
+  typedef pthread_t THREAD_HANDLE;
+  typedef pthread_mutex_t MUTEX;
+
+#elif defined(__MACOSX_CORE__)
+
+  #include <CoreAudio/AudioHardware.h>
+  #include <pthread.h>
+
+  typedef unsigned int AUDIO_HANDLE;
+  typedef AudioDeviceID DEVICE_ID;
   typedef pthread_t THREAD_HANDLE;
   typedef pthread_mutex_t MUTEX;
 
 #endif
 
 
-// *************************************************** //
-//
-// RtError class declaration.
-//
-// *************************************************** //
+/************************************************************************/
+/*! \class RtError
+    \brief Exception handling class for RtAudio.
+
+    The RtError class is quite simple but it does allow errors to be
+    "caught" by RtError::TYPE. Almost all RtAudio methods can "throw"
+    an RtError, most typically if an invalid stream identifier is
+    supplied to a method or a driver error occurs. There are a number
+    of cases within RtAudio where warning messages may be displayed
+    but an exception is not thrown. There is a private RtAudio method,
+    error(), which can be modified to globally control how these
+    messages are handled and reported.
+*/
+/************************************************************************/
 
 class RtError
 {
 public:
+  //! Defined RtError types.
   enum TYPE {
     WARNING,
     DEBUG_WARNING,
@@ -107,6 +164,24 @@ public:
 };
 
 
+// This public structure type is used to pass callback information
+// between the private RtAudio stream structure and global callback
+// handling functions.
+typedef struct {
+  void *object;  // Used as a "this" pointer.
+  int streamId;
+  DEVICE_ID device[2];
+  THREAD_HANDLE thread;
+  void *callback;
+  void *buffers;
+  unsigned long waitTime;
+  bool blockTick;
+  bool stopStream;
+  bool usingCallback;
+  void *userData;
+} CALLBACK_INFO;
+
+
 // *************************************************** //
 //
 // RtAudio class declaration.
@@ -124,10 +199,10 @@ public:
   // soundcard.  Thus, endian-ness is not a concern in the following
   // format definitions.
   typedef unsigned long RTAUDIO_FORMAT;
-  static const RTAUDIO_FORMAT RTAUDIO_SINT8;
-  static const RTAUDIO_FORMAT RTAUDIO_SINT16;
-  static const RTAUDIO_FORMAT RTAUDIO_SINT24; /*!< Upper 3 bytes of 32-bit integer. */
-  static const RTAUDIO_FORMAT RTAUDIO_SINT32;
+  static const RTAUDIO_FORMAT RTAUDIO_SINT8; /*!< 8-bit signed integer. */
+  static const RTAUDIO_FORMAT RTAUDIO_SINT16; /*!< 16-bit signed integer. */
+  static const RTAUDIO_FORMAT RTAUDIO_SINT24; /*!< Upper 3 bytes of 32-bit signed integer. */
+  static const RTAUDIO_FORMAT RTAUDIO_SINT32; /*!< 32-bit signed integer. */
   static const RTAUDIO_FORMAT RTAUDIO_FLOAT32; /*!< Normalized between plus/minus 1.0. */
   static const RTAUDIO_FORMAT RTAUDIO_FLOAT64; /*!< Normalized between plus/minus 1.0. */
 
@@ -136,17 +211,19 @@ public:
 
   typedef int (*RTAUDIO_CALLBACK)(char *buffer, int bufferSize, void *userData);
 
+  //! The public device information structure for passing queried values.
   typedef struct {
-    char name[128];
-    DEVICE_ID id[2];  /*!< No value reported by getDeviceInfo(). */
+    char name[128];    /*!< Character string device identifier. */
+    DEVICE_ID id[2];  /* No value reported by getDeviceInfo(). */
     bool probed;       /*!< true if the device capabilities were successfully probed. */
-    int maxOutputChannels;
-    int maxInputChannels;
-    int maxDuplexChannels;
-    int minOutputChannels;
-    int minInputChannels;
-    int minDuplexChannels;
+    int maxOutputChannels; /*!< Maximum output channels supported by device. */
+    int maxInputChannels;  /*!< Maximum input channels supported by device. */
+    int maxDuplexChannels; /*!< Maximum simultaneous input/output channels supported by device. */
+    int minOutputChannels; /*!< Minimum output channels supported by device. */
+    int minInputChannels;  /*!< Minimum input channels supported by device. */
+    int minDuplexChannels; /*!< Minimum simultaneous input/output channels supported by device. */
     bool hasDuplexSupport; /*!< true if device supports duplex mode. */
+    bool isDefault;        /*!< true if this is the default output or input device. */
     int nSampleRates;      /*!< Number of discrete rates or -1 if range supported. */
     int sampleRates[MAX_SAMPLE_RATES]; /*!< Supported rates or (min, max) if range. */
     RTAUDIO_FORMAT nativeFormats;     /*!< Bit mask of supported data formats. */
@@ -154,11 +231,10 @@ public:
 
   //! The default constructor.
   /*!
-    Probes the system to make sure at least one audio
-    input/output device is available and determines
-    the api-specific identifier for each device found.
-    An RtError error can be thrown if no devices are
-    found or if a memory allocation error occurs.
+    Probes the system to make sure at least one audio input/output
+    device is available and determines the api-specific identifier for
+    each device found.  An RtError error can be thrown if no devices
+    are found or if a memory allocation error occurs.
   */
   RtAudio();
 
@@ -237,8 +313,8 @@ public:
     modes on the same stream through the use of the
     setStreamCallback() and cancelStreamCallback() methods (the
     blocking tickStream() method can be used before a callback is set
-    and/or after a callback is cancelled).  An RtError will be
-    thrown for an invalid device argument.
+    and/or after a callback is cancelled).  An RtError will be thrown
+    for an invalid device argument.
   */
   void setStreamCallback(int streamId, RTAUDIO_CALLBACK callback, void *userData);
 
@@ -255,16 +331,14 @@ public:
   //! A public method which returns the number of audio devices found.
   int getDeviceCount(void);
 
-  //! Fill a user-supplied RTAUDIO_DEVICE structure for a specified device.
+  //! Fill a user-supplied RTAUDIO_DEVICE structure for a specified device number.
   /*!
-    Any device between 0 and getDeviceCount()-1 is valid.  If a
-    device is busy or otherwise unavailable, the structure member
-    "probed" has a value of "false".  The system default input and
-    output devices are referenced by device identifier = 0.  On
-    systems which allow dynamic default device settings, the default
-    devices are not identified by name (specific device enumerations
-    are assigned device identifiers > 0).  An RtError will be
-    thrown for an invalid device argument.
+    Any device integer between 1 and getDeviceCount() is valid.  If
+    a device is busy or otherwise unavailable, the structure member
+    "probed" will have a value of "false" and all other members are
+    undefined.  If the specified device is the current default input
+    or output device, the "isDefault" member will have a value of
+    "true".  An RtError will be thrown for an invalid device argument.
   */
   void getDeviceInfo(int device, RTAUDIO_DEVICE *info);
 
@@ -320,6 +394,14 @@ public:
   */
   int streamWillBlock(int streamId);
 
+#if (defined(__MACOSX_CORE__) || defined(__WINDOWS_ASIO__))
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesireable results!
+  void callbackEvent(int streamId, DEVICE_ID deviceId, void *inData, void *outData);
+#endif
+
 protected:
 
 private:
@@ -329,8 +411,8 @@ private:
   enum { FAILURE, SUCCESS };
 
   enum STREAM_MODE {
-    PLAYBACK,
-    RECORD,
+    OUTPUT,
+    INPUT,
     DUPLEX,
     UNINITIALIZED = -75
   };
@@ -342,7 +424,7 @@ private:
 
   typedef struct {
     int device[2];          // Playback and record, respectively.
-    STREAM_MODE mode;       // PLAYBACK, RECORD, or DUPLEX.
+    STREAM_MODE mode;       // OUTPUT, INPUT, or DUPLEX.
     AUDIO_HANDLE handle[2]; // Playback and record handles, respectively.
     STREAM_STATE state;     // STOPPED or RUNNING
     char *userBuffer;
@@ -357,11 +439,8 @@ private:
     int nDeviceChannels[2];  // Playback and record channels, respectively.
     RTAUDIO_FORMAT userFormat;
     RTAUDIO_FORMAT deviceFormat[2]; // Playback and record, respectively.
-    bool usingCallback;
-    THREAD_HANDLE thread;
     MUTEX mutex;
-    RTAUDIO_CALLBACK callback;
-    void *userData;
+    CALLBACK_INFO callbackInfo;
   } RTAUDIO_STREAM;
 
   typedef signed short INT16;
@@ -383,6 +462,18 @@ private:
     RTAUDIO_DEVICE structures, and probe the device capabilities.
   */
   void initialize(void);
+
+  /*!
+    Private method which returns the index in the devices array to
+    the default input device.
+  */
+  int getDefaultInputDevice(void);
+
+  /*!
+    Private method which returns the index in the devices array to
+    the default output device.
+  */
+  int getDefaultOutputDevice(void);
 
   //! Private method to clear an RTAUDIO_DEVICE structure.
   void clearDeviceInfo(RTAUDIO_DEVICE *info);
@@ -428,7 +519,7 @@ private:
   int formatBytes(RTAUDIO_FORMAT format);
 };
 
-// Uncomment the following definition to have extra information spewed to stderr.
-//#define RTAUDIO_DEBUG
+// Define the following flag to have extra information spewed to stderr.
+//#define __RTAUDIO_DEBUG__
 
 #endif

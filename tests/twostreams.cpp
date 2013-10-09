@@ -3,7 +3,7 @@
   twostreams.cpp
   by Gary P. Scavone, 2001
 
-  Text executable for audio playback,
+  Test executable for audio playback,
   recording, duplex operation, stopping,
   starting, and aborting operations.
   Takes number of channels and sample
@@ -33,15 +33,17 @@ typedef signed short  MY_TYPE;
 typedef signed long  MY_TYPE;
 #define FORMAT RtAudio::RTAUDIO_SINT32
 #define SCALE  2147483647.0
+*/
 
 typedef float  MY_TYPE;
 #define FORMAT RtAudio::RTAUDIO_FLOAT32
 #define SCALE  1.0
-*/
 
+/*
 typedef double  MY_TYPE;
 #define FORMAT RtAudio::RTAUDIO_FLOAT64
 #define SCALE  1.0
+*/
 
 #define BASE_RATE 0.005
 #define TIME 2.0
@@ -50,30 +52,32 @@ void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: twostreams N fs\n";
+  cout << "\nuseage: twostreams N fs <device>\n";
   cout << "    where N = number of channels,\n";
-  cout << "    and fs = the sample rate.\n\n";
+  cout << "    fs = the sample rate,\n";
+  cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
 int main(int argc, char *argv[])
 {
-  int chans, fs, device, buffer_size, stream1, stream2;
+  int chans, fs, buffer_size, stream1 = 0, stream2 = 0, device = 0;
   long frames, counter = 0, i, j;
   MY_TYPE *buffer1, *buffer2;
   RtAudio *audio;
   FILE *fd;
-  double *data;
+  double *data = 0;
 
   // minimal command-line checking
-  if (argc != 3) usage();
+  if (argc != 3 && argc != 4 ) usage();
 
   chans = (int) atoi(argv[1]);
   fs = (int) atoi(argv[2]);
+  if ( argc == 4 )
+    device = (int) atoi(argv[3]);
 
   // Open the realtime output device
   buffer_size = 512;
-  device = 0; // default device
   try {
     audio = new RtAudio();
   }
@@ -86,6 +90,12 @@ int main(int argc, char *argv[])
                                 FORMAT, fs, &buffer_size, 8);
     stream2 = audio->openStream(0, 0, device, chans,
                                 FORMAT, fs, &buffer_size, 8);
+  }
+  catch (RtError &) {
+    goto cleanup;
+  }
+
+  try {
     buffer1 = (MY_TYPE *) audio->getStreamBuffer(stream1);
     buffer2 = (MY_TYPE *) audio->getStreamBuffer(stream2);
   }
@@ -126,13 +136,19 @@ int main(int argc, char *argv[])
   cout << "\nStopping playback stream." << endl;
   try {
     audio->stopStream(stream1);
-    audio->startStream(stream2);
   }
   catch (RtError &) {
     goto cleanup;
   }
 
   fd = fopen("test.raw","wb");
+
+  try {
+    audio->startStream(stream2);
+  }
+  catch (RtError &) {
+    goto cleanup;
+  }
 
   counter = 0;
   cout << "\nStarting recording stream for " << TIME << " seconds." << endl;

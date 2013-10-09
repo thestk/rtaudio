@@ -37,9 +37,10 @@ void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: call_inout N fs\n";
+  cout << "\nuseage: call_inout N fs device\n";
   cout << "    where N = number of channels,\n";
-  cout << "    and fs = the sample rate.\n\n";
+  cout << "    fs = the sample rate,\n";
+  cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
@@ -51,19 +52,20 @@ int inout(char *buffer, int buffer_size, void *)
 
 int main(int argc, char *argv[])
 {
-  int device, stream, chans, fs;
+  int stream, chans, fs, device = 0;
   RtAudio *audio;
   char input;
 
   // minimal command-line checking
-  if (argc != 3) usage();
+  if (argc != 3 && argc != 4 ) usage();
 
   chans = (int) atoi(argv[1]);
   fs = (int) atoi(argv[2]);
+  if ( argc == 4 )
+    device = (int) atoi(argv[3]);
 
   // Open the realtime output device
   int buffer_size = 512;
-  device = 0; // default device
   try {
     audio = new RtAudio(&stream, device, chans, device, chans,
                         FORMAT, fs, &buffer_size, 8);
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
     goto cleanup;
   }
 
-  cout << "\nRunning ... press <enter> to quit.\n";
+  cout << "\nRunning ... press <enter> to quit (buffer size = " << buffer_size << ").\n";
   cin.get(input);
 
   try {
