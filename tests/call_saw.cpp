@@ -76,8 +76,8 @@ int saw(char *buffer, int buffer_size, void *data)
 int main(int argc, char *argv[])
 {
   int buffer_size, fs, device = 0;
-  RtAudio *audio;
-  double *data;
+  RtAudio *audio = 0;
+  double *data = 0;
   char input;
 
   // minimal command-line checking

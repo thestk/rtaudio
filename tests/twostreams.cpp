@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   int chans, fs, buffer_size, device = 0;
   long frames, counter = 0, i, j;
   MY_TYPE *buffer1, *buffer2;
-  RtAudio *stream1, *stream2;
+  RtAudio *stream1 = 0, *stream2 = 0;
   FILE *fd;
   double *data = 0;
 

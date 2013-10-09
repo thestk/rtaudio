@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   int chans, fs, buffer_size, device = 0;
   long frames, counter = 0, i, j;
   MY_TYPE *buffer;
-  RtAudio *audio;
+  RtAudio *audio = 0;
   double *data = 0;
 
   // minimal command-line checking

@@ -53,7 +53,7 @@ int inout(char *buffer, int buffer_size, void *)
 int main(int argc, char *argv[])
 {
   int chans, fs, device = 0;
-  RtAudio *audio;
+  RtAudio *audio = 0;
   char input;
 
   // minimal command-line checking
@@ -67,8 +67,8 @@ int main(int argc, char *argv[])
   // Open the realtime output device
   int buffer_size = 512;
   try {
-    audio = new RtAudio(device, chans, device, chans,
-                        FORMAT, fs, &buffer_size, 8);
+    audio = new RtAudio( device, chans, device, chans,
+                        FORMAT, fs, &buffer_size, 8 );
   }
   catch (RtError &error) {
     error.printMessage();

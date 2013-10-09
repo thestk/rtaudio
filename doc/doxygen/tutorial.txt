@@ -1,8 +1,6 @@
 /*! \mainpage The RtAudio Tutorial
 
-<BODY BGCOLOR="white">
-
-<CENTER>\ref intro &nbsp;&nbsp; \ref changes &nbsp;&nbsp;\ref download &nbsp;&nbsp; \ref start &nbsp;&nbsp; \ref error &nbsp;&nbsp; \ref probing &nbsp;&nbsp; \ref settings &nbsp;&nbsp; \ref playbackb &nbsp;&nbsp; \ref playbackc &nbsp;&nbsp; \ref recording &nbsp;&nbsp; \ref duplex &nbsp;&nbsp; \ref multi &nbsp;&nbsp; \ref methods &nbsp;&nbsp; \ref compiling &nbsp;&nbsp; \ref debug &nbsp;&nbsp; \ref apinotes &nbsp;&nbsp; \ref acknowledge &nbsp;&nbsp; \ref license</CENTER>
+<CENTER>\ref intro &nbsp;&nbsp; \ref changes &nbsp;&nbsp;\ref download &nbsp;&nbsp; \ref start &nbsp;&nbsp; \ref error &nbsp;&nbsp; \ref probing &nbsp;&nbsp; \ref settings &nbsp;&nbsp; \ref playbackb &nbsp;&nbsp; \ref playbackc &nbsp;&nbsp; \ref recording &nbsp;&nbsp; \ref duplex &nbsp;&nbsp; \ref multi &nbsp;&nbsp; \ref methods &nbsp;&nbsp; \ref compiling &nbsp;&nbsp; \ref debug &nbsp;&nbsp; \ref apinotes &nbsp;&nbsp; \ref wishlist &nbsp;&nbsp; \ref acknowledge &nbsp;&nbsp; \ref license</CENTER>
 
 \section intro Introduction
 
@@ -38,7 +36,7 @@ The RtError class declaration and definition have been extracted to a separate f
 
 \section download Download
 
-Latest Release (22 March 2004): <A href="http://music.mcgill.ca/~gary/rtaudio/release/rtaudio-3.0.1.tar.gz">Version 3.0.1 (200 kB tar/gzipped)</A>
+Latest Release (14 October 2005): <A href="http://music.mcgill.ca/~gary/rtaudio/release/rtaudio-3.0.2.tar.gz">Version 3.0.2</A>
 
 \section start Getting Started
 
@@ -52,7 +50,7 @@ The first thing that must be done when using RtAudio is to create an instance of
 
 int main()
 {
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Default RtAudio constructor
   try {
@@ -89,7 +87,7 @@ A programmer may wish to query the available audio device capabilities before de
 
 int main()
 {
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Default RtAudio constructor
   try {
@@ -176,7 +174,7 @@ int main()
   int bufferSize = 256;  // 256 sample frames
   int nBuffers = 4;      // number of internal buffers used by device
   int device = 0;        // 0 indicates the default or first available device
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Instantiate RtAudio and open a stream within a try/catch block
   try {
@@ -230,7 +228,7 @@ int main()
   int nBuffers = 4;      // number of internal buffers used by device
   float *buffer;
   int device = 0;        // 0 indicates the default or first available device
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Open a stream during RtAudio instantiation
   try {
@@ -333,7 +331,7 @@ int main()
   int device = 0;        // 0 indicates the default or first available device
   double data[2];
   char input;
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Open a stream during RtAudio instantiation
   try {
@@ -401,7 +399,7 @@ int main()
   int nBuffers = 4;      // number of internal buffers used by device
   float *buffer;
   int device = 0;        // 0 indicates the default or first available device
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Instantiate RtAudio and open a stream.
   try {
@@ -496,7 +494,7 @@ int main()
   int nBuffers = 4;      // number of internal buffers used by device
   int device = 0;        // 0 indicates the default or first available device
   char input;
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // Open a stream during RtAudio instantiation
   try {
@@ -683,17 +681,51 @@ The Steinberg ASIO audio API is based on a callback scheme.  In addition, the AP
 
 A number of ASIO source and header files are required for use with RtAudio.  Specifically, an RtAudio project must include the following files: <TT>asio.h,cpp; asiodrivers.h,cpp; asiolist.h,cpp; asiodrvr.h; asiosys.h; ginclude.h; iasiodrv.h</TT>.  The Visual C++ projects found in <TT>/tests/Windows/</TT> compile both ASIO and DirectSound support.
 
+\section wishlist Possible Future Changes
+
+There are a few issues that still need to be addressed in future versions of RtAudio, including:
+
+<ul>
+<li>Provide a mechanism so the user can "pre-fill" audio output buffers to allow precise measurement of an acoustic response;</li>
+<li>Allow the user to read / write non-interleaved data to / from the audio buffer;</li>
+<li>Further support in Windows OS for multi-channel (>2) input / output.  This is currently only possible with ASIO interface (in large part due to limitations with the DirectSound API).  But perhaps a port to the WinMM API should be investigated?</li>
+<li>Investigate the possibility of allowing the user to select specific channels of a soundcard.  For example, if an audio device supports 8 channels and the user wishes to send data out channels 7-8 only, it is currently necessary to open all 8 channels and write the two channels of output data to the correct positions in each audio frame of an interleaved data buffer.</li>
+</ul>
 
 \section acknowledge Acknowledgements
 
-The RtAudio API incorporates many of the concepts developed in the <A href="http://www.portaudio.com/">PortAudio</A> project by Phil Burk and Ross Bencina.  Early development also incorporated ideas from Bill Schottstaedt's <A href="http://www-ccrma.stanford.edu/software/snd/sndlib/">sndlib</A>.  The CCRMA <A href="http://www-ccrma.stanford.edu/groups/soundwire/">SoundWire group</A> provided valuable feedback during the API proposal stages.
+Thanks to Robin Davies for a number of bug fixes and improvements to
+the DirectSound and ASIO implementations in the 3.0.2 release!
 
-The early 2.0 version of RtAudio was slowly developed over the course of many months while in residence at the <A href="http://www.iua.upf.es/">Institut Universitari de L'Audiovisual (IUA)</A> in Barcelona, Spain and the <A href="http://www.acoustics.hut.fi/">Laboratory of Acoustics and Audio Signal Processing</A> at the Helsinki University of Technology, Finland.  Much subsequent development happened while working at the <A href="http://www-ccrma.stanford.edu/">Center for Computer Research in Music and Acoustics (CCRMA)</A> at <A href="http://www.stanford.edu/">Stanford University</A>.  The most recent version of RtAudio was finished while working as an assistant professor of <a href="http://www.music.mcgill.ca/musictech/">Music Technology</a> at <a href="http://www.mcgill.ca/">McGill University</a>.  This work was supported in part by the United States Air Force Office of Scientific Research (grant \#F49620-99-1-0293).
+The RtAudio API incorporates many of the concepts developed in the <A
+href="http://www.portaudio.com/">PortAudio</A> project by Phil Burk
+and Ross Bencina.  Early development also incorporated ideas from Bill
+Schottstaedt's <A
+href="http://www-ccrma.stanford.edu/software/snd/sndlib/">sndlib</A>.
+The CCRMA <A
+href="http://www-ccrma.stanford.edu/groups/soundwire/">SoundWire
+group</A> provided valuable feedback during the API proposal stages.
+
+The early 2.0 version of RtAudio was slowly developed over the course
+of many months while in residence at the <A
+href="http://www.iua.upf.es/">Institut Universitari de L'Audiovisual
+(IUA)</A> in Barcelona, Spain and the <A
+href="http://www.acoustics.hut.fi/">Laboratory of Acoustics and Audio
+Signal Processing</A> at the Helsinki University of Technology,
+Finland.  Much subsequent development happened while working at the <A
+href="http://www-ccrma.stanford.edu/">Center for Computer Research in
+Music and Acoustics (CCRMA)</A> at <A
+href="http://www.stanford.edu/">Stanford University</A>.  The most
+recent version of RtAudio was finished while working as an assistant
+professor of <a href="http://www.music.mcgill.ca/musictech/">Music
+Technology</a> at <a href="http://www.mcgill.ca/">McGill
+University</a>.  This work was supported in part by the United States
+Air Force Office of Scientific Research (grant \#F49620-99-1-0293).
 
 \section license License
 
     RtAudio: a realtime audio i/o C++ classes<BR>
-    Copyright (c) 2001-2004 Gary P. Scavone
+    Copyright (c) 2001-2005 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
