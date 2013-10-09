@@ -2,6 +2,9 @@ RtAudio - a set of C++ classes which provide a common API for realtime audio inp
 
 By Gary P. Scavone, 2001-2004.
 
+v3.0.1: (22 March 2004)
+- bug fix in Windows DirectSound support for cards with output only
+
 v3.0: (11 March 2004)
 - added Linux Jack audio server support
 - new multi-api support by subclassing all apis and making rtaudio a controller class
