@@ -87,19 +87,23 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\asio.cpp
+SOURCE=..\..\asio\asio.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\asiodrivers.cpp
+SOURCE=..\..\asio\asiodrivers.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\asiolist.cpp
+SOURCE=..\..\asio\asiolist.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\call_inout.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\asio\iasiothiscallresolver.cpp
 # End Source File
 # Begin Source File
 
@@ -111,31 +115,35 @@ SOURCE=..\..\RtAudio.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\asio.h
+SOURCE=..\..\asio\asio.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\asiodrivers.h
+SOURCE=..\..\asio\asiodrivers.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\asiodrvr.h
+SOURCE=..\..\asio\asiodrvr.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\asiolist.h
+SOURCE=..\..\asio\asiolist.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\asiosys.h
+SOURCE=..\..\asio\asiosys.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ginclude.h
+SOURCE=..\..\asio\ginclude.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\iasiodrv.h
+SOURCE=..\..\asio\iasiodrv.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\asio\iasiothiscallresolver.h
 # End Source File
 # Begin Source File
 

@@ -2,6 +2,12 @@ RtAudio - a set of C++ classes which provide a common API for realtime audio inp
 
 By Gary P. Scavone, 2001-2005.
 
+v3.0.3: ( November 2005)
+- UNICODE fix for Windows DirectSound API
+- MinGW compiler fix for ASIO API
+- jack support to create virtual devices for each jack plugin
+- support to prefill output buffer with zeroes in duplex mode
+
 v3.0.2: (14 October 2005)
 - modification of ALSA read/write order to fix duplex under/overruns
 - added synchronization of input/output devices for ALSA duplex operation
