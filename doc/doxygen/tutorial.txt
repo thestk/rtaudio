@@ -41,7 +41,7 @@ The RtAudio API provides both blocking (synchronous) and callback (asyncronous) 
 
 \section download Download
 
-Latest Release (7 October 2002): <A href="http://www-ccrma.stanford.edu/~gary/rtaudio/release/rtaudio-2.1.tar.gz">Version 2.1 (165 kB tar/gzipped)</A>
+Latest Release (24 October 2002): <A href="http://www-ccrma.stanford.edu/~gary/rtaudio/release/rtaudio-2.1.1.tar.gz">Version 2.1.1 (165 kB tar/gzipped)</A>
 
 
 \section start Getting Started
@@ -467,7 +467,7 @@ In this example, the stream was opened for recording with a non-zero <I>inputCha
 
 \section duplex Duplex Mode
 
-Finally, it is easy to use RtAudio for simultaneous audio input/output, or duplex operation.  In this example, we use a callback function and pass our recorded data directly through for playback.
+Finally, it is easy to use RtAudio for simultaneous audio input/output, or duplex operation.  In this example, we use a callback function and simply scale the input data before sending it back to the output.
 
 \code
 // duplex.cpp
@@ -476,9 +476,18 @@ Finally, it is easy to use RtAudio for simultaneous audio input/output, or duple
 #include "RtAudio.h"
 
 // Pass-through function.
-int pass(char *buffer, int buffer_size, void *)
+int scale(char *buffer, int buffer_size, void *)
 {
-  // Surprise!!  We do nothing to pass the data through.
+  // Note: do nothing here for pass through.
+  double *my_buffer = (double *) buffer;
+
+  // Scale input data for output.
+  for (int i=0; i<buffer_size; i++) {
+    // Do for two channels.
+    *my_buffer++ *= 0.5;
+    *my_buffer++ *= 0.5;
+  }
+
   return 0;
 }
 
@@ -490,7 +499,6 @@ int main()
   int n_buffers = 4;      // number of internal buffers used by device
   int device = 0;         // 0 indicates the default or first available device
   int stream;             // our stream identifier
-  double data[2];
   char input;
   RtAudio *audio;
 
@@ -506,7 +514,7 @@ int main()
 
   try {
     // Set the stream callback function
-    audio->setStreamCallback(stream, &pass, NULL);
+    audio->setStreamCallback(stream, &scale, NULL);
 
     // Start the stream
     audio->startStream(stream);
@@ -537,7 +545,7 @@ int main()
 
 When an RtAudio stream is running in duplex mode (nonzero input <I>AND</I> output channels), the audio write (playback) operation always occurs before the audio read (record) operation.  This sequence allows the use of a single buffer to store both output and input data.
 
-As we see with this example, the write-read sequence of operations does not preclude the use of RtAudio in situations where input data is first processed and then output through a duplex stream.  When the stream buffer is first allocated, it is initialized with zeros, which produces no audible result when output to the device.  In this example, anything recorded by the audio stream input will be played out during the next round of audio processing.
+As we see with this example, the write-read sequence of operations does not preclude the use of RtAudio in situations where input data is first processed and then output through a duplex stream.  When the stream buffer is first allocated, it is initialized with zeros, which produces no audible result when output to the device.  In this example, anything recorded by the audio stream input will be scaled and played out during the next round of audio processing.
 
 Note that duplex operation can also be achieved by opening one output stream and one input stream using the same or different devices.  However, there may be timing problems when attempting to use two different devices, due to possible device clock variations, unless a common external "sync" is provided.  This becomes even more difficult to achieve using two separate callback streams because it is not possible to <I>explicitly</I> control the calling order of the callback functions.
 
@@ -594,7 +602,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>CoreAudio</TD>
   <TD>__MACOSX_CORE__</TD>
   <TD><TT>pthread, stdc++, CoreAudio</TT></TD>
-  <TD><TT>cc -Wall -D__MACOSX_CORE__ -o probe probe.cpp RtAudio.cpp -framework CoreAudio -lstdc++ -lpthread</TT></TD>
+  <TD><TT>CC -Wall -D__MACOSX_CORE__ -o probe probe.cpp RtAudio.cpp -framework CoreAudio -lstdc++ -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Irix</TD>

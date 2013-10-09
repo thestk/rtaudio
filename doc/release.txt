@@ -2,6 +2,10 @@ RtAudio - a C++ class which provides a common API for realtime audio input/outpu
 
 By Gary P. Scavone, 2002.
 
+v2.1.1: (24 October 2002)
+- bug fix in duplex for Mac OS X and Windows ASIO code
+- duplex example change in tutorial 
+
 v2.1: (7 October 2002)
 - added Mac OS X CoreAudio support
 - added Windows ASIO support
