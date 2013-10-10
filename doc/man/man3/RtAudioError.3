@@ -1,0 +1,115 @@
+.TH "RtAudioError" 3 "22 Jan 2002" "RtAudio" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+RtAudioError \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <RtAudio.h>\fP
+.PP
+.SS "Public Types"
+
+.in +1c
+.ti -1c
+.RI "enum \fBTYPE\fP { \fBWARNING\fP, \fBDEBUG_WARNING\fP, \fBUNSPECIFIED\fP, \fBNO_DEVICES_FOUND\fP, \fBINVALID_DEVICE\fP, \fBINVALID_STREAM\fP, \fBMEMORY_ERROR\fP, \fBINVALID_PARAMETER\fP, \fBDRIVER_ERROR\fP, \fBSYSTEM_ERROR\fP, \fBTHREAD_ERROR\fP }"
+.br
+.in -1c
+.SS "Public Methods"
+
+.in +1c
+.ti -1c
+.RI "\fBRtAudioError\fP (const char *p, \fBTYPE\fP tipe=RtAudioError::UNSPECIFIED)"
+.br
+.RI "\fIThe constructor.\fP"
+.ti -1c
+.RI "virtual \fB~RtAudioError\fP (void)"
+.br
+.RI "\fIThe destructor.\fP"
+.ti -1c
+.RI "virtual void \fBprintMessage\fP (void)"
+.br
+.RI "\fIPrints 'thrown' error message to stdout.\fP"
+.ti -1c
+.RI "virtual const \fBTYPE\fP& \fBgetType\fP (void)"
+.br
+.RI "\fIReturns the 'thrown' error message TYPE.\fP"
+.ti -1c
+.RI "virtual const char* \fBgetMessage\fP (void)"
+.br
+.RI "\fIReturns the 'thrown' error message string.\fP"
+.in -1c
+.SS "Protected Attributes"
+
+.in +1c
+.ti -1c
+.RI "char \fBerror_message\fP [256]"
+.br
+.ti -1c
+.RI "\fBTYPE\fP \fBtype\fP"
+.br
+.in -1c
+.SH "MEMBER ENUMERATION DOCUMENTATION"
+.PP 
+.SS "enum RtAudioError::TYPE"
+.PP
+\fBEnumeration values:\fP
+.in +1c
+.TP
+\fB\fIWARNING\fP \fP
+.TP
+\fB\fIDEBUG_WARNING\fP \fP
+.TP
+\fB\fIUNSPECIFIED\fP \fP
+.TP
+\fB\fINO_DEVICES_FOUND\fP \fP
+.TP
+\fB\fIINVALID_DEVICE\fP \fP
+.TP
+\fB\fIINVALID_STREAM\fP \fP
+.TP
+\fB\fIMEMORY_ERROR\fP \fP
+.TP
+\fB\fIINVALID_PARAMETER\fP \fP
+.TP
+\fB\fIDRIVER_ERROR\fP \fP
+.TP
+\fB\fISYSTEM_ERROR\fP \fP
+.TP
+\fB\fITHREAD_ERROR\fP \fP
+
+.SH "CONSTRUCTOR & DESTRUCTOR DOCUMENTATION"
+.PP 
+.SS "RtAudioError::RtAudioError (const char * p, \fBTYPE\fP tipe = RtAudioError::UNSPECIFIED)"
+.PP
+The constructor.
+.PP
+.SS "RtAudioError::~RtAudioError (void)\fC [virtual]\fP"
+.PP
+The destructor.
+.PP
+.SH "MEMBER FUNCTION DOCUMENTATION"
+.PP 
+.SS "void RtAudioError::printMessage (void)\fC [virtual]\fP"
+.PP
+Prints 'thrown' error message to stdout.
+.PP
+.SS "const \fBTYPE\fP & RtAudioError::getType (void)\fC [inline, virtual]\fP"
+.PP
+Returns the 'thrown' error message TYPE.
+.PP
+.SS "const char * RtAudioError::getMessage (void)\fC [inline, virtual]\fP"
+.PP
+Returns the 'thrown' error message string.
+.PP
+.SH "MEMBER DATA DOCUMENTATION"
+.PP 
+.SS "char RtAudioError::error_message\fC [protected]\fP"
+.PP
+.SS "\fBTYPE\fP RtAudioError::type\fC [protected]\fP"
+.PP
+
+
+.SH "AUTHOR"
+.PP 
+Generated automatically by Doxygen for RtAudio from the source code.

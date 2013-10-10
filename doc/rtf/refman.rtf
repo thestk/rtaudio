@@ -1,0 +1,1781 @@
+{\rtf1\ansi\ansicpg1252\uc1 \deff0\deflang1033\deflangfe1033
+{\fonttbl {\f0\froman\fcharset0\fprq2{\*\panose 02020603050405020304}Times New Roman;}
+{\f1\fswiss\fcharset0\fprq2{\*\panose 020b0604020202020204}Arial;}
+{\f2\fmodern\fcharset0\fprq1{\*\panose 02070309020205020404}Courier New;}
+{\f3\froman\fcharset2\fprq2{\*\panose 05050102010706020507}Symbol;}
+}
+{\colortbl;\red0\green0\blue0;\red0\green0\blue255;\red0\green255\blue255;\red0\green255\blue0;\red255\green0\blue255;\red255\green0\blue0;\red255\green255\blue0;\red255\green255\blue255;\red0\green0\blue128;\red0\green128\blue128;\red0\green128\blue0;\red128\green0\blue128;\red128\green0\blue0;\red128\green128\blue0;\red128\green128\blue128;\red192\green192\blue192;}
+{\stylesheet
+{\widctlpar\adjustright \fs20\cgrid \snext0 Normal;}
+{\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid \sbasedon0 \snext0 heading 1;}
+{\s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid \sbasedon0 \snext0 heading 2;}
+{\s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid \sbasedon0 \snext0 heading 3;}
+{\s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid \sbasedon0 \snext0 heading 4;}{\*\cs10 \additive Default Paragraph Font;}
+{\s15\qc\sb240\sa60\widctlpar\outlinelevel0\adjustright \b\f1\fs32\kerning28\cgrid \sbasedon0 \snext15 Title;}
+{\s16\qc\sa60\widctlpar\outlinelevel1\adjustright \f1\cgrid \sbasedon0 \snext16 Subtitle;}
+{\s17\sa60\sb30\widctlpar\qj \fs22\cgrid \sbasedon0 \snext17 BodyText;}
+{\s18\widctlpar\fs22\cgrid \sbasedon0 \snext18 DenseText;}
+{\s28\widctlpar\tqc\tx4320\tqr\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext28 header;}
+{\s29\widctlpar\tqc\tx4320\tqr\tx8640\qr\adjustright \fs20\cgrid \sbasedon0 \snext29 footer;}
+{\s30\li360\sa60\sb120\keepn\widctlpar\adjustright \b\f1\fs20\cgrid \sbasedon0 \snext30 GroupHeader;}
+{\s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext41 Code Example 0;}
+{\s41\li360\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext42 Code Example 1;}
+{\s42\li720\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext43 Code Example 2;}
+{\s43\li1080\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext44 Code Example 3;}
+{\s44\li1440\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext45 Code Example 4;}
+{\s45\li1800\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext46 Code Example 5;}
+{\s46\li2160\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext47 Code Example 6;}
+{\s47\li2520\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext48 Code Example 7;}
+{\s48\li2880\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext49 Code Example 8;}
+{\s49\li3240\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \sbasedon0 \snext49 Code Example 9;}
+{\s50\li0\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext51 List Continue 0;}
+{\s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext52 List Continue 1;}
+{\s52\li720\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext53 List Continue 2;}
+{\s53\li1080\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext54 List Continue 3;}
+{\s54\li1440\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext55 List Continue 4;}
+{\s55\li1800\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext56 List Continue 5;}
+{\s56\li2160\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext57 List Continue 6;}
+{\s57\li2520\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext58 List Continue 7;}
+{\s58\li2880\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext59 List Continue 8;}
+{\s59\li3240\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid \sbasedon0 \snext59 List Continue 9;}
+{\s60\li0\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext61 DescContinue 0;}
+{\s61\li360\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext62 DescContinue 1;}
+{\s62\li720\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext63 DescContinue 2;}
+{\s63\li1080\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext64 DescContinue 3;}
+{\s64\li1440\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext65 DescContinue 4;}
+{\s65\li1800\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext66 DescContinue 5;}
+{\s66\li2160\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext67 DescContinue 6;}
+{\s67\li2520\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext68 DescContinue 7;}
+{\s68\li2880\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext69 DescContinue 8;}
+{\s69\li3240\widctlpar\ql\adjustright \fs20\cgrid \sbasedon0 \snext69 DescContinue 9;}
+{\s70\li0\sa30\sb30\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext81 LatexTOC 0;}
+{\s71\li360\sa27\sb27\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext82 LatexTOC 1;}
+{\s72\li720\sa24\sb24\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext83 LatexTOC 2;}
+{\s73\li1080\sa21\sb21\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext84 LatexTOC 3;}
+{\s74\li1440\sa18\sb18\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext85 LatexTOC 4;}
+{\s75\li1800\sa15\sb15\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext86 LatexTOC 5;}
+{\s76\li2160\sa12\sb12\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext87 LatexTOC 6;}
+{\s77\li2520\sa9\sb9\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext88 LatexTOC 7;}
+{\s78\li2880\sa6\sb6\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext89 LatexTOC 8;}
+{\s79\li3240\sa3\sb3\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid \sbasedon0 \snext89 LatexTOC 9;}
+{\s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid \sbasedon0 \snext81 \sautoupd List Bullet 0;}
+{\s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid \sbasedon0 \snext82 \sautoupd List Bullet 1;}
+{\s82\fi-360\li1080\widctlpar\jclisttab\tx1080{\*\pn \pnlvlbody\ilvl0\ls3\pnrnot0\pndec }\ls3\adjustright \fs20\cgrid \sbasedon0 \snext83 \sautoupd List Bullet 2;}
+{\s83\fi-360\li1440\widctlpar\jclisttab\tx1440{\*\pn \pnlvlbody\ilvl0\ls4\pnrnot0\pndec }\ls4\adjustright \fs20\cgrid \sbasedon0 \snext84 \sautoupd List Bullet 3;}
+{\s84\fi-360\li1800\widctlpar\jclisttab\tx1800{\*\pn \pnlvlbody\ilvl0\ls5\pnrnot0\pndec }\ls5\adjustright \fs20\cgrid \sbasedon0 \snext85 \sautoupd List Bullet 4;}
+{\s85\fi-360\li2160\widctlpar\jclisttab\tx2160{\*\pn \pnlvlbody\ilvl0\ls6\pnrnot0\pndec }\ls6\adjustright \fs20\cgrid \sbasedon0 \snext86 \sautoupd List Bullet 5;}
+{\s86\fi-360\li2520\widctlpar\jclisttab\tx2520{\*\pn \pnlvlbody\ilvl0\ls7\pnrnot0\pndec }\ls7\adjustright \fs20\cgrid \sbasedon0 \snext87 \sautoupd List Bullet 6;}
+{\s87\fi-360\li2880\widctlpar\jclisttab\tx2880{\*\pn \pnlvlbody\ilvl0\ls8\pnrnot0\pndec }\ls8\adjustright \fs20\cgrid \sbasedon0 \snext88 \sautoupd List Bullet 7;}
+{\s88\fi-360\li3240\widctlpar\jclisttab\tx3240{\*\pn \pnlvlbody\ilvl0\ls9\pnrnot0\pndec }\ls9\adjustright \fs20\cgrid \sbasedon0 \snext89 \sautoupd List Bullet 8;}
+{\s89\fi-360\li3600\widctlpar\jclisttab\tx3600{\*\pn \pnlvlbody\ilvl0\ls10\pnrnot0\pndec }\ls10\adjustright \fs20\cgrid \sbasedon0 \snext89 \sautoupd List Bullet 9;}
+{\s90\fi-360\li360\widctlpar\fs20\cgrid \sbasedon0 \snext91 \sautoupd List Enum 0;}
+{\s91\fi-360\li720\widctlpar\fs20\cgrid \sbasedon0 \snext92 \sautoupd List Enum 1;}
+{\s92\fi-360\li1080\widctlpar\fs20\cgrid \sbasedon0 \snext93 \sautoupd List Enum 2;}
+{\s93\fi-360\li1440\widctlpar\fs20\cgrid \sbasedon0 \snext94 \sautoupd List Enum 3;}
+{\s94\fi-360\li1800\widctlpar\fs20\cgrid \sbasedon0 \snext95 \sautoupd List Enum 4;}
+{\s95\fi-360\li2160\widctlpar\fs20\cgrid \sbasedon0 \snext96 \sautoupd List Enum 5;}
+{\s96\fi-360\li2520\widctlpar\fs20\cgrid \sbasedon0 \snext96 \sautoupd List Enum 5;}
+{\s97\fi-360\li2880\widctlpar\fs20\cgrid \sbasedon0 \snext98 \sautoupd List Enum 7;}
+{\s98\fi-360\li3240\widctlpar\fs20\cgrid \sbasedon0 \snext99 \sautoupd List Enum 8;}
+{\s99\fi-360\li3600\widctlpar\fs20\cgrid \sbasedon0 \snext99 \sautoupd List Enum 9;}
+}
+{\comment begin body}
+{\info 
+{\title {\comment RtAudio Reference Manual}RtAudio}
+{\comment Generated byDoxgyen. }
+{\creatim \yr2002\mo1\dy22\hr15\min27\sec40}
+}\pard\plain 
+\sectd\pgnlcrm
+{\footer \s29\widctlpar\tqc\tx4320\tqr\tx8640\qr\adjustright \fs20\cgrid {\chpgn}}
+\pard\plain \s16\qc\sa60\widctlpar\outlinelevel1\adjustright \f1\cgrid 
+\vertalc\qc\par\par\par\par\par\par\par\pard\plain \s15\qc\sb240\sa60\widctlpar\outlinelevel0\adjustright \b\f1\fs32\kerning28\cgrid 
+{\field\fldedit {\*\fldinst TITLE \\*MERGEFORMAT}{\fldrslt TITLE}}\par
+\pard\plain \s16\qc\sa60\widctlpar\outlinelevel1\adjustright \f1\cgrid 
+\par
+\par\par\par\par\par\par\par\par\par\par\par\par
+\pard\plain \s16\qc\sa60\widctlpar\outlinelevel1\adjustright \f1\cgrid 
+{\field\fldedit {\*\fldinst AUTHOR \\*MERGEFORMAT}{\fldrslt AUTHOR}}\par
+Version \par{\field\fldedit {\*\fldinst CREATEDATE \\*MERGEFORMAT}{\fldrslt CREATEDATE}}\par
+\page\page\vertalt
+\pard\plain 
+{\field\fldedit {\*\fldinst TOC \\f \\*MERGEFORMAT}{\fldrslt Table of contents}}\par
+\pard\plain 
+
+\pard\plain \sect\sbkpage
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid 
+The {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) Tutorial\par \pard\plain 
+{\tc \v Main Page}
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid  \par
+{\qc
+ {\b Introduction} (p.{\field\fldedit {\*\fldinst PAGEREF intro \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Download} (p.{\field\fldedit {\*\fldinst PAGEREF download \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Getting Started} (p.{\field\fldedit {\*\fldinst PAGEREF start \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Error Handling} (p.{\field\fldedit {\*\fldinst PAGEREF error \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Probing Device Capabilities} (p.{\field\fldedit {\*\fldinst PAGEREF probing \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Device Settings} (p.{\field\fldedit {\*\fldinst PAGEREF settings \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Playback (blocking functionality)} (p.{\field\fldedit {\*\fldinst PAGEREF playbackb \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Playback (callback functionality)} (p.{\field\fldedit {\*\fldinst PAGEREF playbackc \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Recording} (p.{\field\fldedit {\*\fldinst PAGEREF recording \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Duplex Mode} (p.{\field\fldedit {\*\fldinst PAGEREF duplex \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Summary of Methods} (p.{\field\fldedit {\*\fldinst PAGEREF methods \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Compiling} (p.{\field\fldedit {\*\fldinst PAGEREF compiling \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b OS Notes} (p.{\field\fldedit {\*\fldinst PAGEREF osnotes \\*MERGEFORMAT}{\fldrslt pagenum}})
+ \~ \~  {\b Acknowledgments} (p.{\field\fldedit {\*\fldinst PAGEREF acknowledge \\*MERGEFORMAT}{\fldrslt pagenum}})
+ }\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Introduction}
+Introduction\par
+{\bkmkstart intro}
+{\bkmkend intro}
+}\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) is a C++ class which provides a common API (Application Programming Interface) for realtime audio input/output across Linux (native ALSA and OSS), SGI, and Windows operating systems. {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) significantly simplifies the process of interacting with computer audio hardware. It was designed with the following goals:\par
+{ \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+object oriented C++ design \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+simple, common API across all supported platforms \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+single independent header and source file for easy inclusion in programming projects (no libraries!) \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+blocking functionality \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+callback functionality \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+extensive audio device parameter control \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+audio device capability probing \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+automatic internal conversion for data format, channel number compensation, de-interleaving, and byte-swapping \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+control over multiple audio streams and devices with a single instance \par
+}{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording). Available audio devices and their capabilities can be enumerated and then specified when opening a stream. Multiple streams can run at the same time and, when allowed by the underlying audio API, a single device can serve multiple streams.\par
+The {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) API provides both blocking (synchronous) and callback (asynchronous) functionality. Callbacks are typically used in conjunction with graphical user interfaces (GUI). Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Download}
+Download\par
+{\bkmkstart download}
+{\bkmkend download}
+}\par
+Latest Release (22 January 2002): {\f2 Version 2.0 (111 kB tar/gzipped)}\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Getting Started}
+Getting Started\par
+{\bkmkstart start}
+{\bkmkend start}
+}\par
+The first thing that must be done when using {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) is to create an instance of the class. The default constructor {\b RtAudio::RtAudio}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a0 \\*MERGEFORMAT}{\fldrslt pagenum}}}) scans the underlying audio system to verify that at least one device is available. {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) often uses C++ exceptions to report errors, necessitating try/catch blocks around most member functions. The following code example demonstrates default object construction and destruction:\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid #include "RtAudio.h"\line
+\line
+int main()\line
+\{\line
+  RtAudio *audio;\line
+\line
+  // Default RtAudio constructor\line
+  try \{\line
+    audio = new RtAudio();\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    // Handle the exception here\line
+  \}\line
+\line
+  // Clean up\line
+  delete audio;\line
+\}\par
+}
+Obviously, this example doesn't demonstrate any of the real functionality of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}). However, all uses of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) must begin with a constructor (either default or overloaded varieties) and must end with class destruction. Further, it is necessary that all class methods which can throw a C++ exception be called within a try/catch block.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Error Handling}
+Error Handling\par
+{\bkmkstart error}
+{\bkmkend error}
+}\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) uses a C++ exception handler called {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}), which is declared and defined within the {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) class files. The {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) class is quite simple but it does allow errors to be "caught" by {\b RtAudioError::TYPE} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError_s11 \\*MERGEFORMAT}{\fldrslt pagenum}}}). Almost all {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) methods can "throw" an {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}), most typically if an invalid stream identifier is supplied to a method or a driver error occurs. There are a number of cases within {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) where warning messages may be displayed but an exception is not thrown. There is a private {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) method, error(), which can be modified to globally control how these messages are handled and reported.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Probing Device Capabilities}
+Probing Device Capabilities\par
+{\bkmkstart probing}
+{\bkmkend probing}
+}\par
+A programmer may wish to query the available audio device capabilities before deciding which to use. The following example outlines how this can be done.\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid // probe.cpp\line
+\line
+#include <iostream.h>\line
+#include "RtAudio.h"\line
+\line
+int main()\line
+\{\line
+  RtAudio *audio;\line
+\line
+  // Default RtAudio constructor\line
+  try \{\line
+    audio = new RtAudio();\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    exit(EXIT_FAILURE);\line
+  \}\line
+\line
+  // Determine the number of devices available\line
+  int devices = audio->getDeviceCount();\line
+\line
+  // Scan through devices for various capabilities\line
+  RtAudio::RTAUDIO_DEVICE info;\line
+  for (int i=0; i<devices; i++) \{\line
+\line
+    try \{\line
+      audio->getDeviceInfo(i, &info);\line
+    \}\line
+    catch (RtAudioError &error) \{\line
+      error.printMessage();\line
+      break;\line
+    \}\line
+\line
+    // Print, for example, the maximum number of output channels for each device\line
+    cout << "device = " << i;\line
+    cout << ": maximum output channels = " << info.maxOutputChannels << endl;\line
+  \}\line
+\line
+  // Clean up\line
+  delete audio;\line
+\line
+  return 0;\line
+\}\par
+}
+The RTAUDIO_DEVICE structure is defined in {\b RtAudio.h} and provides a variety of information useful in assessing the capabilities of a device:\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid   typedef struct \{\line
+    char name[128];\line
+    DEVICE_ID id[2];                      // No value reported by getDeviceInfo().\line
+    bool probed;                          // true if the device probe was successful.\line
+    int maxOutputChannels;\line
+    int maxInputChannels;\line
+    int maxDuplexChannels;\line
+    int minOutputChannels;\line
+    int minInputChannels;\line
+    int minDuplexChannels;\line
+    bool hasDuplexSupport;                // true if duplex supported\line
+    int nSampleRates;                     // Number of discrete rates, or -1 if range supported.\line
+    double sampleRates[MAX_SAMPLE_RATES]; // Supported sample rates, or \{min, max\} if range.\line
+    RTAUDIO_FORMAT nativeFormats;\line
+  \} RTAUDIO_DEVICE;\par
+}
+The following data formats are defined and fully supported by {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}):\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid   typedef unsigned long RTAUDIO_FORMAT;\line
+  static const RTAUDIO_FORMAT  RTAUDIO_SINT8;   // Signed 8-bit integer\line
+  static const RTAUDIO_FORMAT  RTAUDIO_SINT16;  // Signed 16-bit integer\line
+  static const RTAUDIO_FORMAT  RTAUDIO_SINT24;  // Signed 24-bit integer\line
+  static const RTAUDIO_FORMAT  RTAUDIO_SINT32;  // Signed 32-bit integer\line
+  static const RTAUDIO_FORMAT  RTAUDIO_FLOAT32; // 32-bit float\line
+  static const RTAUDIO_FORMAT  RTAUDIO_FLOAT64; // 64-bit double\par
+}
+The {\i nativeFormats} member of the {\b RtAudio::RTAUDIO_DEVICE} ({\i p.{\field\fldedit {\*\fldinst PAGEREF structRtAudio_1_1RTAUDIO__DEVICE \\*MERGEFORMAT}{\fldrslt pagenum}}}) structure is a bit mask of the above formats which are natively supported by the device. However, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) will automatically provide format conversion if a particular format is not natively supported. When the {\i probed} member of the RTAUDIO_DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unusable.\par
+In general, the user need not be concerned with the minimum channel values reported in the RTAUDIO_DEVICE structure. While some audio devices may require a minimum channel value > 1, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) will provide automatic channel number compensation when the number of channels set by the user is less than that required by the device. Channel compensation is {\i NOT} possible when the number of channels set by the user is greater than that supported by the device.\par
+It should be noted that the capabilities reported by a device driver or underlying audio API are not always accurate and/or may be dependent on a combination of device settings.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Device Settings}
+Device Settings\par
+{\bkmkstart settings}
+{\bkmkend settings}
+}\par
+The next step in using {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) is to open a stream with a particular set of device settings.\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid #include "RtAudio.h"\line
+\line
+int main()\line
+\{\line
+  int channels = 2;\line
+  int sample_rate = 44100;\line
+  int buffer_size = 256;  // 256 sample frames\line
+  int n_buffers = 4;      // number of internal buffers used by device\line
+  int device = 0;         // 0 indicates the default or first available device\line
+  int stream;             // our stream identifier\line
+  RtAudio *audio;\line
+\line
+  // Instantiate RtAudio and open a stream within a try/catch block\line
+  try \{\line
+    audio = new RtAudio();\line
+    stream = audio->openStream(device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,\line
+                               sample_rate, &buffer_size, n_buffers);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    exit(EXIT_FAILURE);\line
+  \}\line
+\line
+  // Clean up\line
+  delete audio;\line
+\line
+  return 0;\line
+\}\par
+}
+The {\b RtAudio::openStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a3 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method attempts to open a stream with a specified set of parameter values. When successful, a stream identifier is returned. In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers. When device = 0, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) first attempts to open the default audio device with the given parameters. If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters. If all attempts are unsuccessful, an {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) is thrown. When a non-zero device value is specified, an attempt is made to open that device only.\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) provides four signed integer and two floating point data formats which can be specified using the {\b RtAudio::RTAUDIO_FORMAT} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_s0 \\*MERGEFORMAT}{\fldrslt pagenum}}}) parameter values mentioned earlier. If the opened device does not natively support the given format, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) will automatically perform the necessary data format conversion.\par
+Buffer sizes in {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) are {\i ALWAYS} given in sample frame units. For example, if you open an output stream with 4 channels and set {\i bufferSize} to 512, you will have to write 2048 samples of data to the output buffer within your callback or between calls to {\b RtAudio::tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}). In this case, a single sample frame of data contains 4 samples of data.\par
+The {\i bufferSize} parameter specifies the desired number of sample frames which will be written to and/or read from a device per write/read operation. The {\i nBuffers} parameter is used in setting the underlying device buffer parameters. Both the {\i bufferSize} and {\i nBuffers} parameters can be used to control stream latency though there is no guarantee that the passed values will be those used by a device. In general, lower values for both parameters will produce less latency but perhaps less robust performance. Both parameters can be specified with values of zero, in which case the smallest allowable values will be used. The {\i bufferSize} parameter is passed as a pointer and the actual value used by the stream is set during the device setup procedure. {\i bufferSize} values should be a power of two. Optimal and allowable buffer values tend to vary between systems and devices. Check the {\b OS Notes} (p.{\field\fldedit {\*\fldinst PAGEREF osnotes \\*MERGEFORMAT}{\fldrslt pagenum}})
+ section for general guidelines.\par
+As noted earlier, the device capabilities reported by a driver or underlying audio API are not always accurate and/or may be dependent on a combination of device settings. Because of this, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) does not attempt to query a device's capabilities or use previously reported values when opening a device. Instead, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) simply attempts to set the given parameters on a specified device and then checks whether the setup is successful or not.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Playback (blocking functionality)}
+Playback (blocking functionality)\par
+{\bkmkstart playbackb}
+{\bkmkend playbackb}
+}\par
+Once the device is open for playback, there are only a few final steps necessary for realtime audio output. We'll first provide an example (blocking functionality) and then discuss the details.\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid // playback.cpp\line
+\line
+#include "RtAudio.h"\line
+\line
+int main()\line
+\{\line
+  int count;\line
+  int channels = 2;\line
+  int sample_rate = 44100;\line
+  int buffer_size = 256;  // 256 sample frames\line
+  int n_buffers = 4;      // number of internal buffers used by device\line
+  float *buffer;\line
+  int device = 0;         // 0 indicates the default or first available device\line
+  int stream;             // our stream identifier\line
+  RtAudio *audio;\line
+\line
+  // Open a stream during RtAudio instantiation\line
+  try \{\line
+    audio = new RtAudio(&stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,\line
+                        sample_rate, &buffer_size, n_buffers);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    exit(EXIT_FAILURE);\line
+  \}\line
+\line
+  try \{\line
+    // Get a pointer to the stream buffer\line
+    buffer = (float *) audio->getStreamBuffer(stream);\line
+\line
+    // Start the stream\line
+    audio->startStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    goto cleanup;\line
+  \}\line
+\line
+  // An example loop which runs for about 40000 sample frames\line
+  count = 0;\line
+  while (count < 40000) \{\line
+    // Generate your samples and fill the buffer with buffer_size sample frames of data\line
+    ...\line
+\line
+    // Trigger the output of the data buffer\line
+    try \{\line
+      audio->tickStream(stream);\line
+    \}\line
+    catch (RtAudioError &error) \{\line
+      error.printMessage();\line
+      goto cleanup;\line
+    \}\line
+\line
+    count += buffer_size;\line
+  \}\line
+\line
+  try \{\line
+    // Stop and close the stream\line
+    audio->stopStream(stream);\line
+    audio->closeStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+  \}\line
+\line
+ cleanup:\line
+  delete audio;\line
+\line
+  return 0;\line
+\}\par
+}
+The first thing to notice in this example is that we attempt to open a stream during class instantiation with an overloaded constructor. This constructor simply combines the functionality of the default constructor, used earlier, and the {\b RtAudio::openStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a3 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. Again, we have specified a device value of 0, indicating that the default or first available device meeting the given parameters should be used. The integer identifier of the opened stream is returned via the {\i stream} pointer value. An attempt is made to open the stream with the specified {\i bufferSize} value. However, it is possible that the device will not accept this value, in which case the closest allowable size is used and returned via the pointer value. The constructor can fail if no available devices are found, or a memory allocation or device driver error occurs. Note that you should not call the {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) destructor if an exception is thrown during instantiation.\par
+Because {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) can be used to simultaneously control more than a single stream, it is necessary that the stream identifier be provided to nearly all public methods. Assuming the constructor is successful, it is necessary to get a pointer to the buffer, provided by {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}), for use in feeding data to/from the opened stream. Note that the user should {\i NOT} attempt to deallocate the stream buffer memory ... memory management for the stream buffer will be automatically controlled by {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}). After starting the stream with {\b RtAudio::startStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a11 \\*MERGEFORMAT}{\fldrslt pagenum}}}), one simply fills that buffer, which is of length equal to the returned {\i bufferSize} value, with interleaved audio data (in the specified format) for playback. Finally, a call to the {\b RtAudio::tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}) routine triggers a blocking write call for the stream.\par
+In general, one should call the {\b RtAudio::stopStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a12 \\*MERGEFORMAT}{\fldrslt pagenum}}}) and {\b RtAudio::closeStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a10 \\*MERGEFORMAT}{\fldrslt pagenum}}}) methods after finishing with a stream. However, both methods will implicitly be called during object destruction if necessary.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Playback (callback functionality)}
+Playback (callback functionality)\par
+{\bkmkstart playbackc}
+{\bkmkend playbackc}
+}\par
+The primary difference in using {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) with callback functionality involves the creation of a user-defined callback function. Here is an example which produces a sawtooth waveform for playback.\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid #include <iostream.h>\line
+#include "RtAudio.h"\line
+\line
+// Two-channel sawtooth wave generator.\line
+int sawtooth(char *buffer, int buffer_size, void *data)\line
+\{\line
+  int i, j;\line
+  double *my_buffer = (double *) buffer;\line
+  double *my_data = (double *) data;\line
+\line
+  // Write interleaved audio data.\line
+  for (i=0; i<buffer_size; i++) \{\line
+    for (j=0; j<2; j++) \{\line
+      *my_buffer++ = my_data[j];\line
+\line
+      my_data[j] += 0.005 * (j+1+(j*0.1));\line
+      if (my_data[j] >= 1.0) my_data[j] -= 2.0;\line
+    \}\line
+  \}\line
+\line
+  return 0;\line
+\}\line
+\line
+int main()\line
+\{\line
+  int channels = 2;\line
+  int sample_rate = 44100;\line
+  int buffer_size = 256;  // 256 sample frames\line
+  int n_buffers = 4;      // number of internal buffers used by device\line
+  int device = 0;         // 0 indicates the default or first available device\line
+  int stream;             // our stream identifier\line
+  double data[2];\line
+  char input;\line
+  RtAudio *audio;\line
+\line
+  // Open a stream during RtAudio instantiation\line
+  try \{\line
+    audio = new RtAudio(&stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT64,\line
+                        sample_rate, &buffer_size, n_buffers);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    exit(EXIT_FAILURE);\line
+  \}\line
+\line
+  try \{\line
+    // Set the stream callback function\line
+    audio->setStreamCallback(stream, &sawtooth, (void *)data);\line
+\line
+    // Start the stream\line
+    audio->startStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    goto cleanup;\line
+  \}\line
+\line
+  cout << "\\nPlaying ... press <enter> to quit.\\n";\line
+  cin.get(input);\line
+\line
+  try \{\line
+    // Stop and close the stream\line
+    audio->stopStream(stream);\line
+    audio->closeStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+  \}\line
+\line
+ cleanup:\line
+  delete audio;\line
+\line
+  return 0;\line
+\}\par
+}
+After opening the device in exactly the same way as the previous example (except with a data format change), we must set our callback function for the stream using {\b RtAudio::setStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a4 \\*MERGEFORMAT}{\fldrslt pagenum}}}). This method will spawn a new process (or thread) which automatically calls the callback function when more data is needed. Note that the callback function is called only when the stream is "running" (between calls to the {\b RtAudio::startStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a11 \\*MERGEFORMAT}{\fldrslt pagenum}}}) and {\b RtAudio::stopStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a12 \\*MERGEFORMAT}{\fldrslt pagenum}}}) methods). The last argument to {\b RtAudio::setStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a4 \\*MERGEFORMAT}{\fldrslt pagenum}}}) is a pointer to arbitrary data that you wish to access from within your callback function.\par
+In this example, we stop the stream with an explicit call to {\b RtAudio::stopStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a12 \\*MERGEFORMAT}{\fldrslt pagenum}}}). When using callback functionality, it is also possible to stop a stream by returning a non-zero value from the callback function.\par
+Once set with {\b RtAudio::setStreamCallback} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a4 \\*MERGEFORMAT}{\fldrslt pagenum}}}), the callback process will continue to run for the life of the stream (until the stream is closed with {\b RtAudio::closeStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a10 \\*MERGEFORMAT}{\fldrslt pagenum}}}) or the {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) instance is deleted). It is possible to disassociate a callback function and cancel its process for an open stream using the {\b RtAudio::cancelStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a5 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. The stream can then be used with blocking functionality or a new callback can be associated with it.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Recording}
+Recording\par
+{\bkmkstart recording}
+{\bkmkend recording}
+}\par
+Using {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) for audio input is almost identical to the way it is used for playback. Here's the blocking playback example rewritten for recording:\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid // record.cpp\line
+\line
+#include "RtAudio.h"\line
+\line
+int main()\line
+\{\line
+  int count;\line
+  int channels = 2;\line
+  int sample_rate = 44100;\line
+  int buffer_size = 256;  // 256 sample frames\line
+  int n_buffers = 4;      // number of internal buffers used by device\line
+  float *buffer;\line
+  int device = 0;         // 0 indicates the default or first available device\line
+  int stream;             // our stream identifier\line
+  RtAudio *audio;\line
+\line
+  // Instantiate RtAudio and open a stream.\line
+  try \{\line
+    audio = new RtAudio(&stream, 0, 0, device, channels,\line
+                        RtAudio::RTAUDIO_FLOAT32, sample_rate, &buffer_size, n_buffers);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    exit(EXIT_FAILURE);\line
+  \}\line
+\line
+  try \{\line
+    // Get a pointer to the stream buffer\line
+    buffer = (float *) audio->getStreamBuffer(stream);\line
+\line
+    // Start the stream\line
+    audio->startStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    goto cleanup;\line
+  \}\line
+\line
+  // An example loop which runs for about 40000 sample frames\line
+  count = 0;\line
+  while (count < 40000) \{\line
+\line
+    // Read a buffer of data\line
+    try \{\line
+      audio->tickStream(stream);\line
+    \}\line
+    catch (RtAudioError &error) \{\line
+      error.printMessage();\line
+      goto cleanup;\line
+    \}\line
+\line
+    // Process the input samples (buffer_size sample frames) that were read\line
+    ...\line
+\line
+    count += buffer_size;\line
+  \}\line
+\line
+  try \{\line
+    // Stop the stream\line
+    audio->stopStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+  \}\line
+\line
+ cleanup:\line
+  delete audio;\line
+\line
+  return 0;\line
+\}\par
+}
+In this example, the stream was opened for recording with a non-zero {\i inputChannels} value. The only other difference between this example and that for playback involves the order of data processing in the loop, where it is necessary to first read a buffer of input data before manipulating it.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Duplex Mode}
+Duplex Mode\par
+{\bkmkstart duplex}
+{\bkmkend duplex}
+}\par
+Finally, it is easy to use {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) for simultaneous audio input/output, or duplex operation. In this example, we use a callback function and pass our recorded data directly through for playback.\par
+{
+\par
+\pard\plain \s40\li0\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid // duplex.cpp\line
+\line
+#include <iostream.h>\line
+#include "RtAudio.h"\line
+\line
+// Pass-through function.\line
+int pass(char *buffer, int buffer_size, void *)\line
+\{\line
+  // Surprise!!  We do nothing to pass the data through.\line
+  return 0;\line
+\}\line
+\line
+int main()\line
+\{\line
+  int channels = 2;\line
+  int sample_rate = 44100;\line
+  int buffer_size = 256;  // 256 sample frames\line
+  int n_buffers = 4;      // number of internal buffers used by device\line
+  int device = 0;         // 0 indicates the default or first available device\line
+  int stream;             // our stream identifier\line
+  double data[2];\line
+  char input;\line
+  RtAudio *audio;\line
+\line
+  // Open a stream during RtAudio instantiation\line
+  try \{\line
+    audio = new RtAudio(&stream, device, channels, device, channels, RtAudio::RTAUDIO_FLOAT64,\line
+                        sample_rate, &buffer_size, n_buffers);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    exit(EXIT_FAILURE);\line
+  \}\line
+\line
+  try \{\line
+    // Set the stream callback function\line
+    audio->setStreamCallback(stream, &pass, NULL);\line
+\line
+    // Start the stream\line
+    audio->startStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+    goto cleanup;\line
+  \}\line
+\line
+  cout << "\\nRunning duplex ... press <enter> to quit.\\n";\line
+  cin.get(input);\line
+\line
+  try \{\line
+    // Stop and close the stream\line
+    audio->stopStream(stream);\line
+    audio->closeStream(stream);\line
+  \}\line
+  catch (RtAudioError &error) \{\line
+    error.printMessage();\line
+  \}\line
+\line
+ cleanup:\line
+  delete audio;\line
+\line
+  return 0;\line
+\}\par
+}
+When an {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) stream is running in duplex mode (nonzero input {\i AND} output channels), the audio write (playback) operation always occurs before the audio read (record) operation. This sequence allows the use of a single buffer to store both output and input data.\par
+As we see with this example, the write-read sequence of operations does not preclude the use of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) in situations where input data is first processed and then output through a duplex stream. When the stream buffer is first allocated, it is initialized with zeros, which produces no audible result when output to the device. In this example, anything recorded by the audio stream input will be played out during the next round of audio processing.\par
+Note that duplex operation can also be achieved by opening one output stream and one input stream using the same or different devices. However, there may be timing problems when attempting to use two different devices, due to possible device clock variations. This becomes even more difficult to achieve using two separate callback streams because it is not possible to explicitly control the calling order of the callback functions.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Summary of Methods}
+Summary of Methods\par
+{\bkmkstart methods}
+{\bkmkend methods}
+}\par
+The following is short summary of public methods (not including constructors and the destructor) provided by {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}):\par
+{ \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::openStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a3 \\*MERGEFORMAT}{\fldrslt pagenum}}}): opens a stream with the specified parameters. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::setStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a4 \\*MERGEFORMAT}{\fldrslt pagenum}}}): sets a user-defined callback function for a given stream. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::cancelStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a5 \\*MERGEFORMAT}{\fldrslt pagenum}}}): cancels a callback process and function for a given stream. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::getDeviceCount}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a6 \\*MERGEFORMAT}{\fldrslt pagenum}}}): returns the number of audio devices available. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::getDeviceInfo}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a7 \\*MERGEFORMAT}{\fldrslt pagenum}}}): fills a user-supplied RTAUDIO_DEVICE structure for a specified device. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::getStreamBuffer}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a8 \\*MERGEFORMAT}{\fldrslt pagenum}}}): returns a pointer to the stream buffer. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}): triggers processing of input/output data for a stream (blocking). \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::closeStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a10 \\*MERGEFORMAT}{\fldrslt pagenum}}}): closes the specified stream (implicitly called during object destruction). Once a stream is closed, the stream identifier is invalid and should not be used in calling any other {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) methods. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::startStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a11 \\*MERGEFORMAT}{\fldrslt pagenum}}}): (re)starts the specified stream, typically after it has been stopped with either stopStream() or abortStream() or after first opening the stream. \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::stopStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a12 \\*MERGEFORMAT}{\fldrslt pagenum}}}): stops the specified stream, allowing any remaining samples in the queue to be played out and/or read in. This does not implicitly call {\b RtAudio::closeStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a10 \\*MERGEFORMAT}{\fldrslt pagenum}}}). \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::abortStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a13 \\*MERGEFORMAT}{\fldrslt pagenum}}}): stops the specified stream, discarding any remaining samples in the queue. This does not implicitly call closeStream(). \par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio::streamWillBlock}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a14 \\*MERGEFORMAT}{\fldrslt pagenum}}}): queries a stream to determine whether a call to the {\i tickStream()} method will block. A return value of 0 indicates that the stream will NOT block. A positive return value indicates the number of sample frames that cannot yet be processed without blocking. \par
+}{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Compiling}
+Compiling\par
+{\bkmkstart compiling}
+{\bkmkend compiling}
+}\par
+In order to compile {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) for a specific OS and audio API, it is necessary to supply the appropriate preprocessor definition and library within the compiler statement: \par
+\par
+  {\b OS:} {\b Audio API:} {\b Preprocessor Definition:} {\b Library:} {\b Example Compiler Statement:}   Linux ALSA __LINUX_ALSA_ {\f2 libasound, libpthread} {\f2 g++ -Wall -D__LINUX_ALSA_ -o probe probe.cpp RtAudio.cpp -lasound -lpthread}   Linux OSS __LINUX_OSS_ {\f2 libpthread} {\f2 g++ -Wall -D__LINUX_OSS_ -o probe probe.cpp RtAudio.cpp -lpthread}   Irix AL __IRIX_AL_ {\f2 libaudio, libpthread} {\f2 CC -Wall -D__IRIX_AL_ -o probe probe.cpp RtAudio.cpp -laudio -lpthread}   Windows Direct Sound __WINDOWS_DS_ {\f2 dsound.lib (ver. 5.0 or higher), multithreaded} {\i compiler specific}   \par
+\par
+The example compiler statements above could be used to compile the {\f2 probe.cpp} example file, assuming that {\f2 probe.cpp}, {\f2 {\b RtAudio.h}}, and {\f2 RtAudio.cpp} all exist in the same directory.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v OS Notes}
+OS Notes\par
+{\bkmkstart osnotes}
+{\bkmkend osnotes}
+}\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) is designed to provide a common API across the various supported operating systems and audio libraries. Despite that, however, some issues need to be mentioned with regard to each.\par
+{\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid {\tc\tcl3 \v Linux:}
+Linux:\par
+{\bkmkstart linux}
+{\bkmkend linux}
+}\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) for Linux was developed under Redhat distributions 7.0 - 7.2. Two different audio APIs are supported on Linux platforms: OSS and {\f2 ALSA}. The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers. Therefore, a generic Linux system is most likely to have OSS support. The ALSA API is relatively new and at this time is not part of the Linux kernel distribution. Work is in progress to make ALSA part of the 2.5 development kernel series. Despite that, the ALSA API offers significantly better functionality than the OSS API. {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) provides support for the 0.9 and higher versions of ALSA. Input/output latency on the order of 15-20 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) buffer parameters (without kernel modifications). Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority. The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.\par
+The ALSA library includes OSS emulation support. That means that you can run programs compiled for the OSS API even when using the ALSA drivers and library. It should be noted however that OSS emulation under ALSA is not perfect. Specifically, channel number queries seem to consistently produce invalid results. While OSS emulation is successful for the majority of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) tests, it is recommended that the native ALSA implementation of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) be used on systems which have ALSA drivers installed.\par
+The ALSA implementation of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) makes no use of the ALSA "plug" interface. All necessary data format conversions, channel compensation, deinterleaving, and byte-swapping is handled by internal {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) routines.\par
+{\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid {\tc\tcl3 \v Irix (SGI):}
+Irix (SGI):\par
+{\bkmkstart irix}
+{\bkmkend irix}
+}\par
+The Irix version of {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) was written and tested on an SGI Indy running Irix version 6.5 and the newer "al" audio library. {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) does not compile under Irix version 6.3 because the C++ compiler is too old. Despite the relatively slow speed of the Indy, {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) was found to behave quite well and input/output latency was very good. No problems were found with respect to using the pthread library.\par
+{\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid {\tc\tcl3 \v Windows:}
+Windows:\par
+{\bkmkstart windows}
+{\bkmkend windows}
+}\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) under Windows is written using the DirectSound API. In order to compile {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) under Windows, you must have the header and source files for DirectSound version 0.5 or higher. As far as I know, you cannot compile {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) for Windows NT because there is not sufficient DirectSound support. Audio output latency with DirectSound can be reasonably good (on the order of 20 milliseconds). On the other hand, input audio latency tends to be terrible (100 milliseconds or more). Further, DirectSound drivers tend to crash easily when experimenting with buffer parameters. On my system, I found it necessary to use values around nBuffers = 8 and bufferSize = 512 to avoid crashing my system. {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) was developed with Visual C++ version 6.0. I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented. We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard.\par
+{\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid {\tc\tcl2 \v Acknowledgments}
+Acknowledgments\par
+{\bkmkstart acknowledge}
+{\bkmkend acknowledge}
+}\par
+The {\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) API incorporates many of the concepts developed in the {\f2 PortAudio} project by Phil Burk and Ross Bencina. Early development also incorporated ideas from Bill Schottstaedt's {\f2 sndlib}. The CCRMA {\f2 SoundWire group} provided valuable feedback during the API proposal stages.\par
+{\b RtAudio} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}}) was slowly developed over the course of many months while in residence at the {\f2 Institut Universitari de L'Audiovisual (IUA)} in Barcelona, Spain, the {\f2 Laboratory of Acoustics and Audio Signal Processing} at the Helsinki University of Technology, Finland, and the {\f2 Center for Computer Research in Music and Acoustics (CCRMA)} at {\f2 Stanford University}. This work was supported in part by the United States Air Force Office of Scientific Research (grant #F49620-99-1-0293).\par
+These documentation files were generated using {\f2 doxygen} by Dimitri van Heesch.\par
+\par
+}
+
+\pard\plain \sect\sbkpage
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid 
+RtAudio Compound Index\par \pard\plain 
+{\tc \v Compound Index}
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+RtAudio Compound List\par \pard\plain 
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid Here are the classes, structs, unions and interfaces with brief descriptions:\par
+}
+{
+\pard\plain \s71\li360\sa27\sb27\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid 
+{\b RtAudio} \tab {\field\fldedit {\*\fldinst PAGEREF classRtAudio \\*MERGEFORMAT}{\fldrslt pagenum}}
+\par
+{\b RtAudio::RTAUDIO_DEVICE} \tab {\field\fldedit {\*\fldinst PAGEREF structRtAudio_1_1RTAUDIO__DEVICE \\*MERGEFORMAT}{\fldrslt pagenum}}
+\par
+{\b RtAudioError} \tab {\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}
+\par
+\par
+}
+\pard\plain \sect\sbkpage
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid 
+RtAudio File Index\par \pard\plain 
+{\tc \v File Index}
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+RtAudio File List\par \pard\plain 
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid Here is a list of all files with brief descriptions:\par
+}
+{
+\pard\plain \s71\li360\sa27\sb27\widctlpar\tqr\tldot\tx8640\adjustright \fs20\cgrid 
+{\b RtAudio.h} \tab {\field\fldedit {\*\fldinst PAGEREF RtAudio_8h \\*MERGEFORMAT}{\fldrslt pagenum}}
+\par
+\par
+}\sect \sbkpage \pgnrestart
+\sect \sectd \sbknone \pgndec
+{\footer \s29\widctlpar\tqc\tx4320\tqr\tx8640\qr\adjustright \fs20\cgrid {\chpgn}}
+
+\pard\plain \sect\sbkpage
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid 
+RtAudio Class Documentation{\tc \v Class Documentation}
+\par \pard\plain 
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+RtAudio  Class Reference\par \pard\plain 
+{\tc\tcl2 \v RtAudio}
+{\xe \v RtAudio}
+{\bkmkstart classRtAudio}
+{\bkmkend }
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {\f2 #include <RtAudio.h>}\par
+\par
+}
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Public Types\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+typedef unsigned long {\b RTAUDIO_FORMAT}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+typedef int (* {\b RTAUDIO_CALLBACK} )(char *buffer, int bufferSize, void *userData)\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+enum \{ {\b MAX_SAMPLE_RATES} =  14 
+ \}\par
+}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Public Methods\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+{\b RtAudio} ()\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i The default constructor.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+{\b RtAudio} (int *streamID, int outputDevice, int outputChannels, int inputDevice, int inputChannels, {\b RTAUDIO_FORMAT} format, int sampleRate, int *bufferSize, int numberOfBuffers)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i A constructor which can be used to open a stream during instantiation.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+{\b ~RtAudio} ()\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i The destructor.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b openStream} (int outputDevice, int outputChannels, int inputDevice, int inputChannels, {\b RTAUDIO_FORMAT} format, int sampleRate, int *bufferSize, int numberOfBuffers)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i A public method for opening a stream with the specified parameters.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b setStreamCallback} (int streamID, {\b RTAUDIO_CALLBACK} callback, void *userData)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i A public method which sets a user-defined callback function for a given stream.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b cancelStreamCallback} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i A public method which cancels a callback process and function for a given stream.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b getDeviceCount} (void)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i A public method which returns the number of audio devices found.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b getDeviceInfo} (int device, {\b RTAUDIO_DEVICE} *info)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Fill a user-supplied {\b RTAUDIO_DEVICE} ({\i p.{\field\fldedit {\*\fldinst PAGEREF structRtAudio_1_1RTAUDIO__DEVICE \\*MERGEFORMAT}{\fldrslt pagenum}}}) structure for a specified device.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+char* const {\b getStreamBuffer} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i A public method which returns a pointer to the buffer for an open stream.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b tickStream} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Public method used to trigger processing of input/output data for a stream.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b closeStream} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Public method which closes a stream and frees any associated buffers.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b startStream} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Public method which starts a stream.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b stopStream} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Stop a stream, allowing any samples remaining in the queue to be played out and/or read in.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+void {\b abortStream} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Stop a stream, discarding any samples remaining in the input/output queue.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b streamWillBlock} (int streamID)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Queries a stream to determine whether a call to the {\b tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method will block.}\par
+\par}
+}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Static Public Attributes\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+const {\b RTAUDIO_FORMAT} {\b RTAUDIO_SINT8}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+const {\b RTAUDIO_FORMAT} {\b RTAUDIO_SINT16}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+const {\b RTAUDIO_FORMAT} {\b RTAUDIO_SINT24}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+const {\b RTAUDIO_FORMAT} {\b RTAUDIO_SINT32}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+const {\b RTAUDIO_FORMAT} {\b RTAUDIO_FLOAT32}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+const {\b RTAUDIO_FORMAT} {\b RTAUDIO_FLOAT64}\par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Typedef Documentation\par
+\pard\plain 
+{\xe \v RTAUDIO_FORMAT\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_FORMAT}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+typedef unsigned long RtAudio::RTAUDIO_FORMAT}
+}\par
+{\bkmkstart classRtAudio_s0}
+{\bkmkend classRtAudio_s0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v RTAUDIO_CALLBACK\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_CALLBACK}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+typedef int(* RtAudio::RTAUDIO_CALLBACK)(char *buffer, int bufferSize, void *userData)}
+}\par
+{\bkmkstart classRtAudio_s1}
+{\bkmkend classRtAudio_s1}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Enumeration Documentation\par
+\pard\plain 
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+anonymous enum}
+}\par
+{\bkmkstart classRtAudio_s3}
+{\bkmkend classRtAudio_s3}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+{\par
+{\b Enumeration values:}\par
+\pard\plain \s62\li720\widctlpar\ql\adjustright \fs20\cgrid {
+{\xe \v MAX_SAMPLE_RATES\:RtAudio}
+{\xe \v RtAudio\:MAX_SAMPLE_RATES}
+{\b {\i MAX_SAMPLE_RATES}{\bkmkstart classRtAudio_s3s2}
+{\bkmkend classRtAudio_s3s2}
+}  \par
+}
+\par
+}
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Constructor & Destructor Documentation\par
+\pard\plain 
+{\xe \v RtAudio\:RtAudio}
+{\xe \v RtAudio\:RtAudio}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+RtAudio::RtAudio ()}
+}\par
+{\bkmkstart classRtAudio_a0}
+{\bkmkend classRtAudio_a0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+The default constructor.\par
+Probes the system to make sure at least one audio input/output device is available and determines the api-specific identifier for each device found. An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) error can be thrown if no devices are found or if a memory allocation error occurs. \par
+}
+{\xe \v RtAudio\:RtAudio}
+{\xe \v RtAudio\:RtAudio}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+RtAudio::RtAudio (int * {\i streamID}, int {\i outputDevice}, int {\i outputChannels}, int {\i inputDevice}, int {\i inputChannels}, {\b RTAUDIO_FORMAT} {\i format}, int {\i sampleRate}, int * {\i bufferSize}, int {\i numberOfBuffers})}
+}\par
+{\bkmkstart classRtAudio_a1}
+{\bkmkend classRtAudio_a1}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+A constructor which can be used to open a stream during instantiation.\par
+The specified output and/or input device identifiers correspond to those enumerated via the {\b getDeviceInfo}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a7 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. If device = 0, the default or first available devices meeting the given parameters is selected. If an output or input channel value is zero, the corresponding device value is ignored. When a stream is successfully opened, its identifier is returned via the "streamID" pointer. An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) can be thrown if no devices are found for the given parameters, if a memory allocation error occurs, or if a driver error occurs. {\par
+{\b See also: }\par
+\pard\plain \s62\li720\widctlpar\ql\adjustright \fs20\cgrid {\b openStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a3 \\*MERGEFORMAT}{\fldrslt pagenum}}}) \par
+}}
+{\xe \v ~RtAudio\:RtAudio}
+{\xe \v RtAudio\:~RtAudio}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+RtAudio::~RtAudio ()}
+}\par
+{\bkmkstart classRtAudio_a2}
+{\bkmkend classRtAudio_a2}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+The destructor.\par
+Stops and closes any open streams and devices and deallocates buffer and structure memory. \par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Function Documentation\par
+\pard\plain 
+{\xe \v openStream\:RtAudio}
+{\xe \v RtAudio\:openStream}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::openStream (int {\i outputDevice}, int {\i outputChannels}, int {\i inputDevice}, int {\i inputChannels}, {\b RTAUDIO_FORMAT} {\i format}, int {\i sampleRate}, int * {\i bufferSize}, int {\i numberOfBuffers})}
+}\par
+{\bkmkstart classRtAudio_a3}
+{\bkmkend classRtAudio_a3}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+A public method for opening a stream with the specified parameters.\par
+If successful, the opened stream ID is returned. Otherwise, an {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) is thrown.{\par
+{\b Parameters: }\par
+\pard\plain \s62\li720\widctlpar\ql\adjustright \fs20\cgrid {
+{\b {\i outputDevice:}}  If equal to 0, the default or first device found meeting the given parameters is opened. Otherwise, the device number should correspond to one of those enumerated via the {\b getDeviceInfo}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a7 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. \par
+{\b {\i outputChannels:}}  The desired number of output channels. If equal to zero, the outputDevice identifier is ignored. \par
+{\b {\i inputDevice:}}  If equal to 0, the default or first device found meeting the given parameters is opened. Otherwise, the device number should correspond to one of those enumerated via the {\b getDeviceInfo}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a7 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. \par
+{\b {\i inputChannels:}}  The desired number of input channels. If equal to zero, the inputDevice identifier is ignored. \par
+{\b {\i format:}}  An RTAUDIO_FORMAT specifying the desired sample data format. \par
+{\b {\i sampleRate:}}  The desired sample rate (sample frames per second). \par
+{\b {\i bufferSize:}}  A pointer value indicating the desired internal buffer size in sample frames. The actual value used by the device is returned via the same pointer. A value of zero can be specified, in which case the lowest allowable value is determined. \par
+{\b {\i numberOfBuffers:}}  A value which can be used to help control device latency. More buffers typically result in more robust performance, though at a cost of greater latency. A value of zero can be specified, in which case the lowest allowable value is used. \par
+}
+\par
+}}
+{\xe \v setStreamCallback\:RtAudio}
+{\xe \v RtAudio\:setStreamCallback}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::setStreamCallback (int {\i streamID}, {\b RTAUDIO_CALLBACK} {\i callback}, void * {\i userData})}
+}\par
+{\bkmkstart classRtAudio_a4}
+{\bkmkend classRtAudio_a4}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+A public method which sets a user-defined callback function for a given stream.\par
+This method assigns a callback function to a specific, previously opened stream for non-blocking stream functionality. A separate process is initiated, though the user function is called only when the stream is "running" (between calls to the {\b startStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a11 \\*MERGEFORMAT}{\fldrslt pagenum}}}) and {\b stopStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a12 \\*MERGEFORMAT}{\fldrslt pagenum}}}) methods, respectively). The callback process remains active for the duration of the stream and is automatically shutdown when the stream is closed (via the {\b closeStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a10 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method or by object destruction). The callback process can also be shutdown and the user function de-referenced through an explicit call to the {\b cancelStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a5 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. Note that a single stream can use only blocking or callback functionality at the same time, though it is possible to alternate modes on the same stream through the use of the {\b setStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a4 \\*MERGEFORMAT}{\fldrslt pagenum}}}) and {\b cancelStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a5 \\*MERGEFORMAT}{\fldrslt pagenum}}}) methods (the blocking {\b tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method can be used before a callback is set and/or after a callback is cancelled). An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid device argument. \par
+}
+{\xe \v cancelStreamCallback\:RtAudio}
+{\xe \v RtAudio\:cancelStreamCallback}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::cancelStreamCallback (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a5}
+{\bkmkend classRtAudio_a5}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+A public method which cancels a callback process and function for a given stream.\par
+This method shuts down a callback process and de-references the user function for a specific stream. Callback functionality can subsequently be restarted on the stream via the {\b setStreamCallback}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a4 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid device argument. \par
+}
+{\xe \v getDeviceCount\:RtAudio}
+{\xe \v RtAudio\:getDeviceCount}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::getDeviceCount (void)}
+}\par
+{\bkmkstart classRtAudio_a6}
+{\bkmkend classRtAudio_a6}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+A public method which returns the number of audio devices found.\par
+}
+{\xe \v getDeviceInfo\:RtAudio}
+{\xe \v RtAudio\:getDeviceInfo}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::getDeviceInfo (int {\i device}, {\b RTAUDIO_DEVICE} * {\i info})}
+}\par
+{\bkmkstart classRtAudio_a7}
+{\bkmkend classRtAudio_a7}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Fill a user-supplied {\b RTAUDIO_DEVICE} ({\i p.{\field\fldedit {\*\fldinst PAGEREF structRtAudio_1_1RTAUDIO__DEVICE \\*MERGEFORMAT}{\fldrslt pagenum}}}) structure for a specified device.\par
+Any device between 0 and {\b getDeviceCount}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a6 \\*MERGEFORMAT}{\fldrslt pagenum}}})-1 is valid. If a device is busy or otherwise unavailable, the structure member "probed" has a value of "false". The system default input and output devices are referenced by device identifier = 0. On systems which allow dynamic default device settings, the default devices are not identified by name (specific device enumerations are assigned device identifiers > 0). An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid device argument. \par
+}
+{\xe \v getStreamBuffer\:RtAudio}
+{\xe \v RtAudio\:getStreamBuffer}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+char *const RtAudio::getStreamBuffer (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a8}
+{\bkmkend classRtAudio_a8}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+A public method which returns a pointer to the buffer for an open stream.\par
+The user should fill and/or read the buffer data in interleaved format and then call the {\b tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method. An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid stream identifier. \par
+}
+{\xe \v tickStream\:RtAudio}
+{\xe \v RtAudio\:tickStream}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::tickStream (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a9}
+{\bkmkend classRtAudio_a9}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Public method used to trigger processing of input/output data for a stream.\par
+This method blocks until all buffer data is read/written. An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid stream identifier or if a driver error occurs. \par
+}
+{\xe \v closeStream\:RtAudio}
+{\xe \v RtAudio\:closeStream}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::closeStream (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a10}
+{\bkmkend classRtAudio_a10}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Public method which closes a stream and frees any associated buffers.\par
+If an invalid stream identifier is specified, this method issues a warning and returns (an {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) is not thrown). \par
+}
+{\xe \v startStream\:RtAudio}
+{\xe \v RtAudio\:startStream}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::startStream (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a11}
+{\bkmkend classRtAudio_a11}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Public method which starts a stream.\par
+An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid stream identifier or if a driver error occurs. \par
+}
+{\xe \v stopStream\:RtAudio}
+{\xe \v RtAudio\:stopStream}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::stopStream (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a12}
+{\bkmkend classRtAudio_a12}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Stop a stream, allowing any samples remaining in the queue to be played out and/or read in.\par
+An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid stream identifier or if a driver error occurs. \par
+}
+{\xe \v abortStream\:RtAudio}
+{\xe \v RtAudio\:abortStream}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudio::abortStream (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a13}
+{\bkmkend classRtAudio_a13}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Stop a stream, discarding any samples remaining in the input/output queue.\par
+An {\b RtAudioError} ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudioError \\*MERGEFORMAT}{\fldrslt pagenum}}}) will be thrown for an invalid stream identifier or if a driver error occurs. \par
+}
+{\xe \v streamWillBlock\:RtAudio}
+{\xe \v RtAudio\:streamWillBlock}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::streamWillBlock (int {\i streamID})}
+}\par
+{\bkmkstart classRtAudio_a14}
+{\bkmkend classRtAudio_a14}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Queries a stream to determine whether a call to the {\b tickStream}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a9 \\*MERGEFORMAT}{\fldrslt pagenum}}}) method will block.\par
+A return value of 0 indicates that the stream will NOT block. A positive return value indicates the number of sample frames that cannot yet be processed without blocking. \par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Data Documentation\par
+\pard\plain 
+{\xe \v RTAUDIO_SINT8\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_SINT8}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_SINT8{\f2  [static]}}
+}\par
+{\bkmkstart classRtAudio_p0}
+{\bkmkend classRtAudio_p0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v RTAUDIO_SINT16\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_SINT16}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_SINT16{\f2  [static]}}
+}\par
+{\bkmkstart classRtAudio_p1}
+{\bkmkend classRtAudio_p1}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v RTAUDIO_SINT24\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_SINT24}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_SINT24{\f2  [static]}}
+}\par
+{\bkmkstart classRtAudio_p2}
+{\bkmkend classRtAudio_p2}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Upper 3 bytes of 32-bit integer. \par
+}
+{\xe \v RTAUDIO_SINT32\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_SINT32}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_SINT32{\f2  [static]}}
+}\par
+{\bkmkstart classRtAudio_p3}
+{\bkmkend classRtAudio_p3}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v RTAUDIO_FLOAT32\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_FLOAT32}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_FLOAT32{\f2  [static]}}
+}\par
+{\bkmkstart classRtAudio_p4}
+{\bkmkend classRtAudio_p4}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Normalized between plus/minus 1.0. \par
+}
+{\xe \v RTAUDIO_FLOAT64\:RtAudio}
+{\xe \v RtAudio\:RTAUDIO_FLOAT64}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_FLOAT64{\f2  [static]}}
+}\par
+{\bkmkstart classRtAudio_p5}
+{\bkmkend classRtAudio_p5}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Normalized between plus/minus 1.0. \par
+}
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+The documentation for this class was generated from the following file:{\par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio.h}\par
+}}
+\par \pard\plain 
+
+\pard\plain \sect\sbkpage
+\s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+RtAudio::RTAUDIO_DEVICE  Struct Reference\par \pard\plain 
+{\tc\tcl2 \v RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE}
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE}
+{\bkmkend }
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {\f2 #include <RtAudio.h>}\par
+\par
+}
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Public Attributes\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+char {\b name} [128]\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+DEVICE_ID {\b id} [2]\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+bool {\b probed}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b maxOutputChannels}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b maxInputChannels}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b maxDuplexChannels}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b minOutputChannels}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b minInputChannels}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b minDuplexChannels}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+bool {\b hasDuplexSupport}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b nSampleRates}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+int {\b sampleRates} [MAX_SAMPLE_RATES]\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+{\b RTAUDIO_FORMAT} {\b nativeFormats}\par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Data Documentation\par
+\pard\plain 
+{\xe \v name\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:name}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+char RtAudio::RTAUDIO_DEVICE::name}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m0}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v id\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:id}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+DEVICE_ID RtAudio::RTAUDIO_DEVICE::id}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m1}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m1}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+No value reported by {\b getDeviceInfo}() ({\i p.{\field\fldedit {\*\fldinst PAGEREF classRtAudio_a7 \\*MERGEFORMAT}{\fldrslt pagenum}}}). \par
+}
+{\xe \v probed\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:probed}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+bool RtAudio::RTAUDIO_DEVICE::probed}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m2}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m2}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+true if the device capabilities were successfully probed. \par
+}
+{\xe \v maxOutputChannels\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:maxOutputChannels}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::maxOutputChannels}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m3}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m3}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v maxInputChannels\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:maxInputChannels}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::maxInputChannels}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m4}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m4}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v maxDuplexChannels\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:maxDuplexChannels}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::maxDuplexChannels}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m5}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m5}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v minOutputChannels\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:minOutputChannels}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::minOutputChannels}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m6}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m6}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v minInputChannels\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:minInputChannels}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::minInputChannels}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m7}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m7}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v minDuplexChannels\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:minDuplexChannels}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::minDuplexChannels}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m8}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m8}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v hasDuplexSupport\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:hasDuplexSupport}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+bool RtAudio::RTAUDIO_DEVICE::hasDuplexSupport}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m9}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m9}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+true if device supports duplex mode. \par
+}
+{\xe \v nSampleRates\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:nSampleRates}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::nSampleRates}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m10}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m10}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Number of discrete rates or -1 if range supported. \par
+}
+{\xe \v sampleRates\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:sampleRates}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+int RtAudio::RTAUDIO_DEVICE::sampleRates}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m11}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m11}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Supported rates or (min, max) if range. \par
+}
+{\xe \v nativeFormats\:RtAudio::RTAUDIO_DEVICE}
+{\xe \v RtAudio::RTAUDIO_DEVICE\:nativeFormats}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+{\b RTAUDIO_FORMAT} RtAudio::RTAUDIO_DEVICE::nativeFormats}
+}\par
+{\bkmkstart structRtAudio_1_1RTAUDIO__DEVICE_m12}
+{\bkmkend structRtAudio_1_1RTAUDIO__DEVICE_m12}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Bit mask of supported data formats. \par
+}
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+The documentation for this struct was generated from the following file:{\par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio.h}\par
+}}
+\par \pard\plain 
+
+\pard\plain \sect\sbkpage
+\s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+RtAudioError  Class Reference\par \pard\plain 
+{\tc\tcl2 \v RtAudioError}
+{\xe \v RtAudioError}
+{\bkmkstart classRtAudioError}
+{\bkmkend }
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {\f2 #include <RtAudio.h>}\par
+\par
+}
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Public Types\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+enum {\b TYPE} \{ {\b WARNING}, 
+{\b DEBUG_WARNING}, 
+{\b UNSPECIFIED}, 
+{\b NO_DEVICES_FOUND}, 
+{\b INVALID_DEVICE}, 
+{\b INVALID_STREAM}, 
+{\b MEMORY_ERROR}, 
+{\b INVALID_PARAMETER}, 
+{\b DRIVER_ERROR}, 
+{\b SYSTEM_ERROR}, 
+{\b THREAD_ERROR}
+ \}\par
+}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Public Methods\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+{\b RtAudioError} (const char *p, {\b TYPE} tipe=RtAudioError::UNSPECIFIED)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i The constructor.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+virtual {\b ~RtAudioError} (void)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i The destructor.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+virtual void {\b printMessage} (void)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Prints "thrown" error message to stdout.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+virtual const {\b TYPE}& {\b getType} (void)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Returns the "thrown" error message TYPE.}\par
+\par}
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+virtual const char* {\b getMessage} (void)\par
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid {\i Returns the "thrown" error message string.}\par
+\par}
+}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Protected Attributes\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+char {\b error_message} [256]\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+{\b TYPE} {\b type}\par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Enumeration Documentation\par
+\pard\plain 
+{\xe \v TYPE\:RtAudioError}
+{\xe \v RtAudioError\:TYPE}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+enum RtAudioError::TYPE}
+}\par
+{\bkmkstart classRtAudioError_s11}
+{\bkmkend classRtAudioError_s11}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+{\par
+{\b Enumeration values:}\par
+\pard\plain \s62\li720\widctlpar\ql\adjustright \fs20\cgrid {
+{\xe \v WARNING\:RtAudioError}
+{\xe \v RtAudioError\:WARNING}
+{\b {\i WARNING}{\bkmkstart classRtAudioError_s11s0}
+{\bkmkend classRtAudioError_s11s0}
+}  \par
+{\xe \v DEBUG_WARNING\:RtAudioError}
+{\xe \v RtAudioError\:DEBUG_WARNING}
+{\b {\i DEBUG_WARNING}{\bkmkstart classRtAudioError_s11s1}
+{\bkmkend classRtAudioError_s11s1}
+}  \par
+{\xe \v UNSPECIFIED\:RtAudioError}
+{\xe \v RtAudioError\:UNSPECIFIED}
+{\b {\i UNSPECIFIED}{\bkmkstart classRtAudioError_s11s2}
+{\bkmkend classRtAudioError_s11s2}
+}  \par
+{\xe \v NO_DEVICES_FOUND\:RtAudioError}
+{\xe \v RtAudioError\:NO_DEVICES_FOUND}
+{\b {\i NO_DEVICES_FOUND}{\bkmkstart classRtAudioError_s11s3}
+{\bkmkend classRtAudioError_s11s3}
+}  \par
+{\xe \v INVALID_DEVICE\:RtAudioError}
+{\xe \v RtAudioError\:INVALID_DEVICE}
+{\b {\i INVALID_DEVICE}{\bkmkstart classRtAudioError_s11s4}
+{\bkmkend classRtAudioError_s11s4}
+}  \par
+{\xe \v INVALID_STREAM\:RtAudioError}
+{\xe \v RtAudioError\:INVALID_STREAM}
+{\b {\i INVALID_STREAM}{\bkmkstart classRtAudioError_s11s5}
+{\bkmkend classRtAudioError_s11s5}
+}  \par
+{\xe \v MEMORY_ERROR\:RtAudioError}
+{\xe \v RtAudioError\:MEMORY_ERROR}
+{\b {\i MEMORY_ERROR}{\bkmkstart classRtAudioError_s11s6}
+{\bkmkend classRtAudioError_s11s6}
+}  \par
+{\xe \v INVALID_PARAMETER\:RtAudioError}
+{\xe \v RtAudioError\:INVALID_PARAMETER}
+{\b {\i INVALID_PARAMETER}{\bkmkstart classRtAudioError_s11s7}
+{\bkmkend classRtAudioError_s11s7}
+}  \par
+{\xe \v DRIVER_ERROR\:RtAudioError}
+{\xe \v RtAudioError\:DRIVER_ERROR}
+{\b {\i DRIVER_ERROR}{\bkmkstart classRtAudioError_s11s8}
+{\bkmkend classRtAudioError_s11s8}
+}  \par
+{\xe \v SYSTEM_ERROR\:RtAudioError}
+{\xe \v RtAudioError\:SYSTEM_ERROR}
+{\b {\i SYSTEM_ERROR}{\bkmkstart classRtAudioError_s11s9}
+{\bkmkend classRtAudioError_s11s9}
+}  \par
+{\xe \v THREAD_ERROR\:RtAudioError}
+{\xe \v RtAudioError\:THREAD_ERROR}
+{\b {\i THREAD_ERROR}{\bkmkstart classRtAudioError_s11s10}
+{\bkmkend classRtAudioError_s11s10}
+}  \par
+}
+\par
+}
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Constructor & Destructor Documentation\par
+\pard\plain 
+{\xe \v RtAudioError\:RtAudioError}
+{\xe \v RtAudioError\:RtAudioError}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+RtAudioError::RtAudioError (const char * {\i p}, {\b TYPE} {\i tipe} = RtAudioError::UNSPECIFIED)}
+}\par
+{\bkmkstart classRtAudioError_a0}
+{\bkmkend classRtAudioError_a0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+The constructor.\par
+}
+{\xe \v ~RtAudioError\:RtAudioError}
+{\xe \v RtAudioError\:~RtAudioError}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+RtAudioError::~RtAudioError (void){\f2  [virtual]}}
+}\par
+{\bkmkstart classRtAudioError_a1}
+{\bkmkend classRtAudioError_a1}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+The destructor.\par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Function Documentation\par
+\pard\plain 
+{\xe \v printMessage\:RtAudioError}
+{\xe \v RtAudioError\:printMessage}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+void RtAudioError::printMessage (void){\f2  [virtual]}}
+}\par
+{\bkmkstart classRtAudioError_a2}
+{\bkmkend classRtAudioError_a2}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Prints "thrown" error message to stdout.\par
+}
+{\xe \v getType\:RtAudioError}
+{\xe \v RtAudioError\:getType}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const {\b TYPE} & RtAudioError::getType (void){\f2  [inline, virtual]}}
+}\par
+{\bkmkstart classRtAudioError_a3}
+{\bkmkend classRtAudioError_a3}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Returns the "thrown" error message TYPE.\par
+}
+{\xe \v getMessage\:RtAudioError}
+{\xe \v RtAudioError\:getMessage}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+const char * RtAudioError::getMessage (void){\f2  [inline, virtual]}}
+}\par
+{\bkmkstart classRtAudioError_a4}
+{\bkmkend classRtAudioError_a4}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+Returns the "thrown" error message string.\par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Member Data Documentation\par
+\pard\plain 
+{\xe \v error_message\:RtAudioError}
+{\xe \v RtAudioError\:error_message}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+char RtAudioError::error_message{\f2  [protected]}}
+}\par
+{\bkmkstart classRtAudioError_n0}
+{\bkmkend classRtAudioError_n0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{\xe \v type\:RtAudioError}
+{\xe \v RtAudioError\:type}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+{\b TYPE} RtAudioError::type{\f2  [protected]}}
+}\par
+{\bkmkstart classRtAudioError_n1}
+{\bkmkend classRtAudioError_n1}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+}
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+The documentation for this class was generated from the following file:{\par
+\pard\plain \s81\fi-360\li720\widctlpar\jclisttab\tx720{\*\pn \pnlvlbody\ilvl0\ls2\pnrnot0\pndec }\ls2\adjustright \fs20\cgrid 
+{\b RtAudio.h}\par
+}}
+
+\pard\plain \sect\sbkpage
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid 
+RtAudio File Documentation{\tc \v File Documentation}
+\par \pard\plain 
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+RtAudio.h File Reference\par \pard\plain 
+{\tc\tcl2 \v RtAudio.h}
+{\xe \v RtAudio.h}
+{\bkmkstart RtAudio_8h}
+{\bkmkend }
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {
+\pard\plain \s18\widctlpar\fs22\cgrid {\f2 #include <map>}\par
+\par
+}
+}
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Compounds\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+class {\b RtAudioError}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+class {\b RtAudio}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+struct {\b RtAudio::RTAUDIO_DEVICE}\par
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+struct {\b RtAudio::RTAUDIO_STREAM}\par
+}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Defines\par
+\pard\plain 
+
+{
+\pard\plain \s80\fi-360\li360\widctlpar\jclisttab\tx360{\*\pn \pnlvlbody\ilvl0\ls1\pnrnot0\pndec }\ls1\adjustright \fs20\cgrid 
+#define {\b __RtAudio_h}\par
+}
+{\pard\widctlpar\brdrb\brdrs\brdrw5\brsp20 \adjustright \par}
+\par
+\pard\plain \s3\sb240\sa60\keepn\widctlpar\adjustright \b\f1\cgrid 
+Define Documentation\par
+\pard\plain 
+{\xe \v __RtAudio_h\:RtAudio.h}
+{\xe \v RtAudio.h\:__RtAudio_h}
+\pard\plain \s4\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs20\cgrid {
+{\b 
+#define __RtAudio_h}
+}\par
+{\bkmkstart RtAudio_8h_a0}
+{\bkmkend RtAudio_8h_a0}
+{
+\pard\plain \s51\li360\sa60\sb30\qj\widctlpar\qj\adjustright \fs20\cgrid 
+{\b Value:}{
+\par
+\pard\plain \s41\li360\widctlpar\adjustright \shading1000\cbpat8 \f2\fs16\cgrid \line
+\par
+}
+}
+\par \pard\plain 
+
+\pard\plain \sect\sbkpage
+\s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+\pard\plain \s2\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs28\kerning28\cgrid 
+tutorial.txt File Reference\par \pard\plain 
+{\tc\tcl2 \v tutorial.txt}
+{\xe \v tutorial.txt}
+{\bkmkstart tutorial_8txt}
+{\bkmkend }
+{
+\pard\plain \s17\sa60\sb30\widctlpar\qj \fs22\cgrid {
+\pard\plain \s18\widctlpar\fs22\cgrid \par
+}
+}
+
+\pard\plain \sect\sbkpage
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid 
+\s1\sb240\sa60\keepn\widctlpar\adjustright \b\f1\fs36\kerning36\cgrid Index\par 
+\pard\plain 
+{\tc \v Index}
+{\field\fldedit {\*\fldinst INDEX \\c2 \\*MERGEFORMAT}{\fldrslt INDEX}}
+}

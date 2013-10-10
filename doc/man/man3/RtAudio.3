@@ -1,0 +1,254 @@
+.TH "RtAudio" 3 "22 Jan 2002" "RtAudio" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+RtAudio \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <RtAudio.h>\fP
+.PP
+.SS "Public Types"
+
+.in +1c
+.ti -1c
+.RI "typedef unsigned long \fBRTAUDIO_FORMAT\fP"
+.br
+.ti -1c
+.RI "typedef int (* \fBRTAUDIO_CALLBACK\fP )(char *buffer, int bufferSize, void *userData)"
+.br
+.ti -1c
+.RI "enum { \fBMAX_SAMPLE_RATES\fP =  14  }"
+.br
+.in -1c
+.SS "Public Methods"
+
+.in +1c
+.ti -1c
+.RI "\fBRtAudio\fP ()"
+.br
+.RI "\fIThe default constructor.\fP"
+.ti -1c
+.RI "\fBRtAudio\fP (int *streamID, int outputDevice, int outputChannels, int inputDevice, int inputChannels, \fBRTAUDIO_FORMAT\fP format, int sampleRate, int *bufferSize, int numberOfBuffers)"
+.br
+.RI "\fIA constructor which can be used to open a stream during instantiation.\fP"
+.ti -1c
+.RI "\fB~RtAudio\fP ()"
+.br
+.RI "\fIThe destructor.\fP"
+.ti -1c
+.RI "int \fBopenStream\fP (int outputDevice, int outputChannels, int inputDevice, int inputChannels, \fBRTAUDIO_FORMAT\fP format, int sampleRate, int *bufferSize, int numberOfBuffers)"
+.br
+.RI "\fIA public method for opening a stream with the specified parameters.\fP"
+.ti -1c
+.RI "void \fBsetStreamCallback\fP (int streamID, \fBRTAUDIO_CALLBACK\fP callback, void *userData)"
+.br
+.RI "\fIA public method which sets a user-defined callback function for a given stream.\fP"
+.ti -1c
+.RI "void \fBcancelStreamCallback\fP (int streamID)"
+.br
+.RI "\fIA public method which cancels a callback process and function for a given stream.\fP"
+.ti -1c
+.RI "int \fBgetDeviceCount\fP (void)"
+.br
+.RI "\fIA public method which returns the number of audio devices found.\fP"
+.ti -1c
+.RI "void \fBgetDeviceInfo\fP (int device, \fBRTAUDIO_DEVICE\fP *info)"
+.br
+.RI "\fIFill a user-supplied \fBRTAUDIO_DEVICE\fP structure for a specified device.\fP"
+.ti -1c
+.RI "char* const \fBgetStreamBuffer\fP (int streamID)"
+.br
+.RI "\fIA public method which returns a pointer to the buffer for an open stream.\fP"
+.ti -1c
+.RI "void \fBtickStream\fP (int streamID)"
+.br
+.RI "\fIPublic method used to trigger processing of input/output data for a stream.\fP"
+.ti -1c
+.RI "void \fBcloseStream\fP (int streamID)"
+.br
+.RI "\fIPublic method which closes a stream and frees any associated buffers.\fP"
+.ti -1c
+.RI "void \fBstartStream\fP (int streamID)"
+.br
+.RI "\fIPublic method which starts a stream.\fP"
+.ti -1c
+.RI "void \fBstopStream\fP (int streamID)"
+.br
+.RI "\fIStop a stream, allowing any samples remaining in the queue to be played out and/or read in.\fP"
+.ti -1c
+.RI "void \fBabortStream\fP (int streamID)"
+.br
+.RI "\fIStop a stream, discarding any samples remaining in the input/output queue.\fP"
+.ti -1c
+.RI "int \fBstreamWillBlock\fP (int streamID)"
+.br
+.RI "\fIQueries a stream to determine whether a call to the \fBtickStream\fP() method will block.\fP"
+.in -1c
+.SS "Static Public Attributes"
+
+.in +1c
+.ti -1c
+.RI "const \fBRTAUDIO_FORMAT\fP \fBRTAUDIO_SINT8\fP"
+.br
+.ti -1c
+.RI "const \fBRTAUDIO_FORMAT\fP \fBRTAUDIO_SINT16\fP"
+.br
+.ti -1c
+.RI "const \fBRTAUDIO_FORMAT\fP \fBRTAUDIO_SINT24\fP"
+.br
+.ti -1c
+.RI "const \fBRTAUDIO_FORMAT\fP \fBRTAUDIO_SINT32\fP"
+.br
+.ti -1c
+.RI "const \fBRTAUDIO_FORMAT\fP \fBRTAUDIO_FLOAT32\fP"
+.br
+.ti -1c
+.RI "const \fBRTAUDIO_FORMAT\fP \fBRTAUDIO_FLOAT64\fP"
+.br
+.in -1c
+.SH "MEMBER TYPEDEF DOCUMENTATION"
+.PP 
+.SS "typedef unsigned long RtAudio::RTAUDIO_FORMAT"
+.PP
+.SS "typedef int(* RtAudio::RTAUDIO_CALLBACK)(char *buffer, int bufferSize, void *userData)"
+.PP
+.SH "MEMBER ENUMERATION DOCUMENTATION"
+.PP 
+.SS "anonymous enum"
+.PP
+\fBEnumeration values:\fP
+.in +1c
+.TP
+\fB\fIMAX_SAMPLE_RATES\fP \fP
+
+.SH "CONSTRUCTOR & DESTRUCTOR DOCUMENTATION"
+.PP 
+.SS "RtAudio::RtAudio ()"
+.PP
+The default constructor.
+.PP
+Probes the system to make sure at least one audio input/output device is available and determines the api-specific identifier for each device found. An \fBRtAudioError\fP error can be thrown if no devices are found or if a memory allocation error occurs. 
+.SS "RtAudio::RtAudio (int * streamID, int outputDevice, int outputChannels, int inputDevice, int inputChannels, \fBRTAUDIO_FORMAT\fP format, int sampleRate, int * bufferSize, int numberOfBuffers)"
+.PP
+A constructor which can be used to open a stream during instantiation.
+.PP
+The specified output and/or input device identifiers correspond to those enumerated via the \fBgetDeviceInfo\fP() method. If device = 0, the default or first available devices meeting the given parameters is selected. If an output or input channel value is zero, the corresponding device value is ignored. When a stream is successfully opened, its identifier is returned via the 'streamID' pointer. An \fBRtAudioError\fP can be thrown if no devices are found for the given parameters, if a memory allocation error occurs, or if a driver error occurs. 
+.PP
+\fBSee also: \fP
+.in +1c
+\fBopenStream\fP() 
+.SS "RtAudio::~RtAudio ()"
+.PP
+The destructor.
+.PP
+Stops and closes any open streams and devices and deallocates buffer and structure memory. 
+.SH "MEMBER FUNCTION DOCUMENTATION"
+.PP 
+.SS "int RtAudio::openStream (int outputDevice, int outputChannels, int inputDevice, int inputChannels, \fBRTAUDIO_FORMAT\fP format, int sampleRate, int * bufferSize, int numberOfBuffers)"
+.PP
+A public method for opening a stream with the specified parameters.
+.PP
+If successful, the opened stream ID is returned. Otherwise, an \fBRtAudioError\fP is thrown.
+.PP
+\fBParameters: \fP
+.in +1c
+.TP
+\fB\fIoutputDevice:\fP\fP
+If equal to 0, the default or first device found meeting the given parameters is opened. Otherwise, the device number should correspond to one of those enumerated via the \fBgetDeviceInfo\fP() method. 
+.TP
+\fB\fIoutputChannels:\fP\fP
+The desired number of output channels. If equal to zero, the outputDevice identifier is ignored. 
+.TP
+\fB\fIinputDevice:\fP\fP
+If equal to 0, the default or first device found meeting the given parameters is opened. Otherwise, the device number should correspond to one of those enumerated via the \fBgetDeviceInfo\fP() method. 
+.TP
+\fB\fIinputChannels:\fP\fP
+The desired number of input channels. If equal to zero, the inputDevice identifier is ignored. 
+.TP
+\fB\fIformat:\fP\fP
+An RTAUDIO_FORMAT specifying the desired sample data format. 
+.TP
+\fB\fIsampleRate:\fP\fP
+The desired sample rate (sample frames per second). 
+.TP
+\fB\fIbufferSize:\fP\fP
+A pointer value indicating the desired internal buffer size in sample frames. The actual value used by the device is returned via the same pointer. A value of zero can be specified, in which case the lowest allowable value is determined. 
+.TP
+\fB\fInumberOfBuffers:\fP\fP
+A value which can be used to help control device latency. More buffers typically result in more robust performance, though at a cost of greater latency. A value of zero can be specified, in which case the lowest allowable value is used. 
+.SS "void RtAudio::setStreamCallback (int streamID, \fBRTAUDIO_CALLBACK\fP callback, void * userData)"
+.PP
+A public method which sets a user-defined callback function for a given stream.
+.PP
+This method assigns a callback function to a specific, previously opened stream for non-blocking stream functionality. A separate process is initiated, though the user function is called only when the stream is 'running' (between calls to the \fBstartStream\fP() and \fBstopStream\fP() methods, respectively). The callback process remains active for the duration of the stream and is automatically shutdown when the stream is closed (via the \fBcloseStream\fP() method or by object destruction). The callback process can also be shutdown and the user function de-referenced through an explicit call to the \fBcancelStreamCallback\fP() method. Note that a single stream can use only blocking or callback functionality at the same time, though it is possible to alternate modes on the same stream through the use of the \fBsetStreamCallback\fP() and \fBcancelStreamCallback\fP() methods (the blocking \fBtickStream\fP() method can be used before a callback is set and/or after a callback is cancelled). An \fBRtAudioError\fP will be thrown for an invalid device argument. 
+.SS "void RtAudio::cancelStreamCallback (int streamID)"
+.PP
+A public method which cancels a callback process and function for a given stream.
+.PP
+This method shuts down a callback process and de-references the user function for a specific stream. Callback functionality can subsequently be restarted on the stream via the \fBsetStreamCallback\fP() method. An \fBRtAudioError\fP will be thrown for an invalid device argument. 
+.SS "int RtAudio::getDeviceCount (void)"
+.PP
+A public method which returns the number of audio devices found.
+.PP
+.SS "void RtAudio::getDeviceInfo (int device, \fBRTAUDIO_DEVICE\fP * info)"
+.PP
+Fill a user-supplied \fBRTAUDIO_DEVICE\fP structure for a specified device.
+.PP
+Any device between 0 and \fBgetDeviceCount\fP()-1 is valid. If a device is busy or otherwise unavailable, the structure member 'probed' has a value of 'false'. The system default input and output devices are referenced by device identifier = 0. On systems which allow dynamic default device settings, the default devices are not identified by name (specific device enumerations are assigned device identifiers > 0). An \fBRtAudioError\fP will be thrown for an invalid device argument. 
+.SS "char *const RtAudio::getStreamBuffer (int streamID)"
+.PP
+A public method which returns a pointer to the buffer for an open stream.
+.PP
+The user should fill and/or read the buffer data in interleaved format and then call the \fBtickStream\fP() method. An \fBRtAudioError\fP will be thrown for an invalid stream identifier. 
+.SS "void RtAudio::tickStream (int streamID)"
+.PP
+Public method used to trigger processing of input/output data for a stream.
+.PP
+This method blocks until all buffer data is read/written. An \fBRtAudioError\fP will be thrown for an invalid stream identifier or if a driver error occurs. 
+.SS "void RtAudio::closeStream (int streamID)"
+.PP
+Public method which closes a stream and frees any associated buffers.
+.PP
+If an invalid stream identifier is specified, this method issues a warning and returns (an \fBRtAudioError\fP is not thrown). 
+.SS "void RtAudio::startStream (int streamID)"
+.PP
+Public method which starts a stream.
+.PP
+An \fBRtAudioError\fP will be thrown for an invalid stream identifier or if a driver error occurs. 
+.SS "void RtAudio::stopStream (int streamID)"
+.PP
+Stop a stream, allowing any samples remaining in the queue to be played out and/or read in.
+.PP
+An \fBRtAudioError\fP will be thrown for an invalid stream identifier or if a driver error occurs. 
+.SS "void RtAudio::abortStream (int streamID)"
+.PP
+Stop a stream, discarding any samples remaining in the input/output queue.
+.PP
+An \fBRtAudioError\fP will be thrown for an invalid stream identifier or if a driver error occurs. 
+.SS "int RtAudio::streamWillBlock (int streamID)"
+.PP
+Queries a stream to determine whether a call to the \fBtickStream\fP() method will block.
+.PP
+A return value of 0 indicates that the stream will NOT block. A positive return value indicates the number of sample frames that cannot yet be processed without blocking. 
+.SH "MEMBER DATA DOCUMENTATION"
+.PP 
+.SS "const \fBRTAUDIO_FORMAT\fP RtAudio::RTAUDIO_SINT8\fC [static]\fP"
+.PP
+.SS "const \fBRTAUDIO_FORMAT\fP RtAudio::RTAUDIO_SINT16\fC [static]\fP"
+.PP
+.SS "const \fBRTAUDIO_FORMAT\fP RtAudio::RTAUDIO_SINT24\fC [static]\fP"
+.PP
+Upper 3 bytes of 32-bit integer. 
+.SS "const \fBRTAUDIO_FORMAT\fP RtAudio::RTAUDIO_SINT32\fC [static]\fP"
+.PP
+.SS "const \fBRTAUDIO_FORMAT\fP RtAudio::RTAUDIO_FLOAT32\fC [static]\fP"
+.PP
+Normalized between plus/minus 1.0. 
+.SS "const \fBRTAUDIO_FORMAT\fP RtAudio::RTAUDIO_FLOAT64\fC [static]\fP"
+.PP
+Normalized between plus/minus 1.0. 
+
+.SH "AUTHOR"
+.PP 
+Generated automatically by Doxygen for RtAudio from the source code.
