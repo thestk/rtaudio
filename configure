@@ -3611,7 +3611,7 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_func_gettimeofday" >&5
 echo "${ECHO_T}$ac_cv_func_gettimeofday" >&6
 if test $ac_cv_func_gettimeofday = yes; then
-  cflags=$cflags" -DHAVE_GETTIMEOFDAY"
+  CFLAGS=$CFLAGS" -DHAVE_GETTIMEOFDAY"
 fi
 
 
@@ -3620,6 +3620,8 @@ if test $GXX = "yes" ; then
   warn=-Wall
 
 fi
+
+CFLAGS="$CFLAGS $cflags"
 
 # Checks for package options and external software
 ac_aux_dir=
@@ -3711,7 +3713,7 @@ case $host in
 echo "${ECHO_T}using OSS" >&6
     audio_apis=-D__LINUX_OSS__
 
-    cflags=$cflags" -lossaudio"
+    CFLAGS=$CFLAGS" -lossaudio"
 
 echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5
 echo $ECHO_N "checking for pthread_create in -lpthread... $ECHO_C" >&6
@@ -3961,7 +3963,7 @@ echo "$as_me: error: Jack support also requires the asound library!" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-    LIBS="`pkg-config --cflags --libs jack` $TEMP_LIBS -lasound"
+    LIBS="`pkg-config --CFLAGS --libs jack` $TEMP_LIBS -lasound"
     audio_apis="-D__UNIX_JACK__"
   fi
 

@@ -12,7 +12,7 @@
 <h1>RtAudio.h</h1><a href="RtAudio_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">/************************************************************************/</span>
 <a name="l00039"></a>00039 <span class="comment">/************************************************************************/</span>
 <a name="l00040"></a>00040 
-<a name="l00045"></a>00045 <span class="comment">// RtAudio: Version 4.0.3</span>
+<a name="l00045"></a>00045 <span class="comment">// RtAudio: Version 4.0.4</span>
 <a name="l00046"></a>00046 
 <a name="l00047"></a>00047 <span class="preprocessor">#ifndef __RTAUDIO_H</span>
 <a name="l00048"></a>00048 <span class="preprocessor"></span><span class="preprocessor">#define __RTAUDIO_H</span>
@@ -317,7 +317,7 @@
 <a name="l00617"></a>00617 <span class="preprocessor">#endif</span>
 <a name="l00618"></a>00618 <span class="preprocessor"></span>
 <a name="l00619"></a>00619     RtApiStream()
-<a name="l00620"></a>00620       :apiHandle(0), deviceBuffer(0) {}
+<a name="l00620"></a>00620       :apiHandle(0), deviceBuffer(0) { device[0] = 11111; device[1] = 11111; }
 <a name="l00621"></a>00621   };
 <a name="l00622"></a>00622 
 <a name="l00623"></a>00623   <span class="keyword">typedef</span> <span class="keywordtype">signed</span> <span class="keywordtype">short</span> Int16;
@@ -546,85 +546,87 @@
 <a name="l00867"></a>00867 
 <a name="l00868"></a>00868   <span class="keyword">private</span>:
 <a name="l00869"></a>00869 
-<a name="l00870"></a>00870   <span class="keywordtype">bool</span> probeDeviceOpen( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device, StreamMode mode, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> channels, 
-<a name="l00871"></a>00871                         <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> firstChannel, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> sampleRate,
-<a name="l00872"></a>00872                         <a class="code" href="RtAudio_8h.html#a1">RtAudioFormat</a> format, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *bufferSize,
-<a name="l00873"></a>00873                         <a class="code" href="structRtAudio_1_1StreamOptions.html">RtAudio::StreamOptions</a> *options );
-<a name="l00874"></a>00874 };
-<a name="l00875"></a>00875 
-<a name="l00876"></a>00876 <span class="preprocessor">#endif</span>
-<a name="l00877"></a>00877 <span class="preprocessor"></span>
-<a name="l00878"></a>00878 <span class="preprocessor">#if defined(__LINUX_OSS__)</span>
+<a name="l00870"></a>00870   std::vector&lt;RtAudio::DeviceInfo&gt; devices_;
+<a name="l00871"></a>00871   <span class="keywordtype">void</span> saveDeviceInfo( <span class="keywordtype">void</span> );
+<a name="l00872"></a>00872   <span class="keywordtype">bool</span> probeDeviceOpen( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device, StreamMode mode, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> channels, 
+<a name="l00873"></a>00873                         <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> firstChannel, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> sampleRate,
+<a name="l00874"></a>00874                         <a class="code" href="RtAudio_8h.html#a1">RtAudioFormat</a> format, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *bufferSize,
+<a name="l00875"></a>00875                         <a class="code" href="structRtAudio_1_1StreamOptions.html">RtAudio::StreamOptions</a> *options );
+<a name="l00876"></a>00876 };
+<a name="l00877"></a>00877 
+<a name="l00878"></a>00878 <span class="preprocessor">#endif</span>
 <a name="l00879"></a>00879 <span class="preprocessor"></span>
-<a name="l00880"></a>00880 <span class="keyword">class </span>RtApiOss: <span class="keyword">public</span> RtApi
-<a name="l00881"></a>00881 {
-<a name="l00882"></a>00882 <span class="keyword">public</span>:
-<a name="l00883"></a>00883 
-<a name="l00884"></a>00884   RtApiOss();
-<a name="l00885"></a>00885   ~RtApiOss();
-<a name="l00886"></a>00886   <a class="code" href="classRtAudio.html#w8">RtAudio::Api</a> getCurrentApi() { <span class="keywordflow">return</span> <a class="code" href="classRtAudio.html#w8w2">RtAudio::LINUX_OSS</a>; };
-<a name="l00887"></a>00887   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> getDeviceCount( <span class="keywordtype">void</span> );
-<a name="l00888"></a>00888   <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> getDeviceInfo( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device );
-<a name="l00889"></a>00889   <span class="keywordtype">void</span> closeStream( <span class="keywordtype">void</span> );
-<a name="l00890"></a>00890   <span class="keywordtype">void</span> startStream( <span class="keywordtype">void</span> );
-<a name="l00891"></a>00891   <span class="keywordtype">void</span> stopStream( <span class="keywordtype">void</span> );
-<a name="l00892"></a>00892   <span class="keywordtype">void</span> abortStream( <span class="keywordtype">void</span> );
-<a name="l00893"></a>00893 
-<a name="l00894"></a>00894   <span class="comment">// This function is intended for internal use only.  It must be</span>
-<a name="l00895"></a>00895   <span class="comment">// public because it is called by the internal callback handler,</span>
-<a name="l00896"></a>00896   <span class="comment">// which is not a member of RtAudio.  External use of this function</span>
-<a name="l00897"></a>00897   <span class="comment">// will most likely produce highly undesireable results!</span>
-<a name="l00898"></a>00898   <span class="keywordtype">void</span> callbackEvent( <span class="keywordtype">void</span> );
-<a name="l00899"></a>00899 
-<a name="l00900"></a>00900   <span class="keyword">private</span>:
+<a name="l00880"></a>00880 <span class="preprocessor">#if defined(__LINUX_OSS__)</span>
+<a name="l00881"></a>00881 <span class="preprocessor"></span>
+<a name="l00882"></a>00882 <span class="keyword">class </span>RtApiOss: <span class="keyword">public</span> RtApi
+<a name="l00883"></a>00883 {
+<a name="l00884"></a>00884 <span class="keyword">public</span>:
+<a name="l00885"></a>00885 
+<a name="l00886"></a>00886   RtApiOss();
+<a name="l00887"></a>00887   ~RtApiOss();
+<a name="l00888"></a>00888   <a class="code" href="classRtAudio.html#w8">RtAudio::Api</a> getCurrentApi() { <span class="keywordflow">return</span> <a class="code" href="classRtAudio.html#w8w2">RtAudio::LINUX_OSS</a>; };
+<a name="l00889"></a>00889   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> getDeviceCount( <span class="keywordtype">void</span> );
+<a name="l00890"></a>00890   <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> getDeviceInfo( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device );
+<a name="l00891"></a>00891   <span class="keywordtype">void</span> closeStream( <span class="keywordtype">void</span> );
+<a name="l00892"></a>00892   <span class="keywordtype">void</span> startStream( <span class="keywordtype">void</span> );
+<a name="l00893"></a>00893   <span class="keywordtype">void</span> stopStream( <span class="keywordtype">void</span> );
+<a name="l00894"></a>00894   <span class="keywordtype">void</span> abortStream( <span class="keywordtype">void</span> );
+<a name="l00895"></a>00895 
+<a name="l00896"></a>00896   <span class="comment">// This function is intended for internal use only.  It must be</span>
+<a name="l00897"></a>00897   <span class="comment">// public because it is called by the internal callback handler,</span>
+<a name="l00898"></a>00898   <span class="comment">// which is not a member of RtAudio.  External use of this function</span>
+<a name="l00899"></a>00899   <span class="comment">// will most likely produce highly undesireable results!</span>
+<a name="l00900"></a>00900   <span class="keywordtype">void</span> callbackEvent( <span class="keywordtype">void</span> );
 <a name="l00901"></a>00901 
-<a name="l00902"></a>00902   <span class="keywordtype">bool</span> probeDeviceOpen( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device, StreamMode mode, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> channels, 
-<a name="l00903"></a>00903                         <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> firstChannel, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> sampleRate,
-<a name="l00904"></a>00904                         <a class="code" href="RtAudio_8h.html#a1">RtAudioFormat</a> format, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *bufferSize,
-<a name="l00905"></a>00905                         <a class="code" href="structRtAudio_1_1StreamOptions.html">RtAudio::StreamOptions</a> *options );
-<a name="l00906"></a>00906 };
-<a name="l00907"></a>00907 
-<a name="l00908"></a>00908 <span class="preprocessor">#endif</span>
-<a name="l00909"></a>00909 <span class="preprocessor"></span>
-<a name="l00910"></a>00910 <span class="preprocessor">#if defined(__RTAUDIO_DUMMY__)</span>
+<a name="l00902"></a>00902   <span class="keyword">private</span>:
+<a name="l00903"></a>00903 
+<a name="l00904"></a>00904   <span class="keywordtype">bool</span> probeDeviceOpen( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device, StreamMode mode, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> channels, 
+<a name="l00905"></a>00905                         <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> firstChannel, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> sampleRate,
+<a name="l00906"></a>00906                         <a class="code" href="RtAudio_8h.html#a1">RtAudioFormat</a> format, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *bufferSize,
+<a name="l00907"></a>00907                         <a class="code" href="structRtAudio_1_1StreamOptions.html">RtAudio::StreamOptions</a> *options );
+<a name="l00908"></a>00908 };
+<a name="l00909"></a>00909 
+<a name="l00910"></a>00910 <span class="preprocessor">#endif</span>
 <a name="l00911"></a>00911 <span class="preprocessor"></span>
-<a name="l00912"></a>00912 <span class="keyword">class </span>RtApiDummy: <span class="keyword">public</span> RtApi
-<a name="l00913"></a>00913 {
-<a name="l00914"></a>00914 <span class="keyword">public</span>:
-<a name="l00915"></a>00915 
-<a name="l00916"></a>00916   RtApiDummy() { errorText_ = <span class="stringliteral">"RtApiDummy: This class provides no functionality."</span>; error( <a class="code" href="classRtError.html#w11w0">RtError::WARNING</a> ); };
-<a name="l00917"></a>00917   <a class="code" href="classRtAudio.html#w8">RtAudio::Api</a> getCurrentApi( <span class="keywordtype">void</span> ) { <span class="keywordflow">return</span> <a class="code" href="classRtAudio.html#w8w7">RtAudio::RTAUDIO_DUMMY</a>; };
-<a name="l00918"></a>00918   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> getDeviceCount( <span class="keywordtype">void</span> ) { <span class="keywordflow">return</span> 0; };
-<a name="l00919"></a>00919   <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> getDeviceInfo( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device ) { <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> info; <span class="keywordflow">return</span> info; };
-<a name="l00920"></a>00920   <span class="keywordtype">void</span> closeStream( <span class="keywordtype">void</span> ) {};
-<a name="l00921"></a>00921   <span class="keywordtype">void</span> startStream( <span class="keywordtype">void</span> ) {};
-<a name="l00922"></a>00922   <span class="keywordtype">void</span> stopStream( <span class="keywordtype">void</span> ) {};
-<a name="l00923"></a>00923   <span class="keywordtype">void</span> abortStream( <span class="keywordtype">void</span> ) {};
-<a name="l00924"></a>00924 
-<a name="l00925"></a>00925   <span class="keyword">private</span>:
+<a name="l00912"></a>00912 <span class="preprocessor">#if defined(__RTAUDIO_DUMMY__)</span>
+<a name="l00913"></a>00913 <span class="preprocessor"></span>
+<a name="l00914"></a>00914 <span class="keyword">class </span>RtApiDummy: <span class="keyword">public</span> RtApi
+<a name="l00915"></a>00915 {
+<a name="l00916"></a>00916 <span class="keyword">public</span>:
+<a name="l00917"></a>00917 
+<a name="l00918"></a>00918   RtApiDummy() { errorText_ = <span class="stringliteral">"RtApiDummy: This class provides no functionality."</span>; error( <a class="code" href="classRtError.html#w11w0">RtError::WARNING</a> ); };
+<a name="l00919"></a>00919   <a class="code" href="classRtAudio.html#w8">RtAudio::Api</a> getCurrentApi( <span class="keywordtype">void</span> ) { <span class="keywordflow">return</span> <a class="code" href="classRtAudio.html#w8w7">RtAudio::RTAUDIO_DUMMY</a>; };
+<a name="l00920"></a>00920   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> getDeviceCount( <span class="keywordtype">void</span> ) { <span class="keywordflow">return</span> 0; };
+<a name="l00921"></a>00921   <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> getDeviceInfo( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device ) { <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> info; <span class="keywordflow">return</span> info; };
+<a name="l00922"></a>00922   <span class="keywordtype">void</span> closeStream( <span class="keywordtype">void</span> ) {};
+<a name="l00923"></a>00923   <span class="keywordtype">void</span> startStream( <span class="keywordtype">void</span> ) {};
+<a name="l00924"></a>00924   <span class="keywordtype">void</span> stopStream( <span class="keywordtype">void</span> ) {};
+<a name="l00925"></a>00925   <span class="keywordtype">void</span> abortStream( <span class="keywordtype">void</span> ) {};
 <a name="l00926"></a>00926 
-<a name="l00927"></a>00927   <span class="keywordtype">bool</span> probeDeviceOpen( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device, StreamMode mode, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> channels, 
-<a name="l00928"></a>00928                         <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> firstChannel, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> sampleRate,
-<a name="l00929"></a>00929                         <a class="code" href="RtAudio_8h.html#a1">RtAudioFormat</a> format, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *bufferSize,
-<a name="l00930"></a>00930                         <a class="code" href="structRtAudio_1_1StreamOptions.html">RtAudio::StreamOptions</a> *options ) { <span class="keywordflow">return</span> <span class="keyword">false</span>; };
-<a name="l00931"></a>00931 };
-<a name="l00932"></a>00932 
-<a name="l00933"></a>00933 <span class="preprocessor">#endif</span>
-<a name="l00934"></a>00934 <span class="preprocessor"></span>
+<a name="l00927"></a>00927   <span class="keyword">private</span>:
+<a name="l00928"></a>00928 
+<a name="l00929"></a>00929   <span class="keywordtype">bool</span> probeDeviceOpen( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device, StreamMode mode, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> channels, 
+<a name="l00930"></a>00930                         <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> firstChannel, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> sampleRate,
+<a name="l00931"></a>00931                         <a class="code" href="RtAudio_8h.html#a1">RtAudioFormat</a> format, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *bufferSize,
+<a name="l00932"></a>00932                         <a class="code" href="structRtAudio_1_1StreamOptions.html">RtAudio::StreamOptions</a> *options ) { <span class="keywordflow">return</span> <span class="keyword">false</span>; };
+<a name="l00933"></a>00933 };
+<a name="l00934"></a>00934 
 <a name="l00935"></a>00935 <span class="preprocessor">#endif</span>
 <a name="l00936"></a>00936 <span class="preprocessor"></span>
-<a name="l00937"></a>00937 <span class="comment">// Indentation settings for Vim and Emacs</span>
-<a name="l00938"></a>00938 <span class="comment">//</span>
-<a name="l00939"></a>00939 <span class="comment">// Local Variables:</span>
-<a name="l00940"></a>00940 <span class="comment">// c-basic-offset: 2</span>
-<a name="l00941"></a>00941 <span class="comment">// indent-tabs-mode: nil</span>
-<a name="l00942"></a>00942 <span class="comment">// End:</span>
-<a name="l00943"></a>00943 <span class="comment">//</span>
-<a name="l00944"></a>00944 <span class="comment">// vim: et sts=2 sw=2</span>
+<a name="l00937"></a>00937 <span class="preprocessor">#endif</span>
+<a name="l00938"></a>00938 <span class="preprocessor"></span>
+<a name="l00939"></a>00939 <span class="comment">// Indentation settings for Vim and Emacs</span>
+<a name="l00940"></a>00940 <span class="comment">//</span>
+<a name="l00941"></a>00941 <span class="comment">// Local Variables:</span>
+<a name="l00942"></a>00942 <span class="comment">// c-basic-offset: 2</span>
+<a name="l00943"></a>00943 <span class="comment">// indent-tabs-mode: nil</span>
+<a name="l00944"></a>00944 <span class="comment">// End:</span>
+<a name="l00945"></a>00945 <span class="comment">//</span>
+<a name="l00946"></a>00946 <span class="comment">// vim: et sts=2 sw=2</span>
 </pre></div><HR>
 
 <table><tr><td><img src="../images/mcgill.gif" width=165></td>
-  <td>&copy;2001-2007 Gary P. Scavone, McGill University. All Rights Reserved.<br>Maintained by <a href="http://www.music.mcgill.ca/~gary/">Gary P. Scavone</a>.</td></tr>
+  <td>&copy;2001-2008 Gary P. Scavone, McGill University. All Rights Reserved.<br>Maintained by <a href="http://www.music.mcgill.ca/~gary/">Gary P. Scavone</a>.</td></tr>
 </table>
 
 </BODY>
