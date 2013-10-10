@@ -8,7 +8,7 @@ AC_CONFIG_FILES([rtaudio-config Makefile tests/Makefile])
 AC_SUBST( GXX, ["no"] )
 
 # Checks for programs.
-AC_PROG_CXX
+AC_PROG_CXX(g++ CC c++ cxx)
 AC_PROG_RANLIB
 AC_PATH_PROG(AR, ar, no)
 if [[ $AR = "no" ]] ; then

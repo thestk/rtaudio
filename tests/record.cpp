@@ -153,9 +153,8 @@ int main( int argc, char *argv[] )
   }
 
   std::cout << "\nRecording for " << time << " seconds ... writing file 'record.raw' (buffer frames = " << bufferFrames << ")." << std::endl;
-  while ( 1 ) {
+  while ( adc.isStreamRunning() ) {
     SLEEP( 100 ); // wake every 100 ms to check if we're done
-    if ( adc.isStreamRunning() == false ) break;
   }
 
   // Now write the entire data to the file.

@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.5
+// RtAudio: Version 4.0.6
 
 #include "RtAudio.h"
 #include <iostream>
@@ -403,7 +403,9 @@ unsigned int RtApi :: getStreamSampleRate( void )
 // implementation.
 struct CoreHandle {
   AudioDeviceID id[2];    // device ids
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
   AudioDeviceIOProcID procId[2];
+#endif
   UInt32 iStream[2];      // device stream index (or first if using multiple)
   UInt32 nStreams[2];     // number of streams to use
   bool xrun[2];
@@ -5646,7 +5648,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   // Set the buffer number, which in ALSA is referred to as the "period".
-  int totalSize, dir;
+  int totalSize, dir = 0;
   unsigned int periods = 0;
   if ( options ) periods = options->numberOfBuffers;
   totalSize = *bufferSize * periods;
