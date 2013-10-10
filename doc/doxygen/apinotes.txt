@@ -22,11 +22,15 @@ The RtAudio Jack support can be compiled on Macintosh OS-X systems, as well as i
 
 \section windowsds Windows (DirectSound):
 
+The \c configure script provides support for the MinGW compiler.  DirectSound support is specified with the "--with-ds" flag.
+
 In order to compile RtAudio under Windows for the DirectSound API, you must have the header and source files for DirectSound version 5.0 or higher.  As far as I know, there is no DirectSoundCapture support for Windows NT.  Audio output latency with DirectSound can be reasonably good, especially since RtAudio version 3.0.2.  Input audio latency still tends to be bad but better since version 3.0.2.  RtAudio was originally developed with Visual C++ version 6.0 but has been tested with .NET.
 
 The DirectSound version of RtAudio can be compiled with or without the UNICODE preprocessor definition.
 
 \section windowsasio Windows (ASIO):
+
+ASIO support using MinGW and the \c configure script is specified with the "--with-asio" flag.
 
 The Steinberg ASIO audio API allows only a single device driver to be loaded and accessed at a time.  ASIO device drivers must be supplied by audio hardware manufacturers, though ASIO emulation is possible on top of systems with DirectSound drivers.  The <I>numberOfBuffers</I> parameter to the RtAudio::openStream() function has no affect in this implementation.
 

@@ -2,7 +2,7 @@
 
 \section debug Debugging
 
-If you are having problems getting RtAudio to run on your system, make sure to pass a value of \e true to the RtAudio::showWarnings() function (this is the default setting).  A variety of warning messages will be displayed which may help in determining the problem.  Also, try using the programs included in the <tt>tests</tt> directory.  The program <tt>probe</tt> displays the queried capabilities of all hardware devices found for all APIs compiled.  When using the ALSA API, further information can be displayed by defining the preprocessor definition __RTAUDIO_DEBUG__.
+If you are having problems getting RtAudio to run on your system, make sure to pass a value of \e true to the RtAudio::showWarnings() function (this is the default setting).  A variety of warning messages will be displayed which may help in determining the problem.  Also, try using the programs included in the <tt>tests</tt> directory.  The program <tt>audioprobe</tt> displays the queried capabilities of all hardware devices found for all APIs compiled.  When using the ALSA API, further information can be displayed by defining the preprocessor definition __RTAUDIO_DEBUG__.
 
 \section compile Compiling
 
@@ -24,7 +24,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>RtApiAlsa</TD>
   <TD>__LINUX_ALSA__</TD>
   <TD><TT>asound, pthread</TT></TD>
-  <TD><TT>g++ -Wall -D__LINUX_ALSA__ -o probe probe.cpp RtAudio.cpp -lasound -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__LINUX_ALSA__ -o audioprobe audioprobe.cpp RtAudio.cpp -lasound -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Linux</TD>
@@ -32,7 +32,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>RtApiOss</TD>
   <TD>__LINUX_OSS__</TD>
   <TD><TT>pthread</TT></TD>
-  <TD><TT>g++ -Wall -D__LINUX_OSS__ -o probe probe.cpp RtAudio.cpp -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__LINUX_OSS__ -o audioprobe audioprobe.cpp RtAudio.cpp -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Linux or Macintosh OS-X</TD>
@@ -40,7 +40,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>RtApiJack</TD>
   <TD>__UNIX_JACK__</TD>
   <TD><TT>jack, pthread</TT></TD>
-  <TD><TT>g++ -Wall -D__UNIX_JACK__ -o probe probe.cpp RtAudio.cpp `pkg-config --cflags --libs jack` -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__UNIX_JACK__ -o audioprobe audioprobe.cpp RtAudio.cpp `pkg-config --cflags --libs jack` -lpthread</TT></TD>
 </TR>
 
 <TR>
@@ -49,7 +49,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>RtApiCore</TD>
   <TD>__MACOSX_CORE__</TD>
   <TD><TT>pthread, CoreAudio</TT></TD>
-  <TD><TT>g++ -Wall -D__MACOSX_CORE__ -o probe probe.cpp RtAudio.cpp -framework CoreAudio -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__MACOSX_CORE__ -o audioprobe audioprobe.cpp RtAudio.cpp -framework CoreAudio -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Windows</TD>
@@ -70,7 +70,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
 </TABLE>
 <P>
 
-The example compiler statements above could be used to compile the <TT>probe.cpp</TT> example file, assuming that <TT>probe.cpp</TT>, <TT>RtAudio.h</TT>, <tt>RtError.h</tt>, and <TT>RtAudio.cpp</TT> all exist in the same directory.
+The example compiler statements above could be used to compile the <TT>audioprobe.cpp</TT> example file, assuming that <TT>audioprobe.cpp</TT>, <TT>RtAudio.h</TT>, <tt>RtError.h</tt>, and <TT>RtAudio.cpp</TT> all exist in the same directory.
 
 
 */

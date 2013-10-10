@@ -17,7 +17,7 @@ RtAudio incorporates the concept of audio streams, which represent audio output 
 
 \section whatsnew What's New (Version 4.0)
 
-RtAudio V4 represents a significant rewrite of the code and includes a number of API and functionality changes form previous versions. A partial list of the changes includes:
+RtAudio V4 represents a significant rewrite of the code and includes a number of API and functionality changes from previous versions. A partial list of the changes includes:
 - new support for non-interleaved user data
 - additional input/output parameter specifications, including channel offset
 - new support for dynamic connection of devices
@@ -28,11 +28,11 @@ RtAudio V4 represents a significant rewrite of the code and includes a number of
 - discontinued support of blocking functionality
 - discontinued support of SGI
 
-Devices are now re-enumerated every time the RtAudio::getDeviceCount(), RtAudio::getDeviceInfo(), and RtAudio::openStream() functions are called.  This allows for the proper identification of hot-pluggable (USB, Firewire, ...) devices while a given RtAudio instance exists.
+Devices are now re-enumerated every time the RtAudio::getDeviceCount(), RtAudio::getDeviceInfo(), and RtAudio::openStream() functions are called.  This allows for the proper identification of hot-pluggable (USB, Firewire, ...) devices that are connected after an RtAudio instance is created.
 
 \section download Download
 
-Latest Release (21 August 2007): <A href="http://music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.0.2.tar.gz">Version 4.0.2</A>
+Latest Release (7 December 2007): <A href="http://music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.0.3.tar.gz">Version 4.0.3</A>
 
 \section documentation Documentation Links
 

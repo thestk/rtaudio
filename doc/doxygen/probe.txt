@@ -4,7 +4,7 @@ A programmer may wish to query the available audio device capabilities before de
 
 \code
 
-// probe.cpp
+// audioprobe.cpp
 
 #include <iostream>
 #include "RtAudio.h"

@@ -119,18 +119,17 @@ int main( int argc, char *argv[] )
   RtAudio dac;
   if ( dac.getDeviceCount() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
-    exit( 0 );
+    exit( 1 );
   }
 
-  channels = (unsigned int) atoi(argv[1]);
-  fs = (unsigned int) atoi(argv[2]);
+  channels = (unsigned int) atoi( argv[1] );
+  fs = (unsigned int) atoi( argv[2] );
   if ( argc > 3 )
-    device = (unsigned int) atoi(argv[3]);
+    device = (unsigned int) atoi( argv[3] );
   if ( argc > 4 )
-    offset = (unsigned int) atoi(argv[4]);
+    offset = (unsigned int) atoi( argv[4] );
 
-  double *data;
-  data = (double *) calloc( channels, sizeof( double ) );
+  double *data = (double *) calloc( channels, sizeof( double ) );
 
   // Let RtAudio print messages to stderr.
   dac.showWarnings( true );
@@ -141,7 +140,6 @@ int main( int argc, char *argv[] )
   oParams.deviceId = device;
   oParams.nChannels = channels;
   oParams.firstChannel = offset;
-
 
   options.flags |= RTAUDIO_HOG_DEVICE;
 #if !defined( USE_INTERLEAVED )

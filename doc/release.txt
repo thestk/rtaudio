@@ -2,6 +2,12 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2007.
 
+v4.0.3: (7 December 2007)
+- added support for MinGW compiler to configure script
+- a few MinGW-related changes to RtAudio.cpp
+- renamed test program probe.cpp to audioprobe.cpp
+- moved various header files into single "include" directory and updated VC++ project files
+
 v4.0.2: (21 August 2007)
 - fix to RtError::WARNING typo in RtAudio.h (RtApiDummy)
 - removed "+1"s in RtApiCore c++ append when getting device name

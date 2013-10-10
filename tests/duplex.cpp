@@ -56,7 +56,7 @@ int inout( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
   return 0;
 }
 
-int main(int argc, char *argv[])
+int main( int argc, char *argv[] )
 {
   unsigned int channels, fs, bufferBytes, oDevice = 0, iDevice = 0, iOffset = 0, oOffset = 0;
 
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
   RtAudio adac;
   if ( adac.getDeviceCount() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
-    exit( 0 );
+    exit( 1 );
   }
 
   channels = (unsigned int) atoi(argv[1]);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
   }
   catch ( RtError& e ) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
-    exit( 0 );
+    exit( 1 );
   }
 
   bufferBytes = bufferFrames * channels * sizeof( MY_TYPE );

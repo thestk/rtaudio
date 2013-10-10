@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="probe" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="audioprobe" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=probe - Win32 Debug
+CFG=audioprobe - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "probe.mak".
+!MESSAGE NMAKE /f "audioprobe.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "probe.mak" CFG="probe - Win32 Debug"
+!MESSAGE NMAKE /f "audioprobe.mak" CFG="audioprobe - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "probe - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "probe - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "audioprobe - Win32 Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "audioprobe - Win32 Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 
 # Begin Project
@@ -28,12 +28,12 @@ CFG=probe - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "probe - Win32 Release"
+!IF  "$(CFG)" == "audioprobe - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir "probe___Win32_Release"
-# PROP BASE Intermediate_Dir "probe___Win32_Release"
+# PROP BASE Output_Dir "audioprobe___Win32_Release"
+# PROP BASE Intermediate_Dir "audioprobe___Win32_Release"
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_DS__" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /I "../../include" /D "NDEBUG" /D "__WINDOW_DS__" /D "__WINDOWS_DS__" /D "__WINDOWS_ASIO__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -52,12 +52,12 @@ LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
 # ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib dsound.lib /nologo /subsystem:console /machine:I386
 
-!ELSEIF  "$(CFG)" == "probe - Win32 Debug"
+!ELSEIF  "$(CFG)" == "audioprobe - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
-# PROP BASE Output_Dir "probe___Win32_Debug"
-# PROP BASE Intermediate_Dir "probe___Win32_Debug"
+# PROP BASE Output_Dir "audioprobe___Win32_Debug"
+# PROP BASE Intermediate_Dir "audioprobe___Win32_Debug"
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "../../" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_DS__" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "../../" /I "../../include" /D "_DEBUG" /D "__WINDOWS_DS__" /D "__WINDOWS_ASIO__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -80,30 +80,30 @@ LINK32=link.exe
 
 # Begin Target
 
-# Name "probe - Win32 Release"
-# Name "probe - Win32 Debug"
+# Name "audioprobe - Win32 Release"
+# Name "audioprobe - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=..\..\asio\asio.cpp
+SOURCE=..\..\include\asio.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\asiodrivers.cpp
+SOURCE=..\..\include\asiodrivers.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\asiolist.cpp
+SOURCE=..\..\include\asiolist.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\iasiothiscallresolver.cpp
+SOURCE=..\audioprobe.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\probe.cpp
+SOURCE=..\..\include\iasiothiscallresolver.cpp
 # End Source File
 # Begin Source File
 
@@ -115,35 +115,35 @@ SOURCE=..\..\RtAudio.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=..\..\asio\asio.h
+SOURCE=..\..\include\asio.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\asiodrivers.h
+SOURCE=..\..\include\asiodrivers.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\asiodrvr.h
+SOURCE=..\..\include\asiodrvr.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\asiolist.h
+SOURCE=..\..\include\asiolist.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\asiosys.h
+SOURCE=..\..\include\asiosys.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\ginclude.h
+SOURCE=..\..\include\ginclude.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\iasiodrv.h
+SOURCE=..\..\include\iasiodrv.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\asio\iasiothiscallresolver.h
+SOURCE=..\..\include\iasiothiscallresolver.h
 # End Source File
 # Begin Source File
 

@@ -96,7 +96,7 @@ int main( int argc, char *argv[] )
   RtAudio adc;
   if ( adc.getDeviceCount() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
-    exit( 0 );
+    exit( 1 );
   }
 
   channels = (unsigned int) atoi( argv[1] );
@@ -159,7 +159,7 @@ int main( int argc, char *argv[] )
   // Now write the entire data to the file.
   fd = fopen( "record.raw", "wb" );
   fwrite( data.buffer, sizeof( MY_TYPE ), data.totalFrames * channels, fd );
-  fclose(fd);
+  fclose( fd );
 
  cleanup:
   if ( adc.isStreamOpen() ) adc.closeStream();
