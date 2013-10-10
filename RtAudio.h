@@ -37,7 +37,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 3.0.2 (14 October 2005)
+// RtAudio: Version 3.0.3 (18 November 2005)
 
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
@@ -552,6 +552,7 @@ public:
   private:
 
   void initialize(void);
+  bool primeOutputBuffer();
   void probeDeviceInfo( RtApiDevice *info );
   bool probeDeviceOpen( int device, StreamMode mode, int channels, 
                         int sampleRate, RtAudioFormat format,

@@ -37,13 +37,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 3.0.2 (14 October 2005)
-
-// Modified by Robin Davies, 1 October 2005
-// - Improvements to DirectX pointer chasing. 
-// - Backdoor RtDsStatistics hook provides DirectX performance information.
-// - Bug fix for non-power-of-two Asio granularity used by Edirol PCR-A30.
-// - Auto-call CoInitialize for DSOUND and ASIO platforms.
+// RtAudio: Version 3.0.3 (18 November 2005)
 
 #include "RtAudio.h"
 #include <iostream>
@@ -2742,11 +2736,35 @@ void RtApiJack :: initialize(void)
   if ( (client = jack_client_new( "RtApiJack" )) == 0)
     return;
 
-  RtApiDevice device;
-  // Determine the name of the device.
-  device.name = "Jack Server";
-  devices_.push_back(device);
-  nDevices_++;
+  /*
+    RtApiDevice device;
+    // Determine the name of the device.
+    device.name = "Jack Server";
+    devices_.push_back(device);
+    nDevices_++;
+  */
+  const char **ports;
+  std::string port, prevPort;
+  unsigned int nChannels = 0;
+  ports = jack_get_ports( client, NULL, NULL, 0 );
+  if ( ports ) {
+    port = (char *) ports[ nChannels ];
+    unsigned int colonPos = 0;
+    do {
+      port = (char *) ports[ nChannels ];
+      if ( (colonPos = port.find(":")) != std::string::npos ) {
+        port = port.substr( 0, colonPos+1 );
+        if ( port != prevPort ) {
+          RtApiDevice device;
+          device.name = port;
+          devices_.push_back( device );
+          nDevices_++;
+          prevPort = port;
+        }
+      }
+    } while ( ports[++nChannels] );
+    free( ports );
+  }
 
   jack_client_close(client);
 }
@@ -2755,7 +2773,7 @@ void RtApiJack :: probeDeviceInfo(RtApiDevice *info)
 {
   // Look for jack server and try to become a client.
   jack_client_t *client;
-  if ( (client = jack_client_new( "RtApiJack" )) == 0) {
+  if ( (client = jack_client_new( "RtApiJack_Probe" )) == 0) {
     sprintf(message_, "RtApiJack: error connecting to Linux Jack server in probeDeviceInfo() (jack: %s)!",
             jackmsg.c_str());
     error(RtError::WARNING);
@@ -2771,7 +2789,7 @@ void RtApiJack :: probeDeviceInfo(RtApiDevice *info)
   const char **ports;
   char *port;
   unsigned int nChannels = 0;
-  ports = jack_get_ports( client, NULL, NULL, JackPortIsInput );
+  ports = jack_get_ports( client, info->name.c_str(), NULL, JackPortIsInput );
   if ( ports ) {
     port = (char *) ports[nChannels];
     while ( port )
@@ -2783,7 +2801,7 @@ void RtApiJack :: probeDeviceInfo(RtApiDevice *info)
 
   // Jack "output ports" equal RtAudio input channels.
   nChannels = 0;
-  ports = jack_get_ports( client, NULL, NULL, JackPortIsOutput );
+  ports = jack_get_ports( client, info->name.c_str(), NULL, JackPortIsOutput );
   if ( ports ) {
     port = (char *) ports[nChannels];
     while ( port )
@@ -3178,7 +3196,7 @@ void RtApiJack :: startStream()
   int result;
   // Get the list of available ports.
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
-    ports = jack_get_ports(handle->client, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
+    ports = jack_get_ports(handle->client, devices_[stream_.device[0]].name.c_str(), NULL, JackPortIsInput);
     if ( ports == NULL) {
       sprintf(message_, "RtApiJack: error determining available jack input ports!");
       error(RtError::SYSTEM_ERROR);
@@ -3201,7 +3219,7 @@ void RtApiJack :: startStream()
   }
 
   if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
-    ports = jack_get_ports( handle->client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput );
+    ports = jack_get_ports( handle->client, devices_[stream_.device[1]].name.c_str(), NULL, JackPortIsOutput );
     if ( ports == NULL) {
       sprintf(message_, "RtApiJack: error determining available jack output ports!");
       error(RtError::SYSTEM_ERROR);
@@ -4209,6 +4227,72 @@ void RtApiAlsa :: closeStream()
   stream_.mode = UNINITIALIZED;
 }
 
+// Pump a bunch of zeros into the output buffer.  This is needed only when we
+// are doing duplex operations.
+bool RtApiAlsa :: primeOutputBuffer()
+{
+  int err;
+  char *buffer;
+  int channels;
+  snd_pcm_t **handle;
+  RtAudioFormat format;
+  AlsaHandle *apiInfo = (AlsaHandle *) stream_.apiHandle;
+  handle = (snd_pcm_t **) apiInfo->handles;
+  
+  if (stream_.mode == DUPLEX) {
+
+    // Setup parameters and do buffer conversion if necessary.
+    if ( stream_.doConvertBuffer[0] ) {
+      convertBuffer( stream_.deviceBuffer, apiInfo->tempBuffer, stream_.convertInfo[0] );
+      channels = stream_.nDeviceChannels[0];
+      format = stream_.deviceFormat[0];
+    }
+    else {
+      channels = stream_.nUserChannels[0];
+      format = stream_.userFormat;
+    }
+
+    buffer = new char[stream_.bufferSize * formatBytes(format) * channels];
+    bzero(buffer, stream_.bufferSize * formatBytes(format) * channels);
+    
+    for (int i=0; i<stream_.nBuffers; i++) {
+      // Write samples to device in interleaved/non-interleaved format.
+      if (stream_.deInterleave[0]) {
+        void *bufs[channels];
+        size_t offset = stream_.bufferSize * formatBytes(format);
+        for (int i=0; i<channels; i++)
+          bufs[i] = (void *) (buffer + (i * offset));
+        err = snd_pcm_writen(handle[0], bufs, stream_.bufferSize);
+      }
+      else
+        err = snd_pcm_writei(handle[0], buffer, stream_.bufferSize);
+  
+      if (err < stream_.bufferSize) {
+        // Either an error or underrun occured.
+        if (err == -EPIPE) {
+          snd_pcm_state_t state = snd_pcm_state(handle[0]);
+          if (state == SND_PCM_STATE_XRUN) {
+            sprintf(message_, "RtApiAlsa: underrun detected while priming output buffer.");
+            return false;
+          }
+          else {
+            sprintf(message_, "RtApiAlsa: primeOutputBuffer() error, current state is %s.",
+                    snd_pcm_state_name(state));
+            return false;
+          }
+        }
+        else {
+          sprintf(message_, "RtApiAlsa: audio write error for device (%s): %s.",
+                  devices_[stream_.device[0]].name.c_str(), snd_strerror(err));
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
 void RtApiAlsa :: startStream()
 {
   // This method calls snd_pcm_prepare if the device isn't already in that state.
@@ -4232,6 +4316,11 @@ void RtApiAlsa :: startStream()
         MUTEX_UNLOCK(&stream_.mutex);
         error(RtError::DRIVER_ERROR);
       }
+      // Reprime output buffer if needed
+      if ( (stream_.mode == DUPLEX) && ( !primeOutputBuffer() ) ) {
+        MUTEX_UNLOCK(&stream_.mutex);
+        error(RtError::DRIVER_ERROR);
+      }
     }
   }
 
@@ -4246,6 +4335,11 @@ void RtApiAlsa :: startStream()
         error(RtError::DRIVER_ERROR);
       }
     }
+  }
+
+  if ( (stream_.mode == DUPLEX) && ( !primeOutputBuffer() ) ) {
+    MUTEX_UNLOCK(&stream_.mutex);
+    error(RtError::DRIVER_ERROR);
   }
   stream_.state = STREAM_RUNNING;
 
@@ -4438,6 +4532,11 @@ void RtApiAlsa :: tickStream()
           if (err < 0) {
             sprintf(message_, "RtApiAlsa: error preparing handle after overrun: %s.",
                     snd_strerror(err));
+            MUTEX_UNLOCK(&stream_.mutex);
+            error(RtError::DRIVER_ERROR);
+          }
+          // Reprime output buffer if needed.
+          if ( (stream_.mode == DUPLEX) && ( !primeOutputBuffer() ) ) {
             MUTEX_UNLOCK(&stream_.mutex);
             error(RtError::DRIVER_ERROR);
           }
@@ -4639,6 +4738,7 @@ extern "C" void *alsaCallbackHandler(void *ptr)
 
 #include "asio/asiosys.h"
 #include "asio/asio.h"
+#include "asio/iasiothiscallresolver.h"
 #include "asio/asiodrivers.h"
 #include <math.h>
 
@@ -4656,7 +4756,7 @@ struct AsioHandle {
     :stopStream(false), bufferInfos(0) {}
 };
 
-static const char*GetAsioErrorString(ASIOError result)
+static const char* GetAsioErrorString( ASIOError result )
 {
   struct Messages 
   {
@@ -4674,10 +4774,9 @@ static const char*GetAsioErrorString(ASIOError result)
     {   ASE_NoMemory,           "Not enough memory to complete the request." }
   };
 
-  for (int i = 0; i < sizeof(m)/sizeof(m[0]); ++i)
-  {
+  for (unsigned int i = 0; i < sizeof(m)/sizeof(m[0]); ++i)
     if (m[i].value == result) return m[i].message;
-  }
+
   return "Unknown error.";
 }
 
@@ -4695,11 +4794,9 @@ RtApiAsio :: RtApiAsio()
 RtApiAsio :: ~RtApiAsio()
 {
   if ( stream_.mode != UNINITIALIZED ) closeStream();
-  if ( coInitialized )
-  {
-    CoUninitialize();
-  }
 
+  if ( coInitialized )
+    CoUninitialize();
 }
 
 void RtApiAsio :: initialize(void)
@@ -4709,8 +4806,7 @@ void RtApiAsio :: initialize(void)
   // for appartment threading (in which case, CoInitilialize will return S_FALSE here).
   coInitialized = false;
   HRESULT hr = CoInitialize(NULL); 
-  if (FAILED(hr))
-  {
+  if ( FAILED(hr) ) {
     sprintf(message_,"RtApiAsio: ASIO requires a single-threaded appartment. Call CoInitializeEx(0,COINIT_APARTMENTTHREADED)");
   }
   coInitialized = true;
@@ -5573,28 +5669,23 @@ void RtApiAsio :: callbackEvent(long bufferIndex)
 static inline DWORD dsPointerDifference(DWORD laterPointer,DWORD earlierPointer,DWORD bufferSize)
 {
   if (laterPointer > earlierPointer)
-  {
     return laterPointer-earlierPointer;
-  } else
-  {
+  else
     return laterPointer-earlierPointer+bufferSize;
-  }
 }
 
 static inline DWORD dsPointerBetween(DWORD pointer, DWORD laterPointer,DWORD earlierPointer, DWORD bufferSize)
 {
   if (pointer > bufferSize) pointer -= bufferSize;
+
   if (laterPointer < earlierPointer)
-  {
     laterPointer += bufferSize;
-  }
+
   if (pointer < earlierPointer)
-  {
     pointer += bufferSize;
-  }
+
   return pointer >= earlierPointer && pointer < laterPointer;
 }
-
 
 #undef GENERATE_DEBUG_LOG // Define this to generate a debug timing log file in c:/rtaudiolog.txt"
 #ifdef GENERATE_DEBUG_LOG
@@ -5637,38 +5728,34 @@ RtApiDs::RtDsStatistics RtApiDs::getDsStatistics()
   
 
   if (s.inputFrameSize != 0)
-  {
     s.latency += s.readDeviceSafeLeadBytes*1.0/s.inputFrameSize / s.sampleRate;
-  }
+
   if (s.outputFrameSize != 0)
-  {
-    s.latency += 
-      (s.writeDeviceSafeLeadBytes+ s.writeDeviceBufferLeadBytes)*1.0/s.outputFrameSize / s.sampleRate;
-  }
+    s.latency += (s.writeDeviceSafeLeadBytes+ s.writeDeviceBufferLeadBytes)*1.0/s.outputFrameSize / s.sampleRate;
+
   return s;
 }
-
 
 // Declarations for utility functions, callbacks, and structures
 // specific to the DirectSound implementation.
 static bool CALLBACK deviceCountCallback(LPGUID lpguid,
-                                         LPCSTR lpcstrDescription,
-                                         LPCSTR lpcstrModule,
+                                         LPCTSTR description,
+                                         LPCTSTR module,
                                          LPVOID lpContext);
 
 static bool CALLBACK deviceInfoCallback(LPGUID lpguid,
-                                        LPCSTR lpcstrDescription,
-                                        LPCSTR lpcstrModule,
+                                        LPCTSTR description,
+                                        LPCTSTR module,
                                         LPVOID lpContext);
 
 static bool CALLBACK defaultDeviceCallback(LPGUID lpguid,
-                                           LPCSTR lpcstrDescription,
-                                           LPCSTR lpcstrModule,
+                                           LPCTSTR description,
+                                           LPCTSTR module,
                                            LPVOID lpContext);
 
 static bool CALLBACK deviceIdCallback(LPGUID lpguid,
-                                      LPCSTR lpcstrDescription,
-                                      LPCSTR lpcstrModule,
+                                      LPCTSTR description,
+                                      LPCTSTR module,
                                       LPVOID lpContext);
 
 static char* getErrorString(int code);
@@ -5676,7 +5763,7 @@ static char* getErrorString(int code);
 extern "C" unsigned __stdcall callbackHandler(void *ptr);
 
 struct enum_info {
-  char name[64];
+  std::string name;
   LPGUID id;
   bool isInput;
   bool isValid;
@@ -5684,13 +5771,12 @@ struct enum_info {
 
 RtApiDs :: RtApiDs()
 {
-  // Dsound will run both-threaded. If CoInitialize fails, then just accept whatever the mainline 
-  // chose for a threading model.
+  // Dsound will run both-threaded. If CoInitialize fails, then just
+  // accept whatever the mainline chose for a threading model.
   coInitialized = false;
   HRESULT hr = CoInitialize(NULL);
-  if (!FAILED(hr)) {
+  if ( !FAILED(hr) )
     coInitialized = true;
-  }
 
   this->initialize();
 
@@ -5703,16 +5789,14 @@ RtApiDs :: RtApiDs()
 RtApiDs :: ~RtApiDs()
 {
   if (coInitialized)
-  {
     CoUninitialize(); // balanced call.
-  }
+
   if ( stream_.mode != UNINITIALIZED ) closeStream();
 }
 
 int RtApiDs :: getDefaultInputDevice(void)
 {
   enum_info info;
-  info.name[0] = '\0';
 
   // Enumerate through devices to find the default output.
   HRESULT result = DirectSoundCaptureEnumerate((LPDSENUMCALLBACK)defaultDeviceCallback, &info);
@@ -5724,9 +5808,8 @@ int RtApiDs :: getDefaultInputDevice(void)
   }
 
   for ( int i=0; i<nDevices_; i++ ) {
-    if ( strncmp( info.name, devices_[i].name.c_str(), 64 ) == 0 ) return i;
+    if ( info.name == devices_[i].name ) return i;
   }
-
 
   return 0;
 }
@@ -5746,7 +5829,7 @@ int RtApiDs :: getDefaultOutputDevice(void)
   }
 
   for ( int i=0; i<nDevices_; i++ )
-    if ( strncmp( info.name, devices_[i].name.c_str(), 64 ) == 0 ) return i;
+    if ( info.name == devices_[i].name ) return i;
 
   return 0;
 }
@@ -5778,7 +5861,6 @@ void RtApiDs :: initialize(void)
 
   std::vector<enum_info> info(count);
   for (i=0; i<count; i++) {
-    info[i].name[0] = '\0';
     if (i < outs) info[i].isInput = false;
     else info[i].isInput = true;
   }
@@ -5804,11 +5886,10 @@ void RtApiDs :: initialize(void)
   // opened, they report < 1 supported channels, or they report no
   // supported data (capture only).
   RtApiDevice device;
-  int index = 0;
   for (i=0; i<count; i++) {
     if ( info[i].isValid ) {
       device.name.erase();
-      device.name.append( (const char *)info[i].name, strlen(info[i].name)+1);
+      device.name = info[i].name;
       devices_.push_back(device);
     }
   }
@@ -5820,7 +5901,7 @@ void RtApiDs :: initialize(void)
 void RtApiDs :: probeDeviceInfo(RtApiDevice *info)
 {
   enum_info dsinfo;
-  strncpy( dsinfo.name, info->name.c_str(), 64 );
+  dsinfo.name = info->name;
   dsinfo.isValid = false;
 
   // Enumerate through input devices to find the id (if it exists).
@@ -6073,32 +6154,25 @@ bool RtApiDs :: probeDeviceOpen( int device, StreamMode mode, int channels,
   waveFormat.nBlockAlign = waveFormat.nChannels * waveFormat.wBitsPerSample / 8;
   waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
 
-  // Determine the device buffer size. By default, 32k, 
-  // but we will grow it to make allowances for very large softare buffer sizes.
+  // Determine the device buffer size. By default, 32k, but we will
+  // grow it to make allowances for very large software buffer sizes.
   DWORD dsBufferSize = 0;
   DWORD dsPointerLeadTime = 0;
 
   buffer_size = MINIMUM_DEVICE_BUFFER_SIZE; // sound cards will always *knock wood* support this
 
-
-  // poisonously large buffer lead time? Then increase the device buffer size accordingly.
-  while (dsPointerLeadTime *2U > (DWORD)buffer_size)
-  {
-    buffer_size *= 2;
-  }
-
-
-
   enum_info dsinfo;
   void *ohandle = 0, *bhandle = 0;
-  strncpy( dsinfo.name, devices_[device].name.c_str(), 64 );
+  //  strncpy( dsinfo.name, devices_[device].name.c_str(), 64 );
+  dsinfo.name = devices_[device].name;
   dsinfo.isValid = false;
   if ( mode == OUTPUT ) {
-    dsPointerLeadTime = (numberOfBuffers) * 
-      (*bufferSize) * 
-      (waveFormat.wBitsPerSample / 8)
-      *channels;
 
+    dsPointerLeadTime = numberOfBuffers * (*bufferSize) * (waveFormat.wBitsPerSample / 8) * channels;
+
+    // If the user wants an even bigger buffer, increase the device buffer size accordingly.
+    while ( dsPointerLeadTime * 2U > (DWORD)buffer_size )
+      buffer_size *= 2;
 
     if ( devices_[device].maxOutputChannels < channels ) {
       sprintf(message_, "RtApiDs: requested channels (%d) > than supported (%d) by device (%s).",
@@ -6595,17 +6669,15 @@ void RtApiDs :: startStream()
   verifyStream();
   if (stream_.state == STREAM_RUNNING) return;
 
-
-  // increase scheduler frequency on lesser windows (a side-effect of increasing timer accuracy.
-  // on greater windows (Win2K or later), this is already in effect.
+  // Increase scheduler frequency on lesser windows (a side-effect of
+  // increasing timer accuracy).  On greater windows (Win2K or later),
+  // this is already in effect.
 
   MUTEX_LOCK(&stream_.mutex);
-
   
   DsHandle *handles = (DsHandle *) stream_.apiHandle;
 
   timeBeginPeriod(1); 
-
 
   memset(&statistics,0,sizeof(statistics));
   statistics.sampleRate = stream_.sampleRate;
@@ -6614,8 +6686,7 @@ void RtApiDs :: startStream()
   buffersRolling = false;
   duplexPrerollBytes = 0;
 
-  if (stream_.mode == DUPLEX)
-  {
+  if (stream_.mode == DUPLEX) {
     // 0.5 seconds of silence in DUPLEX mode while the devices spin up and synchronize.
     duplexPrerollBytes = (int)(0.5*stream_.sampleRate*formatBytes( stream_.deviceFormat[1])*stream_.nDeviceChannels[1]);
   }
@@ -6629,9 +6700,8 @@ void RtApiDs :: startStream()
       statistics.outputFrameSize = formatBytes( stream_.deviceFormat[0])
                                   *stream_.nDeviceChannels[0];
 
-
     LPDIRECTSOUNDBUFFER buffer = (LPDIRECTSOUNDBUFFER) handles[0].buffer;
-    result = buffer->Play(0, 0, DSBPLAY_LOOPING );
+    result = buffer->Play( 0, 0, DSBPLAY_LOOPING );
     if ( FAILED(result) ) {
       sprintf(message_, "RtApiDs: Unable to start buffer (%s): %s.",
               devices_[stream_.device[0]].name.c_str(), getErrorString(result));
@@ -6661,34 +6731,30 @@ void RtApiDs :: stopStream()
   verifyStream();
   if (stream_.state == STREAM_STOPPED) return;
 
-
   // Change the state before the lock to improve shutdown response
   // when using a callback.
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK(&stream_.mutex);
 
-
   timeEndPeriod(1); // revert to normal scheduler frequency on lesser windows.
 
 #ifdef GENERATE_DEBUG_LOG
-  // write the timing log to a .TSV file for analysis in Excel.
+  // Write the timing log to a .TSV file for analysis in Excel.
   unlink("c:/rtaudiolog.txt");
   std::ofstream os("c:/rtaudiolog.txt");
   os << "writeTime\treadDelay\tnextWritePointer\tnextReadPointer\tcurrentWritePointer\tsafeWritePointer\tcurrentReadPointer\tsafeReadPointer" << std::endl;
-  for (int i = 0; i < currentDebugLogEntry ; ++i)
-  {
+  for (int i = 0; i < currentDebugLogEntry ; ++i) {
     TTickRecord &r = debugLog[i];
-    os 
-      << r.writeTime-debugLog[0].writeTime << "\t" << (r.readTime-r.writeTime) << "\t"
-      << r.nextWritePointer % BUFFER_SIZE << "\t" << r.nextReadPointer % BUFFER_SIZE 
-      << "\t" << r.currentWritePointer % BUFFER_SIZE << "\t" << r.safeWritePointer % BUFFER_SIZE 
-      << "\t" << r.currentReadPointer % BUFFER_SIZE << "\t" << r.safeReadPointer % BUFFER_SIZE << std::endl;
+    os << r.writeTime-debugLog[0].writeTime << "\t" << (r.readTime-r.writeTime) << "\t"
+       << r.nextWritePointer % BUFFER_SIZE << "\t" << r.nextReadPointer % BUFFER_SIZE 
+       << "\t" << r.currentWritePointer % BUFFER_SIZE << "\t" << r.safeWritePointer % BUFFER_SIZE 
+       << "\t" << r.currentReadPointer % BUFFER_SIZE << "\t" << r.safeReadPointer % BUFFER_SIZE << std::endl;
   }
 #endif
 
   // There is no specific DirectSound API call to "drain" a buffer
-  // before stopping.  We can hack this for playback by writing zeroes
-  // for another bufferSize * nBuffers frames.  For capture, the
+  // before stopping.  We can hack this for playback by writing
+  // buffers of zeroes over the entire buffer.  For capture, the
   // concept is less clear so we'll repeat what we do in the
   // abortStream() case.
   HRESULT result;
@@ -6701,27 +6767,26 @@ void RtApiDs :: stopStream()
   if (stream_.mode == OUTPUT || stream_.mode == DUPLEX) {
 
     DWORD currentPos, safePos;
-    long buffer_bytes = stream_.bufferSize * stream_.nDeviceChannels[0]
-                      * formatBytes(stream_.deviceFormat[0]);
-
+    long buffer_bytes = stream_.bufferSize * stream_.nDeviceChannels[0] * formatBytes(stream_.deviceFormat[0]);
 
     LPDIRECTSOUNDBUFFER dsBuffer = (LPDIRECTSOUNDBUFFER) handles[0].buffer;
-    long nextWritePos = handles[0].bufferPointer;
+    DWORD nextWritePos = handles[0].bufferPointer;
     dsBufferSize = handles[0].dsBufferSize;
+    DWORD dsBytesWritten = 0;
 
-    // Write zeroes for nBuffer counts.
-    for (int i=0; i<stream_.nBuffers; i++) {
+    // Write zeroes for at least dsBufferSize bytes. 
+    while ( dsBytesWritten < dsBufferSize ) {
 
       // Find out where the read and "safe write" pointers are.
-      result = dsBuffer->GetCurrentPosition(&currentPos, &safePos);
+      result = dsBuffer->GetCurrentPosition( &currentPos, &safePos );
       if ( FAILED(result) ) {
         sprintf(message_, "RtApiDs: Unable to get current position (%s): %s.",
                 devices_[stream_.device[0]].name.c_str(), getErrorString(result));
         error(RtError::DRIVER_ERROR);
       }
-      // Chase nextWritePos.
 
-      if ( currentPos < (DWORD)nextWritePos ) currentPos += dsBufferSize; // unwrap offset
+      // Chase nextWritePosition.
+      if ( currentPos < nextWritePos ) currentPos += dsBufferSize; // unwrap offset
       DWORD endWrite = nextWritePos + buffer_bytes;
 
       // Check whether the entire write region is behind the play pointer.
@@ -6738,11 +6803,12 @@ void RtApiDs :: stopStream()
                   devices_[stream_.device[0]].name.c_str(), getErrorString(result));
           error(RtError::DRIVER_ERROR);
         }
+
         if ( currentPos < (DWORD)nextWritePos ) currentPos += dsBufferSize; // unwrap offset
       }
 
       // Lock free space in the buffer
-      result = dsBuffer->Lock (nextWritePos, buffer_bytes, &buffer1,
+      result = dsBuffer->Lock( nextWritePos, buffer_bytes, &buffer1,
                                &bufferSize1, &buffer2, &bufferSize2, 0);
       if ( FAILED(result) ) {
         sprintf(message_, "RtApiDs: Unable to lock buffer during playback (%s): %s.",
@@ -6751,11 +6817,11 @@ void RtApiDs :: stopStream()
       }
 
       // Zero the free space
-      ZeroMemory(buffer1, bufferSize1);
-      if (buffer2 != NULL) ZeroMemory(buffer2, bufferSize2);
+      ZeroMemory( buffer1, bufferSize1 );
+      if (buffer2 != NULL) ZeroMemory( buffer2, bufferSize2 );
 
       // Update our buffer offset and unlock sound buffer
-      dsBuffer->Unlock (buffer1, bufferSize1, buffer2, bufferSize2);
+      dsBuffer->Unlock( buffer1, bufferSize1, buffer2, bufferSize2 );
       if ( FAILED(result) ) {
         sprintf(message_, "RtApiDs: Unable to unlock buffer during playback (%s): %s.",
                 devices_[stream_.device[0]].name.c_str(), getErrorString(result));
@@ -6763,6 +6829,15 @@ void RtApiDs :: stopStream()
       }
       nextWritePos = (nextWritePos + bufferSize1 + bufferSize2) % dsBufferSize;
       handles[0].bufferPointer = nextWritePos;
+      dsBytesWritten += buffer_bytes;
+    }
+
+    // OK, now stop the buffer.
+    result = dsBuffer->Stop();
+    if ( FAILED(result) ) {
+      sprintf(message_, "RtApiDs: Unable to stop buffer (%s): %s",
+              devices_[stream_.device[0]].name.c_str(), getErrorString(result));
+      error(RtError::DRIVER_ERROR);
     }
 
     // If we play again, start at the beginning of the buffer.
@@ -6820,6 +6895,8 @@ void RtApiDs :: abortStream()
   // when using a callback.
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK(&stream_.mutex);
+
+  timeEndPeriod(1); // revert to normal scheduler frequency on lesser windows.
 
   HRESULT result;
   long dsBufferSize;
@@ -7001,6 +7078,7 @@ void RtApiDs :: tickStream()
 #ifdef GENERATE_DEBUG_LOG
   DWORD writeTime, readTime;
 #endif
+
   LPVOID buffer1 = NULL;
   LPVOID buffer2 = NULL;
   DWORD bufferSize1 = 0;
@@ -7010,28 +7088,28 @@ void RtApiDs :: tickStream()
   long buffer_bytes;
   DsHandle *handles = (DsHandle *) stream_.apiHandle;
 
-  if (stream_.mode == DUPLEX && !buffersRolling)
-  {
+  if (stream_.mode == DUPLEX && !buffersRolling) {
     assert(handles[0].dsBufferSize == handles[1].dsBufferSize);
 
-    // it takes a while for the devices to get rolling. As a result, there's 
-    // no guarantee that the capture and write device pointers will move in lockstep.
-    // Wait here for both devices to start rolling, and then set our buffer pointers accordingly.
-    // e.g. Crystal Drivers: the capture buffer starts up 5700 to 9600 bytes later than the write
-    // buffer.
+    // It takes a while for the devices to get rolling. As a result,
+    // there's no guarantee that the capture and write device pointers
+    // will move in lockstep.  Wait here for both devices to start
+    // rolling, and then set our buffer pointers accordingly.
+    // e.g. Crystal Drivers: the capture buffer starts up 5700 to 9600
+    // bytes later than the write buffer.
 
-    // Stub: a serious risk of having a pre-emptive scheduling round take place between 
-    // the two GetCurrentPosition calls... but I'm really not sure how to solve the problem.
-    // Temporarily boost to Realtime priority, maybe; but I'm not sure what priority the 
-    // directsound service threads run at. We *should* be roughly within a ms or so of correct.
+    // Stub: a serious risk of having a pre-emptive scheduling round
+    // take place between the two GetCurrentPosition calls... but I'm
+    // really not sure how to solve the problem.  Temporarily boost to
+    // Realtime priority, maybe; but I'm not sure what priority the
+    // directsound service threads run at. We *should* be roughly
+    // within a ms or so of correct.
 
     LPDIRECTSOUNDBUFFER dsWriteBuffer = (LPDIRECTSOUNDBUFFER) handles[0].buffer;
     LPDIRECTSOUNDCAPTUREBUFFER dsCaptureBuffer = (LPDIRECTSOUNDCAPTUREBUFFER) handles[1].buffer;
 
-
     DWORD initialWritePos, initialSafeWritePos;
     DWORD initialReadPos, initialSafeReadPos;;
-
 
     result = dsWriteBuffer->GetCurrentPosition(&initialWritePos, &initialSafeWritePos);
     if ( FAILED(result) ) {
@@ -7045,8 +7123,7 @@ void RtApiDs :: tickStream()
               devices_[stream_.device[1]].name.c_str(), getErrorString(result));
       error(RtError::DRIVER_ERROR);
     }
-    while (true)
-    {
+    while (true) {
       result = dsWriteBuffer->GetCurrentPosition(&currentWritePos, &safeWritePos);
       if ( FAILED(result) ) {
         sprintf(message_, "RtApiDs: Unable to get current position (%s): %s.",
@@ -7059,16 +7136,14 @@ void RtApiDs :: tickStream()
                 devices_[stream_.device[1]].name.c_str(), getErrorString(result));
         error(RtError::DRIVER_ERROR);
       }
-      if (safeWritePos != initialSafeWritePos && safeReadPos != initialSafeReadPos)
-      {
+      if (safeWritePos != initialSafeWritePos && safeReadPos != initialSafeReadPos) {
         break;
       }
       Sleep(1);
     }
 
-    assert(handles[0].dsBufferSize == handles[1].dsBufferSize);
+    assert( handles[0].dsBufferSize == handles[1].dsBufferSize );
 
-    UINT writeBufferLead = (safeWritePos-safeReadPos + handles[0].dsBufferSize) % handles[0].dsBufferSize;
     buffersRolling = true;
     handles[0].bufferPointer = (safeWritePos + handles[0].dsPointerLeadTime);
     handles[1].bufferPointer = safeReadPos;
@@ -7104,8 +7179,7 @@ void RtApiDs :: tickStream()
 	  nextWritePos = handles[0].bufferPointer;
 
     DWORD endWrite;
-    while (true)
-    {
+    while ( true ) {
       // Find out where the read and "safe write" pointers are.
       result = dsBuffer->GetCurrentPosition(&currentWritePos, &safeWritePos);
       if ( FAILED(result) ) {
@@ -7115,16 +7189,11 @@ void RtApiDs :: tickStream()
       }
 
       leadPos = safeWritePos + handles[0].dsPointerLeadTime;
-      if (leadPos > dsBufferSize) {
-          leadPos -= dsBufferSize;
-      }
+      if ( leadPos > dsBufferSize ) leadPos -= dsBufferSize;
       if ( leadPos < nextWritePos ) leadPos += dsBufferSize; // unwrap offset
-
-
       endWrite = nextWritePos + buffer_bytes;
 
-    // Check whether the entire write region is behind the play pointer.
-
+      // Check whether the entire write region is behind the play pointer.
       if ( leadPos >= endWrite ) break;
 
       // If we are here, then we must wait until the play pointer gets
@@ -7139,28 +7208,24 @@ void RtApiDs :: tickStream()
       double millis = (endWrite - leadPos) * 900.0;
       millis /= ( formatBytes(stream_.deviceFormat[0]) *stream_.nDeviceChannels[0]* stream_.sampleRate);
       if ( millis < 1.0 ) millis = 1.0;
-      if (millis > 50.0) {
+      if ( millis > 50.0 ) {
         static int nOverruns = 0;
         ++nOverruns;
       }
       Sleep( (DWORD) millis );
-      // Sleep( (DWORD) 2);
     }
+
 #ifdef GENERATE_DEBUG_LOG
     writeTime = timeGetTime();
 #endif
-    if (statistics.writeDeviceSafeLeadBytes < dsPointerDifference(safeWritePos,currentWritePos,handles[0].dsBufferSize))
-    {
+
+    if (statistics.writeDeviceSafeLeadBytes < dsPointerDifference(safeWritePos,currentWritePos,handles[0].dsBufferSize)) {
       statistics.writeDeviceSafeLeadBytes = dsPointerDifference(safeWritePos,currentWritePos,handles[0].dsBufferSize);
     }
 
-    if (
-      dsPointerBetween(nextWritePos,safeWritePos,currentWritePos,dsBufferSize)
-      || dsPointerBetween(endWrite,safeWritePos,currentWritePos,dsBufferSize)
-    )
-    { 
-      // we've strayed into the forbidden zone. 
-      // resync the read pointer.
+    if ( dsPointerBetween( nextWritePos, safeWritePos, currentWritePos, dsBufferSize )
+         || dsPointerBetween( endWrite, safeWritePos, currentWritePos, dsBufferSize ) ) { 
+      // We've strayed into the forbidden zone ... resync the read pointer.
       ++statistics.numberOfWriteUnderruns;
       nextWritePos = safeWritePos + handles[0].dsPointerLeadTime-buffer_bytes+dsBufferSize;
       while (nextWritePos >= dsBufferSize) nextWritePos-= dsBufferSize;
@@ -7169,8 +7234,8 @@ void RtApiDs :: tickStream()
     }
     
     // Lock free space in the buffer
-    result = dsBuffer->Lock (nextWritePos, buffer_bytes, &buffer1,
-                             &bufferSize1, &buffer2, &bufferSize2, 0);
+    result = dsBuffer->Lock( nextWritePos, buffer_bytes, &buffer1,
+                             &bufferSize1, &buffer2, &bufferSize2, 0 );
     if ( FAILED(result) ) {
       sprintf(message_, "RtApiDs: Unable to lock buffer during playback (%s): %s.",
               devices_[stream_.device[0]].name.c_str(), getErrorString(result));
@@ -7182,7 +7247,7 @@ void RtApiDs :: tickStream()
     if (buffer2 != NULL) CopyMemory(buffer2, buffer+bufferSize1, bufferSize2);
 
     // Update our buffer offset and unlock sound buffer
-    dsBuffer->Unlock (buffer1, bufferSize1, buffer2, bufferSize2);
+    dsBuffer->Unlock( buffer1, bufferSize1, buffer2, bufferSize2 );
     if ( FAILED(result) ) {
       sprintf(message_, "RtApiDs: Unable to unlock buffer during playback (%s): %s.",
               devices_[stream_.device[0]].name.c_str(), getErrorString(result));
@@ -7230,9 +7295,9 @@ void RtApiDs :: tickStream()
     // the very complex relationship between phase and increment of the read and write 
     // pointers.
     //
-    // In order to minimize audible dropouts in DUPLEX mode, we will provide a pre-roll 
-    //  period of 0.5 seconds
-    // in which we return zeros from the read buffer while the pointers sync up.
+    // In order to minimize audible dropouts in DUPLEX mode, we will
+    // provide a pre-roll period of 0.5 seconds in which we return
+    // zeros from the read buffer while the pointers sync up.
 
     if (stream_.mode == DUPLEX)
     {
@@ -7381,8 +7446,8 @@ extern "C" unsigned __stdcall callbackHandler(void *ptr)
 }
 
 static bool CALLBACK deviceCountCallback(LPGUID lpguid,
-                                         LPCSTR lpcstrDescription,
-                                         LPCSTR lpcstrModule,
+                                         LPCTSTR description,
+                                         LPCTSTR module,
                                          LPVOID lpContext)
 {
   int *pointer = ((int *) lpContext);
@@ -7391,22 +7456,41 @@ static bool CALLBACK deviceCountCallback(LPGUID lpguid,
   return true;
 }
 
+#include "tchar.h"
+
+std::string convertTChar( LPCTSTR name )
+{
+  std::string s;
+
+#if defined( UNICODE ) || defined( _UNICODE )
+  // Yes, this conversion doesn't make sense for two-byte characters
+  // but RtAudio is currently written to return an std::string of
+  // one-byte chars for the device name.
+  for ( unsigned int i=0; i<wcslen( name ); i++ )
+    s.push_back( name[i] );
+#else
+  s.append( std::string( name ) );
+#endif
+
+  return s;
+}
+
 static bool CALLBACK deviceInfoCallback(LPGUID lpguid,
-                                        LPCSTR lpcstrDescription,
-                                        LPCSTR lpcstrModule,
+                                        LPCTSTR description,
+                                        LPCTSTR module,
                                         LPVOID lpContext)
 {
   enum_info *info = ((enum_info *) lpContext);
-  while (strlen(info->name) > 0) info++;
+  while ( !info->name.empty() ) info++;
 
-  strncpy(info->name, lpcstrDescription, 64);
+  info->name = convertTChar( description );
   info->id = lpguid;
 
-	HRESULT    hr;
+  HRESULT hr;
   info->isValid = false;
   if (info->isInput == true) {
-    DSCCAPS               caps;
-    LPDIRECTSOUNDCAPTURE  object;
+    DSCCAPS caps;
+    LPDIRECTSOUNDCAPTURE object;
 
     hr = DirectSoundCaptureCreate(  lpguid, &object,   NULL );
     if( hr != DS_OK ) return true;
@@ -7420,8 +7504,8 @@ static bool CALLBACK deviceInfoCallback(LPGUID lpguid,
     object->Release();
   }
   else {
-    DSCAPS         caps;
-    LPDIRECTSOUND  object;
+    DSCAPS caps;
+    LPDIRECTSOUND object;
     hr = DirectSoundCreate(  lpguid, &object,   NULL );
     if( hr != DS_OK ) return true;
 
@@ -7438,14 +7522,14 @@ static bool CALLBACK deviceInfoCallback(LPGUID lpguid,
 }
 
 static bool CALLBACK defaultDeviceCallback(LPGUID lpguid,
-                                           LPCSTR lpcstrDescription,
-                                           LPCSTR lpcstrModule,
+                                           LPCTSTR description,
+                                           LPCTSTR module,
                                            LPVOID lpContext)
 {
   enum_info *info = ((enum_info *) lpContext);
 
   if ( lpguid == NULL ) {
-    strncpy(info->name, lpcstrDescription, 64);
+    info->name = convertTChar( description );
     return false;
   }
 
@@ -7453,13 +7537,14 @@ static bool CALLBACK defaultDeviceCallback(LPGUID lpguid,
 }
 
 static bool CALLBACK deviceIdCallback(LPGUID lpguid,
-                                      LPCSTR lpcstrDescription,
-                                      LPCSTR lpcstrModule,
+                                      LPCTSTR description,
+                                      LPCTSTR module,
                                       LPVOID lpContext)
 {
   enum_info *info = ((enum_info *) lpContext);
 
-  if ( strncmp( info->name, lpcstrDescription, 64 ) == 0 ) {
+  std::string s = convertTChar( description );
+  if ( info->name == s ) {
     info->id = lpguid;
     info->isValid = true;
     return false;

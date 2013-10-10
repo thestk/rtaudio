@@ -3,9 +3,12 @@
 
 /*
 	Steinberg Audio Stream I/O API
-	(c) 1997 - 1999, Steinberg Soft- und Hardware GmbH
+	(c) 1997 - 2005, Steinberg Media Technologies GmbH
 
-	ASIO Interface Specification v 2.0
+	ASIO Interface Specification v 2.1
+
+	2005 - Added support for DSD sample data (in cooperation with Sony)
+
 
 	basic concept is an i/o synchronous double-buffer scheme:
 	
@@ -131,7 +134,7 @@ enum {
 
 	// these are used for 32 bit data buffer, with different alignment of the data inside
 	// 32 bit PCI bus systems can be more easily used with these
-	ASIOSTInt32MSB16 = 8,		// 32 bit data with 18 bit alignment
+	ASIOSTInt32MSB16 = 8,		// 32 bit data with 16 bit alignment
 	ASIOSTInt32MSB18 = 9,		// 32 bit data with 18 bit alignment
 	ASIOSTInt32MSB20 = 10,		// 32 bit data with 20 bit alignment
 	ASIOSTInt32MSB24 = 11,		// 32 bit data with 24 bit alignment
@@ -147,8 +150,55 @@ enum {
 	ASIOSTInt32LSB16 = 24,		// 32 bit data with 18 bit alignment
 	ASIOSTInt32LSB18 = 25,		// 32 bit data with 18 bit alignment
 	ASIOSTInt32LSB20 = 26,		// 32 bit data with 20 bit alignment
-	ASIOSTInt32LSB24 = 27		// 32 bit data with 24 bit alignment
+	ASIOSTInt32LSB24 = 27,		// 32 bit data with 24 bit alignment
+
+	//	ASIO DSD format.
+	ASIOSTDSDInt8LSB1   = 32,		// DSD 1 bit data, 8 samples per byte. First sample in Least significant bit.
+	ASIOSTDSDInt8MSB1   = 33,		// DSD 1 bit data, 8 samples per byte. First sample in Most significant bit.
+	ASIOSTDSDInt8NER8	= 40,		// DSD 8 bit data, 1 sample per byte. No Endianness required.
+
+	ASIOSTLastEntry
 };
+
+/*-----------------------------------------------------------------------------
+// DSD operation and buffer layout
+// Definition by Steinberg/Sony Oxford.
+//
+// We have tried to treat DSD as PCM and so keep a consistant structure across
+// the ASIO interface.
+//
+// DSD's sample rate is normally referenced as a multiple of 44.1Khz, so
+// the standard sample rate is refered to as 64Fs (or 2.8224Mhz). We looked
+// at making a special case for DSD and adding a field to the ASIOFuture that
+// would allow the user to select the Over Sampleing Rate (OSR) as a seperate
+// entity but decided in the end just to treat it as a simple value of
+// 2.8224Mhz and use the standard interface to set it.
+//
+// The second problem was the "word" size, in PCM the word size is always a
+// greater than or equal to 8 bits (a byte). This makes life easy as we can
+// then pack the samples into the "natural" size for the machine.
+// In DSD the "word" size is 1 bit. This is not a major problem and can easily
+// be dealt with if we ensure that we always deal with a multiple of 8 samples.
+//
+// DSD brings with it another twist to the Endianness religion. How are the
+// samples packed into the byte. It would be nice to just say the most significant
+// bit is always the first sample, however there would then be a performance hit
+// on little endian machines. Looking at how some of the processing goes...
+// Little endian machines like the first sample to be in the Least Significant Bit,
+//   this is because when you write it to memory the data is in the correct format
+//   to be shifted in and out of the words.
+// Big endian machine prefer the first sample to be in the Most Significant Bit,
+//   again for the same reasion.
+//
+// And just when things were looking really muddy there is a proposed extension to
+// DSD that uses 8 bit word sizes. It does not care what endianness you use.
+//
+// Switching the driver between DSD and PCM mode
+// ASIOFuture allows for extending the ASIO API quite transparently.
+// See kAsioSetIoFormat, kAsioGetIoFormat, kAsioCanDoIoFormat
+//
+//-----------------------------------------------------------------------------*/
+
 
 //- - - - - - - - - - - - - - - - - - - - - - - - -
 // Error codes
@@ -403,9 +453,14 @@ enum
 	kAsioSupportsTimeInfo,		// if host returns true here, it will expect the
 								// callback bufferSwitchTimeInfo to be called instead
 								// of bufferSwitch
-	kAsioSupportsTimeCode,		// supports time code reading/writing
-
-	kAsioSupportsInputMonitor,	// supports input monitoring
+	kAsioSupportsTimeCode,		// 
+	kAsioMMCCommand,			// unused - value: number of commands, message points to mmc commands
+	kAsioSupportsInputMonitor,	// kAsioSupportsXXX return 1 if host supports this
+	kAsioSupportsInputGain,     // unused and undefined
+	kAsioSupportsInputMeter,    // unused and undefined
+	kAsioSupportsOutputGain,    // unused and undefined
+	kAsioSupportsOutputMeter,   // unused and undefined
+	kAsioOverload,              // driver detected an overload
 
 	kAsioNumMessageSelectors
 };
@@ -860,7 +915,14 @@ enum
 	kAsioCanInputGain,
 	kAsioCanInputMeter,
 	kAsioCanOutputGain,
-	kAsioCanOutputMeter
+	kAsioCanOutputMeter,
+
+	//	DSD support
+	//	The following extensions are required to allow switching
+	//	and control of the DSD subsystem.
+	kAsioSetIoFormat			= 0x23111961,		/* ASIOIoFormat * in params.			*/
+	kAsioGetIoFormat			= 0x23111983,		/* ASIOIoFormat * in params.			*/
+	kAsioCanDoIoFormat			= 0x23112004,		/* ASIOIoFormat * in params.			*/
 };
 
 typedef struct ASIOInputMonitor
@@ -904,6 +966,43 @@ enum
 	kTransArm,			// trackSwitches
 	kTransMonitor		// trackSwitches
 };
+
+/*
+// DSD support
+//	Some notes on how to use ASIOIoFormatType.
+//
+//	The caller will fill the format with the request types.
+//	If the board can do the request then it will leave the
+//	values unchanged. If the board does not support the
+//	request then it will change that entry to Invalid (-1)
+//
+//	So to request DSD then
+//
+//	ASIOIoFormat NeedThis={kASIODSDFormat};
+//
+//	if(ASE_SUCCESS != ASIOFuture(kAsioSetIoFormat,&NeedThis) ){
+//		// If the board did not accept one of the parameters then the
+//		// whole call will fail and the failing parameter will
+//		// have had its value changes to -1.
+//	}
+//
+// Note: Switching between the formats need to be done before the "prepared"
+// state (see ASIO 2 documentation) is entered.
+*/
+typedef long int ASIOIoFormatType;
+enum ASIOIoFormatType_e
+{
+	kASIOFormatInvalid = -1,
+	kASIOPCMFormat = 0,
+	kASIODSDFormat = 1,
+};
+
+typedef struct ASIOIoFormat_s
+{
+	ASIOIoFormatType	FormatType;
+	char				future[512-sizeof(ASIOIoFormatType)];
+} ASIOIoFormat;
+
 
 ASIOError ASIOOutputReady(void);
 /* Purpose:
