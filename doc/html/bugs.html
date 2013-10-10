@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>RtAudio Bugs</title>
+</head>
+<body bgcolor="#FFFFFF">
+
+<center><h1>RtAudio Bug Tracker</h1></center>
+
+"Bugs" are considered to be problems that cause program crashes or unpredictable results.  Incomplete or unavailable features are tracked as <a href="updates.html">updates</a>.
+
+<h2>Reported (Unconfirmed) Bugs:</h2>
+
+<table border=1 cellpadding=10 cellspacing=0>
+<tr bgcolor="#C7CAFF"><td><b>#</b></td><td><b>Version</b></td><td><b>API</b></td><td><b>Description</b></td><td><b>Status</b></td></b></tr>
+
+<tr><td>1</td><td>3.03</td><td>CoreAudio</td><td>Do we need a run-time test for endianness given the new Intel Macs?</td><td>Not yet tested (GS)</td></tr>
+
+</table>
+
+<h2>Confirmed Bugs (Unfixed):</h2>
+
+<table border=1 cellpadding=10 cellspacing=0>
+<tr bgcolor="#C7CAFF"><td><b>#</b></td><td><b>Version</b></td><td><b>API</b></td><td><b>Description</b></td></tr>
+
+</table>
+
+<h2>Fixed Bugs:</h2>
+
+<table border=1 cellpadding=10 cellspacing=0>
+<tr bgcolor="#C7CAFF"><td><b>#</b></td><td><b>Version</b></td><td><b>API</b></td><td><b>Description</b></td></tr>
+<tr><td>1</td><td>4.0</td><td>Windows DS</td><td>Memory allocation bug in device querying</td></tr>
+<tr><td>2</td><td>4.0</td><td>All unices</td><td>Default pthread scheduling priority changed to SCHED_RR when defined</td></tr>
+<tr><td>3</td><td>4.0</td><td>ALSA</td><td>Changed sample rate setting to use <tt>snd_pcm_hw_params_set_rate_near()</tt> function</td></tr>
+<tr><td>4</td><td>4.0</td><td>CoreAudio</td><td>RtAudio checks a device's <i>internal</i> data format and sets it to the highest allowable bit rate.  For some stupid devices, like the Griffin iMic, the default format is 8-bit mono when the requested format and number of channels does not exist.  So, we need to query the device's capabilities using the kAudioStreamPropertyPhysicalFormats selector - i.e. ask a device for all of the channels/format/rate combination that it supports - and then enumerate through them to pick the best one.</td></tr>
+</table>
+
+
+</body>
+</html>
