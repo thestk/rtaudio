@@ -2,9 +2,19 @@
 
 <BODY BGCOLOR="white">
 
-<CENTER>
-\ref intro &nbsp;&nbsp; \ref download &nbsp;&nbsp; \ref start &nbsp;&nbsp; \ref error &nbsp;&nbsp; \ref probing &nbsp;&nbsp; \ref settings &nbsp;&nbsp; \ref playbackb &nbsp;&nbsp; \ref playbackc &nbsp;&nbsp; \ref recording &nbsp;&nbsp; \ref duplex &nbsp;&nbsp; \ref methods &nbsp;&nbsp; \ref compiling &nbsp;&nbsp; \ref osnotes &nbsp;&nbsp; \ref acknowledge
-</CENTER>
+- \ref intro
+- \ref start
+- \ref error
+- \ref probing
+- \ref settings
+- \ref playbackb
+- \ref playbackc
+- \ref recording
+- \ref duplex
+- \ref methods
+- \ref compiling
+- \ref osnotes
+- \ref acknowledge
 
 \section intro Introduction
 
@@ -24,11 +34,7 @@ RtAudio is a C++ class which provides a common API (Application Programming Inte
 
 RtAudio incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording).  Available audio devices and their capabilities can be enumerated and then specified when opening a stream.  Multiple streams can run at the same time and, when allowed by the underlying audio API, a single device can serve multiple streams.
 
-The RtAudio API provides both blocking (synchronous) and callback (asynchronous) functionality.  Callbacks are typically used in conjunction with graphical user interfaces (GUI).  Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.
-
-\section download Download
-
-Latest Release (22 January 2002): <A href="release/rtaudio-2.0.tgz">Version 2.0 (111 kB tar/gzipped)</A>
+The RtAudio API provides both blocking (synchronous) and callback (asyncronous) functionality.  Callbacks are typically used in conjunction with graphical user interfaces (GUI).  Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.
 
 \section start Getting Started
 
@@ -46,7 +52,7 @@ int main()
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     // Handle the exception here
   }
 
@@ -60,7 +66,7 @@ Obviously, this example doesn't demonstrate any of the real functionality of RtA
 
 \section error Error Handling
 
-RtAudio uses a C++ exception handler called RtAudioError, which is declared and defined within the RtAudio class files.  The RtAudioError class is quite simple but it does allow errors to be "caught" by RtAudioError::TYPE.  Almost all RtAudio methods can "throw" an RtAudioError, most typically if an invalid stream identifier is supplied to a method or a driver error occurs.  There are a number of cases within RtAudio where warning messages may be displayed but an exception is not thrown.  There is a private RtAudio method, error(), which can be modified to globally control how these messages are handled and reported.
+RtAudio uses a C++ exception handler called RtError, which is declared and defined within the RtAudio class files.  The RtError class is quite simple but it does allow errors to be "caught" by RtError::TYPE.  Almost all RtAudio methods can "throw" an RtError, most typically if an invalid stream identifier is supplied to a method or a driver error occurs.  There are a number of cases within RtAudio where warning messages may be displayed but an exception is not thrown.  There is a private RtAudio method, error(), which can be modified to globally control how these messages are handled and reported.
 
 
 \section probing Probing Device Capabilities
@@ -71,7 +77,7 @@ A programmer may wish to query the available audio device capabilities before de
 
 // probe.cpp
 
-#include <iostream.h>
+#include <iostream>
 #include "RtAudio.h"
 
 int main()
@@ -82,7 +88,7 @@ int main()
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -97,14 +103,14 @@ int main()
     try {
       audio->getDeviceInfo(i, &info);
     }
-    catch (RtAudioError &error) {
+    catch (RtError &error) {
       error.printMessage();
       break;
     }
 
     // Print, for example, the maximum number of output channels for each device
     cout << "device = " << i;
-    cout << ": maximum output channels = " << info.maxOutputChannels << endl;
+    cout << ": maximum output channels = " << info.maxOutputChannels << "\n";
   }
 
   // Clean up
@@ -146,7 +152,7 @@ The following data formats are defined and fully supported by RtAudio:
   static const RTAUDIO_FORMAT  RTAUDIO_FLOAT64; // 64-bit double
 \endcode
 
-The <I>nativeFormats</I> member of the RtAudio::RTAUDIO_DEVICE structure is a bit mask of the above formats which are natively supported by the device.  However, RtAudio will automatically provide format conversion if a particular format is not natively supported.  When the <I>probed</I> member of the RTAUDIO_DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unusable.
+The <I>nativeFormats</I> member of the RtAudio::RTAUDIO_DEVICE structure is a bit mask of the above formats which are natively supported by the device.  However, RtAudio will automatically provide format conversion if a particular format is not natively supported.  When the <I>probed</I> member of the RTAUDIO_DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unuseable.
 
 In general, the user need not be concerned with the minimum channel values reported in the RTAUDIO_DEVICE structure.  While some audio devices may require a minimum channel value > 1, RtAudio will provide automatic channel number compensation when the number of channels set by the user is less than that required by the device.  Channel compensation is <I>NOT</I> possible when the number of channels set by the user is greater than that supported by the device.
 
@@ -177,7 +183,7 @@ int main()
     stream = audio->openStream(device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,
                                sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -189,11 +195,9 @@ int main()
 }
 \endcode
 
-The RtAudio::openStream() method attempts to open a stream with a specified set of parameter values.  When successful, a stream identifier is returned.  In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers.  When device = 0, RtAudio first attempts to open the default audio device with the given parameters.  If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters.  If all attempts are unsuccessful, an RtAudioError is thrown.  When a non-zero device value is specified, an attempt is made to open that device only.
+The RtAudio::openStream() method attempts to open a stream with a specified set of parameter values.  When successful, a stream identifier is returned.  In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers.  When device = 0, RtAudio first attempts to open the default audio device with the given parameters.  If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters.  If all attempts are unsuccessful, an RtError is thrown.  When a non-zero device value is specified, an attempt is made to open that device only.
 
 RtAudio provides four signed integer and two floating point data formats which can be specified using the RtAudio::RTAUDIO_FORMAT parameter values mentioned earlier.  If the opened device does not natively support the given format, RtAudio will automatically perform the necessary data format conversion.
-
-Buffer sizes in RtAudio are <I>ALWAYS</I> given in sample frame units.  For example, if you open an output stream with 4 channels and set <I>bufferSize</I> to 512, you will have to write 2048 samples of data to the output buffer within your callback or between calls to RtAudio::tickStream().  In this case, a single sample frame of data contains 4 samples of data. 
 
 The <I>bufferSize</I> parameter specifies the desired number of sample frames which will be written to and/or read from a device per write/read operation.  The <I>nBuffers</I> parameter is used in setting the underlying device buffer parameters.  Both the <I>bufferSize</I> and <I>nBuffers</I> parameters can be used to control stream latency though there is no guarantee that the passed values will be those used by a device.  In general, lower values for both parameters will produce less latency but perhaps less robust performance.  Both parameters can be specified with values of zero, in which case the smallest allowable values will be used.  The <I>bufferSize</I> parameter is passed as a pointer and the actual value used by the stream is set during the device setup procedure.  <I>bufferSize</I> values should be a power of two.  Optimal and allowable buffer values tend to vary between systems and devices.  Check the \ref osnotes section for general guidelines.
 
@@ -226,7 +230,7 @@ int main()
     audio = new RtAudio(&stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,
                         sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -238,7 +242,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -253,7 +257,7 @@ int main()
     try {
       audio->tickStream(stream);
     }
-    catch (RtAudioError &error) {
+    catch (RtError &error) {
       error.printMessage();
       goto cleanup;
     }
@@ -266,7 +270,7 @@ int main()
     audio->stopStream(stream);
     audio->closeStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -290,7 +294,7 @@ The primary difference in using RtAudio with callback functionality involves the
 
 \code
 
-#include <iostream.h>
+#include <iostream>
 #include "RtAudio.h"
 
 // Two-channel sawtooth wave generator.
@@ -330,7 +334,7 @@ int main()
     audio = new RtAudio(&stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT64,
                         sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -342,7 +346,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -355,7 +359,7 @@ int main()
     audio->stopStream(stream);
     audio->closeStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -399,7 +403,7 @@ int main()
     audio = new RtAudio(&stream, 0, 0, device, channels,
                         RtAudio::RTAUDIO_FLOAT32, sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -411,7 +415,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -424,7 +428,7 @@ int main()
     try {
       audio->tickStream(stream);
     }
-    catch (RtAudioError &error) {
+    catch (RtError &error) {
       error.printMessage();
       goto cleanup;
     }
@@ -439,7 +443,7 @@ int main()
     // Stop the stream
     audio->stopStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -460,7 +464,7 @@ Finally, it is easy to use RtAudio for simultaneous audio input/output, or duple
 \code
 // duplex.cpp
 
-#include <iostream.h>
+#include <iostream>
 #include "RtAudio.h"
 
 // Pass-through function.
@@ -487,7 +491,7 @@ int main()
     audio = new RtAudio(&stream, device, channels, device, channels, RtAudio::RTAUDIO_FLOAT64,
                         sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -499,7 +503,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -512,7 +516,7 @@ int main()
     audio->stopStream(stream);
     audio->closeStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -566,28 +570,28 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
 <TR>
   <TD>Linux</TD>
   <TD>ALSA</TD>
-  <TD>__LINUX_ALSA_</TD>
+  <TD>__LINUX_ALSA__</TD>
   <TD><TT>libasound, libpthread</TT></TD>
-  <TD><TT>g++ -Wall -D__LINUX_ALSA_ -o probe probe.cpp RtAudio.cpp -lasound -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__LINUX_ALSA__ -o probe probe.cpp RtAudio.cpp -lasound -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Linux</TD>
   <TD>OSS</TD>
-  <TD>__LINUX_OSS_</TD>
+  <TD>__LINUX_OSS__</TD>
   <TD><TT>libpthread</TT></TD>
-  <TD><TT>g++ -Wall -D__LINUX_OSS_ -o probe probe.cpp RtAudio.cpp -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__LINUX_OSS__ -o probe probe.cpp RtAudio.cpp -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Irix</TD>
   <TD>AL</TD>
-  <TD>__IRIX_AL_</TD>
+  <TD>__IRIX_AL__</TD>
   <TD><TT>libaudio, libpthread</TT></TD>
-  <TD><TT>CC -Wall -D__IRIX_AL_ -o probe probe.cpp RtAudio.cpp -laudio -lpthread</TT></TD>
+  <TD><TT>CC -Wall -D__IRIX_AL__ -o probe probe.cpp RtAudio.cpp -laudio -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Windows</TD>
   <TD>Direct Sound</TD>
-  <TD>__WINDOWS_DS_</TD>
+  <TD>__WINDOWS_DS__</TD>
   <TD><TT>dsound.lib (ver. 5.0 or higher), multithreaded</TT></TD>
   <TD><I>compiler specific</I></TD>
 </TR>
@@ -602,7 +606,7 @@ RtAudio is designed to provide a common API across the various supported operati
 
 \subsection linux Linux:
 
-RtAudio for Linux was developed under Redhat distributions 7.0 - 7.2.  Two different audio APIs are supported on Linux platforms: OSS and <A href="http://www.alsa-project.org/">ALSA</A>.  The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers.  Therefore, a generic Linux system is most likely to have OSS support.  The ALSA API is relatively new and at this time is not part of the Linux kernel distribution.  Work is in progress to make ALSA part of the 2.5 development kernel series.  Despite that, the ALSA API offers significantly better functionality than the OSS API.  RtAudio provides support for the 0.9 and higher versions of ALSA.  Input/output latency on the order of 15-20 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the RtAudio buffer parameters (without kernel modifications).  Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority.  The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.
+RtAudio for Linux was developed under Redhat distributions 7.0 - 7.2.  Two different audio APIs are supported on Linux platforms: OSS and <A href="http://www.alsa-project.org/">ALSA</A>.  The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers.  Therefore, a generic Linux system is most likely to have OSS support.  The ALSA API, although relatively new, is now part of the Linux development kernel and offers significantly better functionality than the OSS API.  RtAudio provides support for the 0.9 and higher versions of ALSA.  Input/output latency on the order of 15 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the RtAudio buffer parameters (without kernel modifications).  Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority.  The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.
 
 The ALSA library includes OSS emulation support.  That means that you can run programs compiled for the OSS API even when using the ALSA drivers and library.  It should be noted however that OSS emulation under ALSA is not perfect.  Specifically, channel number queries seem to consistently produce invalid results.  While OSS emulation is successful for the majority of RtAudio tests, it is recommended that the native ALSA implementation of RtAudio be used on systems which have ALSA drivers installed.
 
@@ -610,19 +614,17 @@ The ALSA implementation of RtAudio makes no use of the ALSA "plug" interface.  A
 
 \subsection irix Irix (SGI):
 
-The Irix version of RtAudio was written and tested on an SGI Indy running Irix version 6.5 and the newer "al" audio library.  RtAudio does not compile under Irix version 6.3 because the C++ compiler is too old.  Despite the relatively slow speed of the Indy, RtAudio was found to behave quite well and input/output latency was very good.  No problems were found with respect to using the pthread library.
+The Irix version of RtAudio was written and tested on an SGI Indy running Irix version 6.5.4 and the newer "al" audio library.  RtAudio does not compile under Irix version 6.3, mainly because the C++ compiler is too old.  Despite the relatively slow speed of the Indy, RtAudio was found to behave quite well and input/output latency was very good.  No problems were found with respect to using the pthread library.
 
 \subsection windows Windows:
 
-RtAudio under Windows is written using the DirectSound API.  In order to compile RtAudio under Windows, you must have the header and source files for DirectSound version 0.5 or higher.  As far as I know, you cannot compile RtAudio for Windows NT because there is not sufficient DirectSound support.  Audio output latency with DirectSound can be reasonably good (on the order of 20 milliseconds).  On the other hand, input audio latency tends to be terrible (100 milliseconds or more).  Further, DirectSound drivers tend to crash easily when experimenting with buffer parameters.  On my system, I found it necessary to use values around nBuffers = 8 and bufferSize = 512 to avoid crashing my system.  RtAudio was developed with Visual C++ version 6.0.  I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented.  We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard. 
+RtAudio under Windows is written using the DirectSound API.  In order to compile RtAudio under Windows, you must have the header and source files for DirectSound version 5.0 or higher.  As far as I know, there is no DirectSoundCapture support for Windows NT (in which case, you cannot use RtAudio).  Audio output latency with DirectSound can be reasonably good (on the order of 20 milliseconds).  On the other hand, input audio latency tends to be terrible (100 milliseconds or more).  Further, DirectSound drivers tend to crash easily when experimenting with buffer parameters.  On my system, I found it necessary to use values around nBuffers = 8 and bufferSize = 512 to avoid crashing my system.  RtAudio was developed with Visual C++ version 6.0.  I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented.  We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard. 
 
 
-\section acknowledge Acknowledgments
+\section acknowledge Acknowledgements
 
 The RtAudio API incorporates many of the concepts developed in the <A href="http://www.portaudio.com/">PortAudio</A> project by Phil Burk and Ross Bencina.  Early development also incorporated ideas from Bill Schottstaedt's <A href="http://www-ccrma.stanford.edu/software/snd/sndlib/">sndlib</A>.  The CCRMA <A href="http://www-ccrma.stanford.edu/groups/soundwire/">SoundWire group</A> provided valuable feedback during the API proposal stages.
 
 RtAudio was slowly developed over the course of many months while in residence at the <A href="http://www.iua.upf.es/">Institut Universitari de L'Audiovisual (IUA)</A> in Barcelona, Spain, the <A href="http://www.acoustics.hut.fi/">Laboratory of Acoustics and Audio Signal Processing</A> at the Helsinki University of Technology, Finland, and the <A href="http://www-ccrma.stanford.edu/">Center for Computer Research in Music and Acoustics (CCRMA)</A> at <A href="http://www.stanford.edu/">Stanford University</A>.  This work was supported in part by the United States Air Force Office of Scientific Research (grant \#F49620-99-1-0293).
-
-These documentation files were generated using <A href="http://www.doxygen.org/">doxygen</A> by Dimitri van Heesch.
 
 */

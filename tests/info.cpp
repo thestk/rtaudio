@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &m) {
+  catch (RtError &m) {
     m.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     try {
       audio->getDeviceInfo(i, &my_info);
     }
-    catch (RtAudioError &m) {
+    catch (RtError &m) {
       m.printMessage();
       break;
     }

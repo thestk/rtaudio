@@ -1,35 +1,37 @@
 /******************************************/
 /*
   RtAudio - realtime sound I/O C++ class
-  Version 2.0 by Gary P. Scavone, 2001-2002.
+  by Gary P. Scavone, 2001-2002.
 */
 /******************************************/
 
-#if !defined(__RtAudio_h)
-#define __RtAudio_h
+#if !defined(__RTAUDIO_H)
+#define __RTAUDIO_H
 
 #include <map>
 
-#if defined(__LINUX_ALSA_)
+#if defined(__LINUX_ALSA__)
   #include <alsa/asoundlib.h>
   #include <pthread.h>
   #include <unistd.h>
 
+  #define THREAD_TYPE
   typedef snd_pcm_t *AUDIO_HANDLE;
   typedef int DEVICE_ID;
   typedef pthread_t THREAD_HANDLE;
   typedef pthread_mutex_t MUTEX;
 
-#elif defined(__LINUX_OSS_)
+#elif defined(__LINUX_OSS__)
   #include <pthread.h>
   #include <unistd.h>
 
+  #define THREAD_TYPE
   typedef int AUDIO_HANDLE;
   typedef int DEVICE_ID;
   typedef pthread_t THREAD_HANDLE;
   typedef pthread_mutex_t MUTEX;
 
-#elif defined(__WINDOWS_DS_)
+#elif defined(__WINDOWS_DS__)
   #include <windows.h>
   #include <process.h>
 
@@ -41,15 +43,17 @@
     UINT bufferPointer;
   } AUDIO_HANDLE;
 
+  #define THREAD_TYPE __stdcall
   typedef LPGUID DEVICE_ID;
   typedef unsigned long THREAD_HANDLE;
   typedef CRITICAL_SECTION MUTEX;
 
-#elif defined(__IRIX_AL_)
+#elif defined(__IRIX_AL__)
   #include <dmedia/audio.h>
   #include <pthread.h>
   #include <unistd.h>
 
+  #define THREAD_TYPE
   typedef ALport AUDIO_HANDLE;
   typedef int DEVICE_ID;
   typedef pthread_t THREAD_HANDLE;
@@ -60,11 +64,11 @@
 
 // *************************************************** //
 //
-// RtAudioError class declaration.
+// RtError class declaration.
 //
 // *************************************************** //
 
-class RtAudioError
+class RtError
 {
 public:
   enum TYPE {
@@ -87,10 +91,10 @@ protected:
 
 public:
   //! The constructor.
-  RtAudioError(const char *p, TYPE tipe = RtAudioError::UNSPECIFIED);
+  RtError(const char *p, TYPE tipe = RtError::UNSPECIFIED);
 
   //! The destructor.
-  virtual ~RtAudioError(void);
+  virtual ~RtError(void);
 
   //! Prints "thrown" error message to stdout.
   virtual void printMessage(void);
@@ -153,7 +157,7 @@ public:
     Probes the system to make sure at least one audio
     input/output device is available and determines
     the api-specific identifier for each device found.
-    An RtAudioError error can be thrown if no devices are
+    An RtError error can be thrown if no devices are
     found or if a memory allocation error occurs.
   */
   RtAudio();
@@ -165,12 +169,12 @@ public:
     0, the default or first available devices meeting the given
     parameters is selected.  If an output or input channel value is
     zero, the corresponding device value is ignored.  When a stream is
-    successfully opened, its identifier is returned via the "streamID"
-    pointer.  An RtAudioError can be thrown if no devices are found
+    successfully opened, its identifier is returned via the "streamId"
+    pointer.  An RtError can be thrown if no devices are found
     for the given parameters, if a memory allocation error occurs, or
     if a driver error occurs. \sa openStream()
   */
-  RtAudio(int *streamID,
+  RtAudio(int *streamId,
           int outputDevice, int outputChannels,
           int inputDevice, int inputChannels,
           RTAUDIO_FORMAT format, int sampleRate,
@@ -186,7 +190,7 @@ public:
   //! A public method for opening a stream with the specified parameters.
   /*!
     If successful, the opened stream ID is returned.  Otherwise, an
-    RtAudioError is thrown.
+    RtError is thrown.
 
     \param outputDevice: If equal to 0, the default or first device
            found meeting the given parameters is opened.  Otherwise, the
@@ -233,20 +237,20 @@ public:
     modes on the same stream through the use of the
     setStreamCallback() and cancelStreamCallback() methods (the
     blocking tickStream() method can be used before a callback is set
-    and/or after a callback is cancelled).  An RtAudioError will be
+    and/or after a callback is cancelled).  An RtError will be
     thrown for an invalid device argument.
   */
-  void setStreamCallback(int streamID, RTAUDIO_CALLBACK callback, void *userData);
+  void setStreamCallback(int streamId, RTAUDIO_CALLBACK callback, void *userData);
 
   //! A public method which cancels a callback process and function for a given stream.
   /*!
     This method shuts down a callback process and de-references the
     user function for a specific stream.  Callback functionality can
     subsequently be restarted on the stream via the
-    setStreamCallback() method.  An RtAudioError will be thrown for an
+    setStreamCallback() method.  An RtError will be thrown for an
     invalid device argument.
    */
-  void cancelStreamCallback(int streamID);
+  void cancelStreamCallback(int streamId);
 
   //! A public method which returns the number of audio devices found.
   int getDeviceCount(void);
@@ -259,7 +263,7 @@ public:
     output devices are referenced by device identifier = 0.  On
     systems which allow dynamic default device settings, the default
     devices are not identified by name (specific device enumerations
-    are assigned device identifiers > 0).  An RtAudioError will be
+    are assigned device identifiers > 0).  An RtError will be
     thrown for an invalid device argument.
   */
   void getDeviceInfo(int device, RTAUDIO_DEVICE *info);
@@ -267,46 +271,46 @@ public:
   //! A public method which returns a pointer to the buffer for an open stream.
   /*!
     The user should fill and/or read the buffer data in interleaved format
-    and then call the tickStream() method.  An RtAudioError will be
+    and then call the tickStream() method.  An RtError will be
     thrown for an invalid stream identifier.
   */
-  char * const getStreamBuffer(int streamID);
+  char * const getStreamBuffer(int streamId);
 
   //! Public method used to trigger processing of input/output data for a stream.
   /*!
     This method blocks until all buffer data is read/written.  An
-    RtAudioError will be thrown for an invalid stream identifier or if
+    RtError will be thrown for an invalid stream identifier or if
     a driver error occurs.
   */
-  void tickStream(int streamID);
+  void tickStream(int streamId);
 
   //! Public method which closes a stream and frees any associated buffers.
   /*!
     If an invalid stream identifier is specified, this method
-    issues a warning and returns (an RtAudioError is not thrown).
+    issues a warning and returns (an RtError is not thrown).
   */
-  void closeStream(int streamID);
+  void closeStream(int streamId);
 
   //! Public method which starts a stream.
   /*!
-    An RtAudioError will be thrown for an invalid stream identifier
+    An RtError will be thrown for an invalid stream identifier
     or if a driver error occurs.
   */
-  void startStream(int streamID);
+  void startStream(int streamId);
 
   //! Stop a stream, allowing any samples remaining in the queue to be played out and/or read in.
   /*!
-    An RtAudioError will be thrown for an invalid stream identifier
+    An RtError will be thrown for an invalid stream identifier
     or if a driver error occurs.
   */
-  void stopStream(int streamID);
+  void stopStream(int streamId);
 
   //! Stop a stream, discarding any samples remaining in the input/output queue.
   /*!
-    An RtAudioError will be thrown for an invalid stream identifier
+    An RtError will be thrown for an invalid stream identifier
     or if a driver error occurs.
   */
-  void abortStream(int streamID);
+  void abortStream(int streamId);
 
   //! Queries a stream to determine whether a call to the tickStream() method will block.
   /*!
@@ -314,7 +318,7 @@ public:
     return value indicates the number of sample frames that cannot yet be
     processed without blocking.
   */
-  int streamWillBlock(int streamID);
+  int streamWillBlock(int streamId);
 
 protected:
 
@@ -337,7 +341,7 @@ private:
   };
 
   typedef struct {
-    int device[2];           // Playback and record, respectively.
+    int device[2];          // Playback and record, respectively.
     STREAM_MODE mode;       // PLAYBACK, RECORD, or DUPLEX.
     AUDIO_HANDLE handle[2]; // Playback and record handles, respectively.
     STREAM_STATE state;     // STOPPED or RUNNING
@@ -372,7 +376,7 @@ private:
   std::map<int, void *> streams;
 
   //! Private error method to allow global control over error handling.
-  void error(RtAudioError::TYPE type);
+  void error(RtError::TYPE type);
 
   /*!
     Private method to count the system audio devices, allocate the
@@ -409,7 +413,7 @@ private:
     an RTAUDIO_STREAM structure (in the form of a void pointer).
     Otherwise, an "invalid identifier" exception is thrown.
   */
-  void *verifyStream(int streamID);
+  void *verifyStream(int streamId);
 
   /*!
     Private method used to perform format, channel number, and/or interleaving

@@ -92,8 +92,7 @@ int main(int argc, char *argv[])
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     exit(EXIT_FAILURE);
   }
 
@@ -103,8 +102,7 @@ int main(int argc, char *argv[])
     stream2 = audio->openStream(device, chans, 0, 0,
                                 FORMAT, fs, &buffer_size, 8);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -115,8 +113,7 @@ int main(int argc, char *argv[])
     audio->startStream(stream1);
     audio->startStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -128,8 +125,7 @@ int main(int argc, char *argv[])
     audio->stopStream(stream1);
     audio->stopStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -140,8 +136,7 @@ int main(int argc, char *argv[])
     audio->startStream(stream1);
     audio->startStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
     goto cleanup;
   }
 
@@ -152,8 +147,7 @@ int main(int argc, char *argv[])
     audio->stopStream(stream1);
     audio->stopStream(stream2);
   }
-  catch (RtAudioError &m) {
-    m.printMessage();
+  catch (RtError &) {
   }
 
  cleanup:
