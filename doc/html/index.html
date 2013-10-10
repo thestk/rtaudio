@@ -30,7 +30,7 @@ The <a class="el" href="classRtAudio.html">RtAudio</a> API provides both blockin
 <a name="download"><h2>Download</h2></a>
 
 <p>
-Latest Release (7 October 2002): <a href="http://www-ccrma.stanford.edu/~gary/rtaudio/release/rtaudio-2.1.tar.gz">Version 2.1 (165 kB tar/gzipped)</a>
+Latest Release (24 October 2002): <a href="http://www-ccrma.stanford.edu/~gary/rtaudio/release/rtaudio-2.1.1.tar.gz">Version 2.1.1 (165 kB tar/gzipped)</a>
 <p>
 <a name="start"><h2>Getting Started</h2></a>
 
@@ -436,7 +436,7 @@ In this example, the stream was opened for recording with a non-zero <em>inputCh
 <a name="duplex"><h2>Duplex Mode</h2></a>
 
 <p>
-Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> for simultaneous audio input/output, or duplex operation. In this example, we use a callback function and pass our recorded data directly through for playback.
+Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> for simultaneous audio input/output, or duplex operation. In this example, we use a callback function and simply scale the input data before sending it back to the output.
 <p>
 <div class="fragment"><pre><font class="comment">// duplex.cpp</font>
 
@@ -444,9 +444,18 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
 <font class="preprocessor">#include "RtAudio.h"</font>
 
 <font class="comment">// Pass-through function.</font>
-<font class="keywordtype">int</font> pass(<font class="keywordtype">char</font> *buffer, <font class="keywordtype">int</font> buffer_size, <font class="keywordtype">void</font> *)<font class="keyword"></font>
+<font class="keywordtype">int</font> scale(<font class="keywordtype">char</font> *buffer, <font class="keywordtype">int</font> buffer_size, <font class="keywordtype">void</font> *)<font class="keyword"></font>
 <font class="keyword"></font>{
-  <font class="comment">// Surprise!!  We do nothing to pass the data through.</font>
+  <font class="comment">// Note: do nothing here for pass through.</font>
+  <font class="keywordtype">double</font> *my_buffer = (<font class="keywordtype">double</font> *) buffer;
+
+  <font class="comment">// Scale input data for output.</font>
+  <font class="keywordflow">for</font> (<font class="keywordtype">int</font> i=0; i&lt;buffer_size; i++) {
+    <font class="comment">// Do for two channels.</font>
+    *my_buffer++ *= 0.5;
+    *my_buffer++ *= 0.5;
+  }
+
   <font class="keywordflow">return</font> 0;
 }
 
@@ -458,7 +467,6 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
   <font class="keywordtype">int</font> n_buffers = 4;      <font class="comment">// number of internal buffers used by device</font>
   <font class="keywordtype">int</font> device = 0;         <font class="comment">// 0 indicates the default or first available device</font>
   <font class="keywordtype">int</font> stream;             <font class="comment">// our stream identifier</font>
-  <font class="keywordtype">double</font> data[2];
   <font class="keywordtype">char</font> input;
   <a class="code" href="classRtAudio.html">RtAudio</a> *audio;
 
@@ -474,7 +482,7 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
 
   <font class="keywordflow">try</font> {
     <font class="comment">// Set the stream callback function</font>
-    audio-&gt;<a class="code" href="classRtAudio.html#a4">setStreamCallback</a>(stream, &amp;pass, NULL);
+    audio-&gt;<a class="code" href="classRtAudio.html#a4">setStreamCallback</a>(stream, &amp;scale, NULL);
 
     <font class="comment">// Start the stream</font>
     audio-&gt;<a class="code" href="classRtAudio.html#a11">startStream</a>(stream);
@@ -504,7 +512,7 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
 <p>
 When an <a class="el" href="classRtAudio.html">RtAudio</a> stream is running in duplex mode (nonzero input <em>AND</em> output channels), the audio write (playback) operation always occurs before the audio read (record) operation. This sequence allows the use of a single buffer to store both output and input data.
 <p>
-As we see with this example, the write-read sequence of operations does not preclude the use of <a class="el" href="classRtAudio.html">RtAudio</a> in situations where input data is first processed and then output through a duplex stream. When the stream buffer is first allocated, it is initialized with zeros, which produces no audible result when output to the device. In this example, anything recorded by the audio stream input will be played out during the next round of audio processing.
+As we see with this example, the write-read sequence of operations does not preclude the use of <a class="el" href="classRtAudio.html">RtAudio</a> in situations where input data is first processed and then output through a duplex stream. When the stream buffer is first allocated, it is initialized with zeros, which produces no audible result when output to the device. In this example, anything recorded by the audio stream input will be scaled and played out during the next round of audio processing.
 <p>
 Note that duplex operation can also be achieved by opening one output stream and one input stream using the same or different devices. However, there may be timing problems when attempting to use two different devices, due to possible device clock variations, unless a common external "sync" is provided. This becomes even more difficult to achieve using two separate callback streams because it is not possible to <em>explicitly</em> control the calling order of the callback functions.
 <p>
@@ -527,7 +535,7 @@ In order to compile <a class="el" href="classRtAudio.html">RtAudio</a> for a spe
   <table border=1 cellspacing=3 cellpadding=3><tr><td><b>OS:</b> </td><td><b>Audio API:</b> </td><td><b>Preprocessor Definition:</b> </td><td><b>Library or Framework:</b> </td><td><b>Example Compiler Statement:</b>   </td></tr>
 <tr><td>Linux </td><td>ALSA </td><td>__LINUX_ALSA__ </td><td><code>asound, pthread</code> </td><td><code>g++ -Wall -D__LINUX_ALSA__ -o probe probe.cpp RtAudio.cpp -lasound -lpthread</code>   </td></tr>
 <tr><td>Linux </td><td>OSS </td><td>__LINUX_OSS__ </td><td><code>pthread</code> </td><td><code>g++ -Wall -D__LINUX_OSS__ -o probe probe.cpp RtAudio.cpp -lpthread</code>   </td></tr>
-<tr><td>Macintosh OS X </td><td>CoreAudio </td><td>__MACOSX_CORE__ </td><td><code>pthread, stdc++, CoreAudio</code> </td><td><code>cc -Wall -D__MACOSX_CORE__ -o probe probe.cpp RtAudio.cpp -framework CoreAudio -lstdc++ -lpthread</code>   </td></tr>
+<tr><td>Macintosh OS X </td><td>CoreAudio </td><td>__MACOSX_CORE__ </td><td><code>pthread, stdc++, CoreAudio</code> </td><td><code>CC -Wall -D__MACOSX_CORE__ -o probe probe.cpp RtAudio.cpp -framework CoreAudio -lstdc++ -lpthread</code>   </td></tr>
 <tr><td>Irix </td><td>AL </td><td>__IRIX_AL__ </td><td><code>audio, pthread</code> </td><td><code>CC -Wall -D__IRIX_AL__ -o probe probe.cpp RtAudio.cpp -laudio -lpthread</code>   </td></tr>
 <tr><td>Windows </td><td>Direct Sound </td><td>__WINDOWS_DS__ </td><td><code>dsound.lib (ver. 5.0 or higher), multithreaded</code> </td><td><em>compiler specific</em>   </td></tr>
 <tr><td>Windows </td><td>ASIO </td><td>__WINDOWS_ASIO__ </td><td><em>various ASIO header and source files</em> </td><td><em>compiler specific</em>  </td></table>
