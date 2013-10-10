@@ -539,7 +539,7 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
     error( RtError::WARNING );
     return info;
   }
-  info.name.append( (const char *)name, strlen(name) + 1 );
+  info.name.append( (const char *)name, strlen(name) );
   info.name.append( ": " );
 
   dataSize = 256;
@@ -552,7 +552,7 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
     error( RtError::WARNING );
     return info;
   }
-  info.name.append( (const char *)name, strlen(name) + 1 );
+  info.name.append( (const char *)name, strlen(name) );
 
   // Get the output stream "configuration".
   AudioBufferList	*bufferList = nil;
