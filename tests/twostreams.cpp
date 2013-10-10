@@ -3,45 +3,43 @@
   twostreams.cpp
   by Gary P. Scavone, 2001
 
-  Test executable for audio playback,
-  recording, duplex operation, stopping,
-  starting, and aborting operations.
-  Takes number of channels and sample
-  rate as input arguments.  Runs input
-  and output through two separate streams.
+  Test executable for audio playback, recording,
+  duplex operation, stopping, starting, and
+  aborting operations.  Takes number of channels
+  and sample rate as input arguments.  Runs input
+  and output through two separate instances of RtAudio.
   Uses blocking functionality.
 */
 /******************************************/
 
 #include "RtAudio.h"
-#include <iostream.h>
-#include <stdio.h>
+#include <iostream>
 
 /*
 typedef signed long  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT24
+#define FORMAT RTAUDIO_SINT24
 #define SCALE  2147483647.0
 
 typedef char  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT8
+#define FORMAT RTAUDIO_SINT8
 #define SCALE  127.0
 
 typedef signed short  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT16
+#define FORMAT RTAUDIO_SINT16
 #define SCALE  32767.0
 
 typedef signed long  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT32
+#define FORMAT RTAUDIO_SINT32
 #define SCALE  2147483647.0
 */
 
 typedef float  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_FLOAT32
+#define FORMAT RTAUDIO_FLOAT32
 #define SCALE  1.0
 
 /*
 typedef double  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_FLOAT64
+#define FORMAT RTAUDIO_FLOAT64
 #define SCALE  1.0
 */
 
@@ -52,19 +50,19 @@ void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: twostreams N fs <device>\n";
-  cout << "    where N = number of channels,\n";
-  cout << "    fs = the sample rate,\n";
-  cout << "    and device = the device to use (default = 0).\n\n";
+  std::cout << "\nuseage: twostreams N fs <device>\n";
+  std::cout << "    where N = number of channels,\n";
+  std::cout << "    fs = the sample rate,\n";
+  std::cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
 int main(int argc, char *argv[])
 {
-  int chans, fs, buffer_size, stream1 = 0, stream2 = 0, device = 0;
+  int chans, fs, buffer_size, device = 0;
   long frames, counter = 0, i, j;
   MY_TYPE *buffer1, *buffer2;
-  RtAudio *audio;
+  RtAudio *stream1, *stream2;
   FILE *fd;
   double *data = 0;
 
@@ -79,27 +77,30 @@ int main(int argc, char *argv[])
   // Open the realtime output device
   buffer_size = 512;
   try {
-    audio = new RtAudio();
+    stream1 = new RtAudio(device, chans, 0, 0,
+                          FORMAT, fs, &buffer_size, 8);
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     exit(EXIT_FAILURE);
   }
 
   try {
-    stream1 = audio->openStream(device, chans, 0, 0,
-                                FORMAT, fs, &buffer_size, 8);
-    stream2 = audio->openStream(0, 0, device, chans,
-                                FORMAT, fs, &buffer_size, 8);
+    stream2 = new RtAudio(0, 0, device, chans,
+                          FORMAT, fs, &buffer_size, 8);
   }
-  catch (RtError &) {
-    goto cleanup;
+  catch (RtError &error) {
+    delete stream1;
+    error.printMessage();
+    exit(EXIT_FAILURE);
   }
 
   try {
-    buffer1 = (MY_TYPE *) audio->getStreamBuffer(stream1);
-    buffer2 = (MY_TYPE *) audio->getStreamBuffer(stream2);
+    buffer1 = (MY_TYPE *) stream1->getStreamBuffer();
+    buffer2 = (MY_TYPE *) stream2->getStreamBuffer();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
@@ -107,13 +108,14 @@ int main(int argc, char *argv[])
   data = (double *) calloc(chans, sizeof(double));
 
   try {
-    audio->startStream(stream1);
+    stream1->startStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
-  cout << "\nStarting sawtooth playback stream for " << TIME << " seconds." << endl;
+  std::cout << "\nStarting sawtooth playback stream for " << TIME << " seconds." << std::endl;
   while (counter < frames) {
     for (i=0; i<buffer_size; i++) {
       for (j=0; j<chans; j++) {
@@ -124,40 +126,44 @@ int main(int argc, char *argv[])
     }
 
     try {
-      audio->tickStream(stream1);
+      stream1->tickStream();
     }
-    catch (RtError &) {
+    catch (RtError &error) {
+      error.printMessage();
       goto cleanup;
     }
 
     counter += buffer_size;
   }
 
-  cout << "\nStopping playback stream." << endl;
+  std::cout << "\nStopping playback stream." << std::endl;
   try {
-    audio->stopStream(stream1);
+    stream1->stopStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
   fd = fopen("test.raw","wb");
 
   try {
-    audio->startStream(stream2);
+    stream2->startStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
   counter = 0;
-  cout << "\nStarting recording stream for " << TIME << " seconds." << endl;
+  std::cout << "\nStarting recording stream for " << TIME << " seconds." << std::endl;
   while (counter < frames) {
 
     try {
-      audio->tickStream(stream2);
+      stream2->tickStream();
     }
-    catch (RtError &) {
+    catch (RtError &error) {
+      error.printMessage();
       goto cleanup;
     }
 
@@ -166,45 +172,49 @@ int main(int argc, char *argv[])
   }
 
   fclose(fd);
-  cout << "\nAborting recording." << endl;
+  std::cout << "\nAborting recording." << std::endl;
 
   try {
-    audio->abortStream(stream2);
-    audio->startStream(stream1);
-    audio->startStream(stream2);
+    stream2->abortStream();
+    stream1->startStream();
+    stream2->startStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
   counter = 0;
-  cout << "\nStarting playback and record streams (quasi-duplex) for " << TIME << " seconds." << endl;
+  std::cout << "\nStarting playback and record streams (quasi-duplex) for " << TIME << " seconds." << std::endl;
   while (counter < frames) {
 
     try {
-      audio->tickStream(stream2);
+      stream2->tickStream();
       memcpy(buffer1, buffer2, sizeof(MY_TYPE) * chans * buffer_size);
-      audio->tickStream(stream1);
+      stream1->tickStream();
     }
-    catch (RtError &) {
+    catch (RtError &error) {
+      error.printMessage();
       goto cleanup;
     }
 
     counter += buffer_size;
   }
 
-  cout << "\nStopping both streams." << endl;
+  std::cout << "\nStopping both streams." << std::endl;
   try {
-    audio->stopStream(stream1);
-    audio->stopStream(stream2);
+    stream1->stopStream();
+    stream2->stopStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
   }
 
  cleanup:
-  audio->closeStream(stream1);
-  audio->closeStream(stream2);
-  delete audio;
+  stream1->closeStream();
+  stream2->closeStream();
+  delete stream1;
+  delete stream2;
   if (data) free(data);
 
   return 0;

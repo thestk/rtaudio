@@ -1,6 +1,6 @@
 ### RtAudio tests Makefile - for various flavors of unix
 
-PROGRAMS = info play_saw record_raw in_out play_raw twostreams call_saw call_inout call_twostreams call_playtwo
+PROGRAMS = info play_saw record_raw in_out play_raw twostreams call_saw call_inout
 RM = /bin/rm
 SRC_PATH = ../
 INCLUDE = ../
@@ -11,7 +11,7 @@ OBJECTS	=	RtAudio.o
 
 CC       = @CXX@
 DEFS     = @debug@
-DEFS    += @sound_api@
+DEFS    += @audio_apis@
 CFLAGS   = @cflags@
 CFLAGS  += @warn@ -I$(INCLUDE)
 LIBRARY  = @LIBS@
@@ -45,12 +45,6 @@ call_saw : call_saw.cpp $(OBJECTS)
 
 call_inout : call_inout.cpp $(OBJECTS)
 	$(CC) $(CFLAGS) $(DEFS) -o call_inout call_inout.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
-
-call_twostreams : call_twostreams.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o call_twostreams call_twostreams.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
-
-call_playtwo : call_playtwo.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o call_playtwo call_playtwo.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
 clean : 
 	-rm $(OBJECT_PATH)/*.o

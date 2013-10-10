@@ -10,32 +10,32 @@
 /******************************************/
 
 #include "RtAudio.h"
-#include <iostream.h>
+#include <iostream>
 
 /*
 typedef signed long  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT24
+#define FORMAT RTAUDIO_SINT24
 #define SCALE  2147483647.0
 
 typedef char  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT8
+#define FORMAT RTAUDIO_SINT8
 #define SCALE  127.0
 
 typedef signed short  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT16
+#define FORMAT RTAUDIO_SINT16
 #define SCALE  32767.0
 
 typedef signed long  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_SINT32
+#define FORMAT RTAUDIO_SINT32
 #define SCALE  2147483647.0
 */
 typedef float  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_FLOAT32
+#define FORMAT RTAUDIO_FLOAT32
 #define SCALE  1.0
 
 /*
 typedef double  MY_TYPE;
-#define FORMAT RtAudio::RTAUDIO_FLOAT64
+#define FORMAT RTAUDIO_FLOAT64
 #define SCALE  1.0
 */
 
@@ -46,10 +46,10 @@ void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: call_saw N fs <device>\n";
-  cout << "    where N = number of channels,\n";
-  cout << "    fs = the sample rate,\n";
-  cout << "    and device = the device to use (default = 0).\n\n";
+  std::cout << "\nuseage: call_saw N fs <device>\n";
+  std::cout << "    where N = number of channels,\n";
+  std::cout << "    fs = the sample rate,\n";
+  std::cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
@@ -75,7 +75,7 @@ int saw(char *buffer, int buffer_size, void *data)
 
 int main(int argc, char *argv[])
 {
-  int stream, buffer_size, fs, device = 0;
+  int buffer_size, fs, device = 0;
   RtAudio *audio;
   double *data;
   char input;
@@ -91,35 +91,38 @@ int main(int argc, char *argv[])
   // Open the realtime output device
   buffer_size = 1024;
   try {
-    audio = new RtAudio(&stream, device, chans, 0, 0,
+    audio = new RtAudio(device, chans, 0, 0,
                         FORMAT, fs, &buffer_size, 4);
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     exit(EXIT_FAILURE);
   }
 
   data = (double *) calloc(chans, sizeof(double));
 
   try {
-    audio->setStreamCallback(stream, &saw, (void *)data);
-    audio->startStream(stream);
+    audio->setStreamCallback(&saw, (void *)data);
+    audio->startStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
     goto cleanup;
   }
 
-  cout << "\nPlaying ... press <enter> to quit (buffer size = " << buffer_size << ").\n";
-  cin.get(input);
+  std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << buffer_size << ").\n";
+  std::cin.get(input);
 
   // Stop the stream.
   try {
-    audio->stopStream(stream);
+    audio->stopStream();
   }
-  catch (RtError &) {
+  catch (RtError &error) {
+    error.printMessage();
   }
 
  cleanup:
-  audio->closeStream(stream);
+  audio->closeStream();
   delete audio;
   if (data) free(data);
 
