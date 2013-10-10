@@ -37,7 +37,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 3.0, 11 March 2004
+// RtAudio: Version 3.0.1, 22 March 2004
 
 #include "RtAudio.h"
 #include <iostream>
@@ -5489,7 +5489,7 @@ void RtApiDs :: probeDeviceInfo(RtApiDevice *info)
   }
   else {
     // Check input rates against output rate range.
-    for ( unsigned int i=info->sampleRates.size()-1; i>=0; i-- ) {
+    for ( int i=info->sampleRates.size()-1; i>=0; i-- ) {
       if ( (unsigned int) info->sampleRates[i] > out_caps.dwMaxSecondarySampleRate )
         info->sampleRates.erase( info->sampleRates.begin() + i );
     }

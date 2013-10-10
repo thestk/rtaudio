@@ -37,7 +37,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 3.0, 11 March 2004
+// RtAudio: Version 3.0.1, 22 March 2004
 
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
@@ -186,8 +186,7 @@ protected:
 
     RtApiStream()
       :apiHandle(0), userBuffer(0), deviceBuffer(0) {}
-    //      :apiHandle(0), mode(UNINITIALIZED), state(STREAM_STOPPED),
-    //       userBuffer(0), deviceBuffer(0) {}
+    //      mode(UNINITIALIZED), state(STREAM_STOPPED),
   };
 
   // A protected device structure for audio devices.
