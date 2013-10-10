@@ -10,7 +10,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2007 Gary P. Scavone
+    Copyright (c) 2001-2008 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -42,7 +42,7 @@
   \file RtAudio.h
  */
 
-// RtAudio: Version 4.0.3
+// RtAudio: Version 4.0.4
 
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
@@ -617,7 +617,7 @@ protected:
 #endif
 
     RtApiStream()
-      :apiHandle(0), deviceBuffer(0) {}
+      :apiHandle(0), deviceBuffer(0) { device[0] = 11111; device[1] = 11111; }
   };
 
   typedef signed short Int16;
@@ -867,6 +867,8 @@ public:
 
   private:
 
+  std::vector<RtAudio::DeviceInfo> devices_;
+  void saveDeviceInfo( void );
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,

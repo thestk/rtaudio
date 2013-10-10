@@ -37,15 +37,15 @@ The RtAudio::DeviceInfo structure is defined in RtAudio.h and provides a variety
 
 \code
   typedef struct RtAudio::DeviceInfo {
-    bool probed;                  // true if the device capabilities were successfully probed.
-    std::string name;             // Character string device identifier.
-    int outputChannels;           // Maximum output channels supported by device.
-    int inputChannels;            // Maximum input channels supported by device.
-    int duplexChannels;           // Maximum simultaneous input/output channels supported by device.
-    bool isDefaultOutput;         // true if this is the default output device.
-    bool isDefaultInput;          // true if this is the default input device.
-    std::vector<int> sampleRates; // Supported sample rates.
-    RtAudioFormat nativeFormats;  // Bit mask of supported data formats.
+    bool probed;                           // true if the device capabilities were successfully probed.
+    std::string name;                      // Character string device identifier.
+    unsigned int outputChannels;           // Maximum output channels supported by device.
+    unsigned int inputChannels;            // Maximum input channels supported by device.
+    unsigned int duplexChannels;           // Maximum simultaneous input/output channels supported by device.
+    bool isDefaultOutput;                  // true if this is the default output device.
+    bool isDefaultInput;                   // true if this is the default input device.
+    std::vector<unsigned int> sampleRates; // Supported sample rates.
+    RtAudioFormat nativeFormats;           // Bit mask of supported data formats.
   };
 \endcode
 

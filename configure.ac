@@ -30,12 +30,14 @@ AC_ARG_ENABLE(debug,
   [AC_SUBST( debug, [] ) AC_SUBST( cflags, [-O2] ) AC_SUBST( object_path, [Release] ) AC_MSG_RESULT(no)])
 
 # Checks for functions
-AC_CHECK_FUNC(gettimeofday, [cflags=$cflags" -DHAVE_GETTIMEOFDAY"], )
+AC_CHECK_FUNC(gettimeofday, [CFLAGS=$CFLAGS" -DHAVE_GETTIMEOFDAY"], )
 
 # Check compiler and use -Wall if gnu.
 if [test $GXX = "yes" ;] then
   AC_SUBST( warn, [-Wall] )
 fi
+
+CFLAGS="$CFLAGS $cflags"
 
 # Checks for package options and external software
 AC_CANONICAL_HOST
@@ -45,7 +47,7 @@ case $host in
     AC_SUBST( sound_api, [-D__LINUX_OSS__] )
     AC_MSG_RESULT(using OSS)
     AC_SUBST( audio_apis, [-D__LINUX_OSS__] )
-    cflags=$cflags" -lossaudio"
+    CFLAGS=$CFLAGS" -lossaudio"
     AC_CHECK_LIB(pthread, pthread_create, , AC_MSG_ERROR(RtAudio requires the pthread library!))
   ;;
 
@@ -56,7 +58,7 @@ case $host in
     TEMP_LIBS=$LIBS
     AC_CHECK_LIB(jack, jack_client_new, , AC_MSG_ERROR(JACK support requires the jack library!))
     AC_CHECK_LIB(asound, snd_pcm_open, , AC_MSG_ERROR(Jack support also requires the asound library!))
-    LIBS="`pkg-config --cflags --libs jack` $TEMP_LIBS -lasound"
+    LIBS="`pkg-config --CFLAGS --libs jack` $TEMP_LIBS -lasound"
     audio_apis="-D__UNIX_JACK__"
   fi
 

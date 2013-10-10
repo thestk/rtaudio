@@ -10,7 +10,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2007 Gary P. Scavone
+    Copyright (c) 2001-2008 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.3
+// RtAudio: Version 4.0.4
 
 #include "RtAudio.h"
 #include <iostream>
@@ -1816,8 +1816,8 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Count the available ports containing the client name as device
   // channels.  Jack "input ports" equal RtAudio output channels.
   unsigned int nChannels = 0;
-  unsigned long flag = JackPortIsOutput;
-  if ( mode == INPUT ) flag = JackPortIsInput;
+  unsigned long flag = JackPortIsInput;
+  if ( mode == INPUT ) flag = JackPortIsOutput;
   ports = jack_get_ports( client, deviceName.c_str(), NULL, flag );
   if ( ports ) {
     while ( ports[ nChannels ] ) nChannels++;
@@ -3683,8 +3683,10 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     while ( dsPointerLeadTime * 2U > (DWORD) bufferBytes )
       bufferBytes *= 2;
 
-    // Set cooperative level to DSSCL_EXCLUSIVE
-    result = output->SetCooperativeLevel( hWnd, DSSCL_EXCLUSIVE );
+    // Set cooperative level to DSSCL_EXCLUSIVE ... sound stops when window focus changes.
+    //result = output->SetCooperativeLevel( hWnd, DSSCL_EXCLUSIVE );
+    // Set cooperative level to DSSCL_PRIORITY ... sound remains when window focus changes.
+    result = output->SetCooperativeLevel( hWnd, DSSCL_PRIORITY );
     if ( FAILED( result ) ) {
       output->Release();
       errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") setting cooperative level (" << dsinfo.name << ")!";
@@ -3725,6 +3727,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     ZeroMemory( &bufferDescription, sizeof( DSBUFFERDESC ) );
     bufferDescription.dwSize = sizeof( DSBUFFERDESC );
     bufferDescription.dwFlags = ( DSBCAPS_STICKYFOCUS |
+                                  DSBCAPS_GLOBALFOCUS |
                                   DSBCAPS_GETCURRENTPOSITION2 |
                                   DSBCAPS_LOCHARDWARE );  // Force hardware mixing
     bufferDescription.dwBufferBytes = bufferBytes;
@@ -3735,6 +3738,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = output->CreateSoundBuffer( &bufferDescription, &buffer, NULL );
     if ( FAILED( result ) ) {
       bufferDescription.dwFlags = ( DSBCAPS_STICKYFOCUS |
+                                    DSBCAPS_GLOBALFOCUS |
                                     DSBCAPS_GETCURRENTPOSITION2 |
                                     DSBCAPS_LOCSOFTWARE );  // Force software mixing
       result = output->CreateSoundBuffer( &bufferDescription, &buffer, NULL );
@@ -3995,6 +3999,8 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     goto error;
   }
 
+  // Boost DS thread priority
+  SetThreadPriority( (HANDLE) stream_.callbackInfo.thread, THREAD_PRIORITY_HIGHEST );
   return SUCCESS;
 
  error:
@@ -4934,6 +4940,18 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 
  foundDevice:
 
+  // If a stream is already open, we cannot probe the stream devices.
+  // Thus, use the saved results.
+  if ( stream_.state != STREAM_CLOSED &&
+       ( stream_.device[0] == device || stream_.device[1] == device ) ) {
+    if ( device >= devices_.size() ) {
+      errorText_ = "RtApiAlsa::getDeviceInfo: device ID was not present before stream was opened.";
+      error( RtError::WARNING );
+      return info;
+    }
+    return devices_[ device ];
+  }
+
   int openMode = SND_PCM_ASYNC;
   snd_pcm_stream_t stream;
 	snd_pcm_info_t *pcminfo;
@@ -5128,6 +5146,16 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   return info;
 }
 
+void RtApiAlsa :: saveDeviceInfo( void )
+{
+  devices_.clear();
+
+  unsigned int nDevices = getDeviceCount();
+  devices_.resize( nDevices );
+  for ( unsigned int i=0; i<nDevices; i++ )
+    devices_[i] = getDeviceInfo( i );
+}
+
 bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
                                    RtAudioFormat format, unsigned int *bufferSize,
@@ -5164,6 +5192,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 			if ( subdevice < 0 ) break;
       if ( nDevices == device ) {
         sprintf( name, "hw:%d,%d", card, subdevice );
+        snd_ctl_close( chandle );
         goto foundDevice;
       }
       nDevices++;
@@ -5185,6 +5214,12 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
  foundDevice:
+
+  // The getDeviceInfo() function will not work for a device that is
+  // already open.  Thus, we'll probe the system before opening a
+  // stream and save the results for use by getDeviceInfo().
+  if ( mode == OUTPUT || ( mode == INPUT && stream_.mode != OUTPUT ) ) // only do once
+    this->saveDeviceInfo();
 
   snd_pcm_stream_t stream;
   if ( mode == OUTPUT )
@@ -6014,6 +6049,7 @@ unsigned int RtApiOss :: getDeviceCount( void )
     return 0;
   }
 
+  close( mixerfd );
   return sysinfo.numaudios;
 }
 
@@ -6874,11 +6910,11 @@ extern "C" void *ossCallbackHandler( void *ptr )
 // message printing.
 void RtApi :: error( RtError::Type type )
 {
+  errorStream_.str(""); // clear the ostringstream
   if ( type == RtError::WARNING && showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
   else
     throw( RtError( errorText_, type ) );
-  errorStream_.str(""); // clear the ostringstream
 }
 
 void RtApi :: verifyStream()
@@ -6905,7 +6941,7 @@ void RtApi :: clearStreamInfo()
   stream_.callbackInfo.userData = 0;
   stream_.callbackInfo.isRunning = false;
   for ( int i=0; i<2; i++ ) {
-    stream_.device[i] = 0;
+    stream_.device[i] = 11111;
     stream_.doConvertBuffer[i] = false;
     stream_.deviceInterleaved[i] = true;
     stream_.doByteSwap[i] = false;

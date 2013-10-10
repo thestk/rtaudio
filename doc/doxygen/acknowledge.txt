@@ -2,6 +2,7 @@
 
 Many thanks to the following people for providing bug fixes and improvements:
 <UL>
+<LI>Anders Ervik</LI>
 <LI>Robin Davies (Windows DS and ASIO)</LI>
 <LI>Ryan Williams (Windows non-MS compiler ASIO support)</LI>
 <LI>Ed Wildgoose (Linux ALSA and Jack)</LI>
