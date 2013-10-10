@@ -25,7 +25,8 @@
 </ul></td><td>UC<a href="#4"><sup>4</sup></a></td></tr>
 <tr><td>5</td><td>Robust support for full-duplex with different devices.  Provide well-defined behavior if the devices get out of sync, with input taking precedence, so no incoming samples are lost (if possible).</td><td>UC</td></tr>
 <tr><td>6</td><td>More sophisticated querying of device capabilities - for example, it'd be nice to figure out that a device supports either 4 channels of 16-bit or 2 channels of 24-bit audio.</td><td>UC</td></tr>
-
+<tr><td>7</td><td>A faster device querying capability in DirectSound API - the current approach can take an extremely long time, especially for devices with many channels (like an RME Fireface 800).</td><td>UC</td></tr>
+<tr><td>8</td><td>A way to specify a desired device name, instead of a device index, when opening a stream?</td><td>UC</td></tr>
 
 </table>
 
@@ -62,6 +63,12 @@
 <tr><td>9</td><td>Ability to query device latency.</td><td><a href="#2"><sup>2</sup></a>New <tt>getStreamLatency()</tt> function (GS)</td><td>4.0</td></tr>
 
 <tr><td>10</td><td>Choice of opening a device in exclusive or non-exclusive mode.  If opening in non-exclusive mode, try to use the device as-is without changing its sample rate, etc - this is good when users want to use two audio devices at once.</td><td><a href="#3"><sup>3</sup></a>New RtAudio::StreamOptions structure and parameters</td><td>4.0</td></tr>
+
+<tr><td>11</td><td>Previous CoreAudio support included only a single stream with multiple channels or multiple one-channel streams.</td><td>Added support for arbitrary stream channel configurations (GS)</td><td>4.0.5</td></tr>
+
+<tr><td>12</td><td>Added function to return actual sample rate used by a stream because sometimes it varies slightly from the specified one.</td><td>New <tt>getStreamSampleRate()</tt> function (Theo Veenker)</td><td>4.0.5</td></tr>
+
+<tr><td>13</td><td>Added way to specify realtime scheduling for unices.</td><td>New StreamOptions flag "RTAUDIO_SCHEDULE_REALTIME" and attribute "priority" to StreamOptions (Theo Veenker)</td><td>4.0.5</td></tr>
 
 </table>
 
