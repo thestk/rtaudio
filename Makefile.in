@@ -5,23 +5,26 @@ RM = /bin/rm
 
 OBJECTS	= RtAudio.o @objects@
 
-LIBRARY  = librtaudio.a
+STATIC = librtaudio.a
+SHARED = librtaudio.so
+LIBRARIES = $(STATIC) $(SHARED)
 
 CC       = @CXX@
 AR       = @AR@
 RANLIB   = @RANLIB@
 
 DEFS     = @CPPFLAGS@
-CFLAGS   = @CXXFLAGS@ -Iinclude
+CFLAGS   = @CXXFLAGS@ -Iinclude -fPIC
 
-all : $(LIBRARY)
+all : $(LIBRARIES)
 
 tests:
 	cd tests && $(MAKE) all
 
-$(LIBRARY): $(OBJECTS)
-	$(AR) ruv $(LIBRARY) $(OBJECTS)
-	ranlib $(LIBRARY)
+$(LIBRARIES): $(OBJECTS)
+	$(AR) ruv $(STATIC) $(OBJECTS)
+	ranlib $(STATIC)
+	$(CC) -shared $(OBJECTS) -o $(SHARED) @LIBS@
 
 %.o : %.cpp
 	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $@
@@ -30,16 +33,16 @@ $(LIBRARY): $(OBJECTS)
 	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $@
 
 clean : 
-	-rm -f $(LIBRARY)
-	-rm -f $(OBJECTS)
-	-rm -f *~
+	$(RM) -f $(LIBRARIES)
+	$(RM) -f $(OBJECTS)
+	$(RM) -f *~
 	cd tests && $(MAKE) clean
 
 distclean: clean
-	-rm -rf config.log autom4te.cache Makefile rtaudio-config
+	$(RM) -rf config.log config.status autom4te.cache Makefile rtaudio-config
 	cd tests && $(MAKE) distclean
 
 strip : 
-	strip $(LIBRARY)
-	ranlib $(LIBRARY)
+	strip $(LIBRARIES)
+	ranlib $(LIBRARIES)
 	cd tests && $(MAKE) strip

@@ -43,13 +43,13 @@ testall : testall.cpp $(OBJECTS)
 	$(CC) $(CFLAGS) $(DEFS) -o testall testall.cpp $(OBJECT_PATH)/*.o $(LIBRARY)
 
 clean : 
-	-rm $(OBJECT_PATH)/*.o
-	-rm $(PROGRAMS)
-	-rm -f *.raw *~ *.exe
-	-rm -fR *.dSYM
+	$(RM) -f $(OBJECT_PATH)/*.o
+	$(RM) -f $(PROGRAMS)
+	$(RM) -f *.raw *~ *.exe
+	$(RM) -fR *.dSYM
 
 distclean: clean
-	-rm Makefile
+	$(RM) Makefile
 
 strip : 
 	strip $(PROGRAMS)

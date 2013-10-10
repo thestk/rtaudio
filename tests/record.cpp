@@ -13,6 +13,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <stdio.h>
 
 /*
 typedef char  MY_TYPE;
