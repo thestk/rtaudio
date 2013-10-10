@@ -590,7 +590,7 @@
 <a name="l00911"></a>00911 {
 <a name="l00912"></a>00912 <span class="keyword">public</span>:
 <a name="l00913"></a>00913 
-<a name="l00914"></a>00914   RtApiDummy() { errorText_ = <span class="stringliteral">"RtApiDummy: This class provides no functionality."</span>; error( WARNING ); };
+<a name="l00914"></a>00914   RtApiDummy() { errorText_ = <span class="stringliteral">"RtApiDummy: This class provides no functionality."</span>; error( <a class="code" href="classRtError.html#w11w0">RtError::WARNING</a> ); };
 <a name="l00915"></a>00915   <a class="code" href="classRtAudio.html#w8">RtAudio::Api</a> getCurrentApi( <span class="keywordtype">void</span> ) { <span class="keywordflow">return</span> <a class="code" href="classRtAudio.html#w8w7">RtAudio::RTAUDIO_DUMMY</a>; };
 <a name="l00916"></a>00916   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> getDeviceCount( <span class="keywordtype">void</span> ) { <span class="keywordflow">return</span> 0; };
 <a name="l00917"></a>00917   <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> getDeviceInfo( <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> device ) { <a class="code" href="structRtAudio_1_1DeviceInfo.html">RtAudio::DeviceInfo</a> info; <span class="keywordflow">return</span> info; };
