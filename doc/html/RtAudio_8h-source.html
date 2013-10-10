@@ -11,282 +11,287 @@
 <h1>RtAudio.h</h1><a href="RtAudio_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre>00001 <font class="comment">/******************************************/</font>
 00002 <font class="comment">/*</font>
 00003 <font class="comment">  RtAudio - realtime sound I/O C++ class</font>
-00004 <font class="comment">  Version 2.0 by Gary P. Scavone, 2001-2002.</font>
+00004 <font class="comment">  by Gary P. Scavone, 2001-2002.</font>
 00005 <font class="comment">*/</font>
 00006 <font class="comment">/******************************************/</font>
 00007 
-00008 <font class="preprocessor">#if !defined(__RtAudio_h)</font>
-<a name="l00009"></a><a class="code" href="RtAudio_8h.html#a0">00009</a> <font class="preprocessor"></font><font class="preprocessor">#define __RtAudio_h</font>
+00008 <font class="preprocessor">#if !defined(__RTAUDIO_H)</font>
+<a name="l00009"></a><a class="code" href="RtAudio_8h.html#a0">00009</a> <font class="preprocessor"></font><font class="preprocessor">#define __RTAUDIO_H</font>
 00010 <font class="preprocessor"></font>
 00011 <font class="preprocessor">#include &lt;map&gt;</font>
 00012 
-00013 <font class="preprocessor">#if defined(__LINUX_ALSA_)</font>
+00013 <font class="preprocessor">#if defined(__LINUX_ALSA__)</font>
 00014 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;alsa/asoundlib.h&gt;</font>
 00015 <font class="preprocessor">  #include &lt;pthread.h&gt;</font>
 00016 <font class="preprocessor">  #include &lt;unistd.h&gt;</font>
 00017 
-00018   <font class="keyword">typedef</font> snd_pcm_t *AUDIO_HANDLE;
-00019   <font class="keyword">typedef</font> <font class="keywordtype">int</font> DEVICE_ID;
-00020   <font class="keyword">typedef</font> pthread_t THREAD_HANDLE;
-00021   <font class="keyword">typedef</font> pthread_mutex_t MUTEX;
-00022 
-00023 <font class="preprocessor">#elif defined(__LINUX_OSS_)</font>
-00024 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;pthread.h&gt;</font>
-00025 <font class="preprocessor">  #include &lt;unistd.h&gt;</font>
-00026 
-00027   <font class="keyword">typedef</font> <font class="keywordtype">int</font> AUDIO_HANDLE;
-00028   <font class="keyword">typedef</font> <font class="keywordtype">int</font> DEVICE_ID;
-00029   <font class="keyword">typedef</font> pthread_t THREAD_HANDLE;
-00030   <font class="keyword">typedef</font> pthread_mutex_t MUTEX;
-00031 
-00032 <font class="preprocessor">#elif defined(__WINDOWS_DS_)</font>
-00033 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;windows.h&gt;</font>
-00034 <font class="preprocessor">  #include &lt;process.h&gt;</font>
-00035 
-00036   <font class="comment">// The following struct is used to hold the extra variables</font>
-00037   <font class="comment">// specific to the DirectSound implementation.</font>
-00038   <font class="keyword">typedef</font> <font class="keyword">struct </font>{
-00039     <font class="keywordtype">void</font> * object;
-00040     <font class="keywordtype">void</font> * buffer;
-00041     UINT bufferPointer;
-00042   } AUDIO_HANDLE;
-00043 
-00044   <font class="keyword">typedef</font> LPGUID DEVICE_ID;
-00045   <font class="keyword">typedef</font> <font class="keywordtype">unsigned</font> <font class="keywordtype">long</font> THREAD_HANDLE;
-00046   <font class="keyword">typedef</font> CRITICAL_SECTION MUTEX;
-00047 
-00048 <font class="preprocessor">#elif defined(__IRIX_AL_)</font>
-00049 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;dmedia/audio.h&gt;</font>
-00050 <font class="preprocessor">  #include &lt;pthread.h&gt;</font>
-00051 <font class="preprocessor">  #include &lt;unistd.h&gt;</font>
-00052 
-00053   <font class="keyword">typedef</font> ALport AUDIO_HANDLE;
-00054   <font class="keyword">typedef</font> <font class="keywordtype">int</font> DEVICE_ID;
-00055   <font class="keyword">typedef</font> pthread_t THREAD_HANDLE;
-00056   <font class="keyword">typedef</font> pthread_mutex_t MUTEX;
-00057 
-00058 <font class="preprocessor">#endif</font>
-00059 <font class="preprocessor"></font>
-00060 
-00061 <font class="comment">// *************************************************** //</font>
-00062 <font class="comment">//</font>
-00063 <font class="comment">// RtAudioError class declaration.</font>
-00064 <font class="comment">//</font>
+00018 <font class="preprocessor">  #define THREAD_TYPE</font>
+00019 <font class="preprocessor"></font>  <font class="keyword">typedef</font> snd_pcm_t *AUDIO_HANDLE;
+00020   <font class="keyword">typedef</font> <font class="keywordtype">int</font> DEVICE_ID;
+00021   <font class="keyword">typedef</font> pthread_t THREAD_HANDLE;
+00022   <font class="keyword">typedef</font> pthread_mutex_t MUTEX;
+00023 
+00024 <font class="preprocessor">#elif defined(__LINUX_OSS__)</font>
+00025 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;pthread.h&gt;</font>
+00026 <font class="preprocessor">  #include &lt;unistd.h&gt;</font>
+00027 
+00028 <font class="preprocessor">  #define THREAD_TYPE</font>
+00029 <font class="preprocessor"></font>  <font class="keyword">typedef</font> <font class="keywordtype">int</font> AUDIO_HANDLE;
+00030   <font class="keyword">typedef</font> <font class="keywordtype">int</font> DEVICE_ID;
+00031   <font class="keyword">typedef</font> pthread_t THREAD_HANDLE;
+00032   <font class="keyword">typedef</font> pthread_mutex_t MUTEX;
+00033 
+00034 <font class="preprocessor">#elif defined(__WINDOWS_DS__)</font>
+00035 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;windows.h&gt;</font>
+00036 <font class="preprocessor">  #include &lt;process.h&gt;</font>
+00037 
+00038   <font class="comment">// The following struct is used to hold the extra variables</font>
+00039   <font class="comment">// specific to the DirectSound implementation.</font>
+00040   <font class="keyword">typedef</font> <font class="keyword">struct </font>{
+00041     <font class="keywordtype">void</font> * object;
+00042     <font class="keywordtype">void</font> * buffer;
+00043     UINT bufferPointer;
+00044   } AUDIO_HANDLE;
+00045 
+00046 <font class="preprocessor">  #define THREAD_TYPE __stdcall</font>
+00047 <font class="preprocessor"></font>  <font class="keyword">typedef</font> LPGUID DEVICE_ID;
+00048   <font class="keyword">typedef</font> <font class="keywordtype">unsigned</font> <font class="keywordtype">long</font> THREAD_HANDLE;
+00049   <font class="keyword">typedef</font> CRITICAL_SECTION MUTEX;
+00050 
+00051 <font class="preprocessor">#elif defined(__IRIX_AL__)</font>
+00052 <font class="preprocessor"></font><font class="preprocessor">  #include &lt;dmedia/audio.h&gt;</font>
+00053 <font class="preprocessor">  #include &lt;pthread.h&gt;</font>
+00054 <font class="preprocessor">  #include &lt;unistd.h&gt;</font>
+00055 
+00056 <font class="preprocessor">  #define THREAD_TYPE</font>
+00057 <font class="preprocessor"></font>  <font class="keyword">typedef</font> ALport AUDIO_HANDLE;
+00058   <font class="keyword">typedef</font> <font class="keywordtype">int</font> DEVICE_ID;
+00059   <font class="keyword">typedef</font> pthread_t THREAD_HANDLE;
+00060   <font class="keyword">typedef</font> pthread_mutex_t MUTEX;
+00061 
+00062 <font class="preprocessor">#endif</font>
+00063 <font class="preprocessor"></font>
+00064 
 00065 <font class="comment">// *************************************************** //</font>
-00066 
-<a name="l00067"></a><a class="code" href="classRtAudioError.html">00067</a> <font class="keyword">class </font><a class="code" href="classRtAudioError.html">RtAudioError</a>
-00068 {
-00069 <font class="keyword">public</font>:
-<a name="l00070"></a><a class="code" href="classRtAudioError.html#s11">00070</a>   <font class="keyword">enum</font> TYPE {
-00071     WARNING,
-00072     DEBUG_WARNING,
-00073     UNSPECIFIED,
-00074     NO_DEVICES_FOUND,
-00075     INVALID_DEVICE,
-00076     INVALID_STREAM,
-00077     MEMORY_ERROR,
-00078     INVALID_PARAMETER,
-00079     DRIVER_ERROR,
-00080     SYSTEM_ERROR,
-00081     THREAD_ERROR
-00082   };
-00083 
-00084 <font class="keyword">protected</font>:
-<a name="l00085"></a><a class="code" href="classRtAudioError.html#n0">00085</a>   <font class="keywordtype">char</font> error_message[256];
-<a name="l00086"></a><a class="code" href="classRtAudioError.html#n1">00086</a>   TYPE type;
+00066 <font class="comment">//</font>
+00067 <font class="comment">// RtError class declaration.</font>
+00068 <font class="comment">//</font>
+00069 <font class="comment">// *************************************************** //</font>
+00070 
+<a name="l00071"></a><a class="code" href="classRtError.html">00071</a> <font class="keyword">class </font><a class="code" href="classRtError.html">RtError</a>
+00072 {
+00073 <font class="keyword">public</font>:
+<a name="l00074"></a><a class="code" href="classRtError.html#s11">00074</a>   <font class="keyword">enum</font> TYPE {
+00075     WARNING,
+00076     DEBUG_WARNING,
+00077     UNSPECIFIED,
+00078     NO_DEVICES_FOUND,
+00079     INVALID_DEVICE,
+00080     INVALID_STREAM,
+00081     MEMORY_ERROR,
+00082     INVALID_PARAMETER,
+00083     DRIVER_ERROR,
+00084     SYSTEM_ERROR,
+00085     THREAD_ERROR
+00086   };
 00087 
-00088 <font class="keyword">public</font>:
-00090   <a class="code" href="classRtAudioError.html#a0">RtAudioError</a>(<font class="keyword">const</font> <font class="keywordtype">char</font> *p, TYPE tipe = RtAudioError::UNSPECIFIED);
+00088 <font class="keyword">protected</font>:
+<a name="l00089"></a><a class="code" href="classRtError.html#n0">00089</a>   <font class="keywordtype">char</font> error_message[256];
+<a name="l00090"></a><a class="code" href="classRtError.html#n1">00090</a>   TYPE type;
 00091 
-00093   <font class="keyword">virtual</font> <a class="code" href="classRtAudioError.html#a1">~RtAudioError</a>(<font class="keywordtype">void</font>);
-00094 
-00096   <font class="keyword">virtual</font> <font class="keywordtype">void</font> <a class="code" href="classRtAudioError.html#a2">printMessage</a>(<font class="keywordtype">void</font>);
-00097 
-<a name="l00099"></a><a class="code" href="classRtAudioError.html#a3">00099</a>   <font class="keyword">virtual</font> <font class="keyword">const</font> TYPE&amp; <a class="code" href="classRtAudioError.html#a3">getType</a>(<font class="keywordtype">void</font>)<font class="keyword"> </font>{ <font class="keywordflow">return</font> type; }
-00100 
-<a name="l00102"></a><a class="code" href="classRtAudioError.html#a4">00102</a>   <font class="keyword">virtual</font> <font class="keyword">const</font> <font class="keywordtype">char</font> *<a class="code" href="classRtAudioError.html#a4">getMessage</a>(<font class="keywordtype">void</font>)<font class="keyword"> </font>{ <font class="keywordflow">return</font> error_message; }
-00103 };
+00092 <font class="keyword">public</font>:
+00094   <a class="code" href="classRtError.html#a0">RtError</a>(<font class="keyword">const</font> <font class="keywordtype">char</font> *p, TYPE tipe = RtError::UNSPECIFIED);
+00095 
+00097   <font class="keyword">virtual</font> <a class="code" href="classRtError.html#a1">~RtError</a>(<font class="keywordtype">void</font>);
+00098 
+00100   <font class="keyword">virtual</font> <font class="keywordtype">void</font> <a class="code" href="classRtError.html#a2">printMessage</a>(<font class="keywordtype">void</font>);
+00101 
+<a name="l00103"></a><a class="code" href="classRtError.html#a3">00103</a>   <font class="keyword">virtual</font> <font class="keyword">const</font> TYPE&amp; <a class="code" href="classRtError.html#a3">getType</a>(<font class="keywordtype">void</font>)<font class="keyword"> </font>{ <font class="keywordflow">return</font> type; }
 00104 
-00105 
-00106 <font class="comment">// *************************************************** //</font>
-00107 <font class="comment">//</font>
-00108 <font class="comment">// RtAudio class declaration.</font>
-00109 <font class="comment">//</font>
+<a name="l00106"></a><a class="code" href="classRtError.html#a4">00106</a>   <font class="keyword">virtual</font> <font class="keyword">const</font> <font class="keywordtype">char</font> *<a class="code" href="classRtError.html#a4">getMessage</a>(<font class="keywordtype">void</font>)<font class="keyword"> </font>{ <font class="keywordflow">return</font> error_message; }
+00107 };
+00108 
+00109 
 00110 <font class="comment">// *************************************************** //</font>
-00111 
-<a name="l00112"></a><a class="code" href="classRtAudio.html">00112</a> <font class="keyword">class </font><a class="code" href="classRtAudio.html">RtAudio</a>
-00113 {
-00114 <font class="keyword">public</font>:
+00111 <font class="comment">//</font>
+00112 <font class="comment">// RtAudio class declaration.</font>
+00113 <font class="comment">//</font>
+00114 <font class="comment">// *************************************************** //</font>
 00115 
-00116   <font class="comment">// Support for signed integers and floats.  Audio data fed to/from</font>
-00117   <font class="comment">// the tickStream() routine is assumed to ALWAYS be in host</font>
-00118   <font class="comment">// byte order.  The internal routines will automatically take care of</font>
-00119   <font class="comment">// any necessary byte-swapping between the host format and the</font>
-00120   <font class="comment">// soundcard.  Thus, endian-ness is not a concern in the following</font>
-00121   <font class="comment">// format definitions.</font>
-<a name="l00122"></a><a class="code" href="classRtAudio.html#s0">00122</a>   <font class="keyword">typedef</font> <font class="keywordtype">unsigned</font> <font class="keywordtype">long</font> RTAUDIO_FORMAT;
-<a name="l00123"></a><a class="code" href="classRtAudio.html#p0">00123</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT8;
-<a name="l00124"></a><a class="code" href="classRtAudio.html#p1">00124</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT16;
-<a name="l00125"></a><a class="code" href="classRtAudio.html#p2">00125</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT24; 
-<a name="l00126"></a><a class="code" href="classRtAudio.html#p3">00126</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT32;
-<a name="l00127"></a><a class="code" href="classRtAudio.html#p4">00127</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_FLOAT32; 
-<a name="l00128"></a><a class="code" href="classRtAudio.html#p5">00128</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_FLOAT64; 
-00130   <font class="comment">//static const int MAX_SAMPLE_RATES = 14;</font>
-00131   <font class="keyword">enum</font> { MAX_SAMPLE_RATES = 14 };
-00132 
-00133   <font class="keyword">typedef</font> int (*RTAUDIO_CALLBACK)(<font class="keywordtype">char</font> *buffer, <font class="keywordtype">int</font> bufferSize, <font class="keywordtype">void</font> *userData);
-00134 
-<a name="l00135"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html">00135</a>   <font class="keyword">typedef</font> <font class="keyword">struct </font>{
-<a name="l00136"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m0">00136</a>     <font class="keywordtype">char</font> name[128];
-<a name="l00137"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m1">00137</a>     DEVICE_ID id[2];  
-<a name="l00138"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m2">00138</a>     <font class="keywordtype">bool</font> probed;       
-<a name="l00139"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m3">00139</a>     <font class="keywordtype">int</font> maxOutputChannels;
-<a name="l00140"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m4">00140</a>     <font class="keywordtype">int</font> maxInputChannels;
-<a name="l00141"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m5">00141</a>     <font class="keywordtype">int</font> maxDuplexChannels;
-<a name="l00142"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m6">00142</a>     <font class="keywordtype">int</font> minOutputChannels;
-<a name="l00143"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m7">00143</a>     <font class="keywordtype">int</font> minInputChannels;
-<a name="l00144"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m8">00144</a>     <font class="keywordtype">int</font> minDuplexChannels;
-<a name="l00145"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m9">00145</a>     <font class="keywordtype">bool</font> hasDuplexSupport; 
-<a name="l00146"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m10">00146</a>     <font class="keywordtype">int</font> nSampleRates;      
-<a name="l00147"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m11">00147</a>     <font class="keywordtype">int</font> sampleRates[MAX_SAMPLE_RATES]; 
-<a name="l00148"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m12">00148</a>     RTAUDIO_FORMAT nativeFormats;     
-00149   } RTAUDIO_DEVICE;
-00150 
-00152 
-00159   <a class="code" href="classRtAudio.html#a0">RtAudio</a>();
-00160 
-00162 
-00173   <a class="code" href="classRtAudio.html#a0">RtAudio</a>(<font class="keywordtype">int</font> *streamID,
-00174           <font class="keywordtype">int</font> outputDevice, <font class="keywordtype">int</font> outputChannels,
-00175           <font class="keywordtype">int</font> inputDevice, <font class="keywordtype">int</font> inputChannels,
-00176           RTAUDIO_FORMAT format, <font class="keywordtype">int</font> sampleRate,
-00177           <font class="keywordtype">int</font> *bufferSize, <font class="keywordtype">int</font> numberOfBuffers);
-00178 
-00180 
-00184   <a class="code" href="classRtAudio.html#a2">~RtAudio</a>();
-00185 
-00187 
-00214   <font class="keywordtype">int</font> <a class="code" href="classRtAudio.html#a3">openStream</a>(<font class="keywordtype">int</font> outputDevice, <font class="keywordtype">int</font> outputChannels,
-00215                  <font class="keywordtype">int</font> inputDevice, <font class="keywordtype">int</font> inputChannels,
-00216                  RTAUDIO_FORMAT format, <font class="keywordtype">int</font> sampleRate,
-00217                  <font class="keywordtype">int</font> *bufferSize, <font class="keywordtype">int</font> numberOfBuffers);
-00218 
-00220 
-00239   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a4">setStreamCallback</a>(<font class="keywordtype">int</font> streamID, RTAUDIO_CALLBACK callback, <font class="keywordtype">void</font> *userData);
-00240 
-00242 
-00249   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a5">cancelStreamCallback</a>(<font class="keywordtype">int</font> streamID);
-00250 
-00252   <font class="keywordtype">int</font> <a class="code" href="classRtAudio.html#a6">getDeviceCount</a>(<font class="keywordtype">void</font>);
-00253 
-00255 
-00265   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a7">getDeviceInfo</a>(<font class="keywordtype">int</font> device, RTAUDIO_DEVICE *info);
-00266 
-00268 
-00273   <font class="keywordtype">char</font> * <font class="keyword">const</font> <a class="code" href="classRtAudio.html#a8">getStreamBuffer</a>(<font class="keywordtype">int</font> streamID);
-00274 
-00276 
-00281   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a9">tickStream</a>(<font class="keywordtype">int</font> streamID);
-00282 
-00284 
-00288   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a10">closeStream</a>(<font class="keywordtype">int</font> streamID);
-00289 
-00291 
-00295   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a11">startStream</a>(<font class="keywordtype">int</font> streamID);
-00296 
-00298 
-00302   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a12">stopStream</a>(<font class="keywordtype">int</font> streamID);
-00303 
-00305 
-00309   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a13">abortStream</a>(<font class="keywordtype">int</font> streamID);
-00310 
-00312 
-00317   <font class="keywordtype">int</font> <a class="code" href="classRtAudio.html#a14">streamWillBlock</a>(<font class="keywordtype">int</font> streamID);
-00318 
-00319 <font class="keyword">protected</font>:
-00320 
-00321 <font class="keyword">private</font>:
+<a name="l00116"></a><a class="code" href="classRtAudio.html">00116</a> <font class="keyword">class </font><a class="code" href="classRtAudio.html">RtAudio</a>
+00117 {
+00118 <font class="keyword">public</font>:
+00119 
+00120   <font class="comment">// Support for signed integers and floats.  Audio data fed to/from</font>
+00121   <font class="comment">// the tickStream() routine is assumed to ALWAYS be in host</font>
+00122   <font class="comment">// byte order.  The internal routines will automatically take care of</font>
+00123   <font class="comment">// any necessary byte-swapping between the host format and the</font>
+00124   <font class="comment">// soundcard.  Thus, endian-ness is not a concern in the following</font>
+00125   <font class="comment">// format definitions.</font>
+<a name="l00126"></a><a class="code" href="classRtAudio.html#s0">00126</a>   <font class="keyword">typedef</font> <font class="keywordtype">unsigned</font> <font class="keywordtype">long</font> RTAUDIO_FORMAT;
+<a name="l00127"></a><a class="code" href="classRtAudio.html#p0">00127</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT8;
+<a name="l00128"></a><a class="code" href="classRtAudio.html#p1">00128</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT16;
+<a name="l00129"></a><a class="code" href="classRtAudio.html#p2">00129</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT24; 
+<a name="l00130"></a><a class="code" href="classRtAudio.html#p3">00130</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_SINT32;
+<a name="l00131"></a><a class="code" href="classRtAudio.html#p4">00131</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_FLOAT32; 
+<a name="l00132"></a><a class="code" href="classRtAudio.html#p5">00132</a>   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT RTAUDIO_FLOAT64; 
+00133 
+00134   <font class="comment">//static const int MAX_SAMPLE_RATES = 14;</font>
+00135   <font class="keyword">enum</font> { MAX_SAMPLE_RATES = 14 };
+00136 
+00137   <font class="keyword">typedef</font> int (*RTAUDIO_CALLBACK)(<font class="keywordtype">char</font> *buffer, <font class="keywordtype">int</font> bufferSize, <font class="keywordtype">void</font> *userData);
+00138 
+<a name="l00139"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html">00139</a>   <font class="keyword">typedef</font> <font class="keyword">struct </font>{
+<a name="l00140"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m0">00140</a>     <font class="keywordtype">char</font> name[128];
+<a name="l00141"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m1">00141</a>     DEVICE_ID id[2];  
+<a name="l00142"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m2">00142</a>     <font class="keywordtype">bool</font> probed;       
+<a name="l00143"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m3">00143</a>     <font class="keywordtype">int</font> maxOutputChannels;
+<a name="l00144"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m4">00144</a>     <font class="keywordtype">int</font> maxInputChannels;
+<a name="l00145"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m5">00145</a>     <font class="keywordtype">int</font> maxDuplexChannels;
+<a name="l00146"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m6">00146</a>     <font class="keywordtype">int</font> minOutputChannels;
+<a name="l00147"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m7">00147</a>     <font class="keywordtype">int</font> minInputChannels;
+<a name="l00148"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m8">00148</a>     <font class="keywordtype">int</font> minDuplexChannels;
+<a name="l00149"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m9">00149</a>     <font class="keywordtype">bool</font> hasDuplexSupport; 
+<a name="l00150"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m10">00150</a>     <font class="keywordtype">int</font> nSampleRates;      
+<a name="l00151"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m11">00151</a>     <font class="keywordtype">int</font> sampleRates[MAX_SAMPLE_RATES]; 
+<a name="l00152"></a><a class="code" href="structRtAudio_1_1RTAUDIO__DEVICE.html#m12">00152</a>     RTAUDIO_FORMAT nativeFormats;     
+00153   } RTAUDIO_DEVICE;
+00154 
+00156 
+00163   <a class="code" href="classRtAudio.html#a0">RtAudio</a>();
+00164 
+00166 
+00177   <a class="code" href="classRtAudio.html#a0">RtAudio</a>(<font class="keywordtype">int</font> *streamId,
+00178           <font class="keywordtype">int</font> outputDevice, <font class="keywordtype">int</font> outputChannels,
+00179           <font class="keywordtype">int</font> inputDevice, <font class="keywordtype">int</font> inputChannels,
+00180           RTAUDIO_FORMAT format, <font class="keywordtype">int</font> sampleRate,
+00181           <font class="keywordtype">int</font> *bufferSize, <font class="keywordtype">int</font> numberOfBuffers);
+00182 
+00184 
+00188   <a class="code" href="classRtAudio.html#a2">~RtAudio</a>();
+00189 
+00191 
+00218   <font class="keywordtype">int</font> <a class="code" href="classRtAudio.html#a3">openStream</a>(<font class="keywordtype">int</font> outputDevice, <font class="keywordtype">int</font> outputChannels,
+00219                  <font class="keywordtype">int</font> inputDevice, <font class="keywordtype">int</font> inputChannels,
+00220                  RTAUDIO_FORMAT format, <font class="keywordtype">int</font> sampleRate,
+00221                  <font class="keywordtype">int</font> *bufferSize, <font class="keywordtype">int</font> numberOfBuffers);
+00222 
+00224 
+00243   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a4">setStreamCallback</a>(<font class="keywordtype">int</font> streamId, RTAUDIO_CALLBACK callback, <font class="keywordtype">void</font> *userData);
+00244 
+00246 
+00253   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a5">cancelStreamCallback</a>(<font class="keywordtype">int</font> streamId);
+00254 
+00256   <font class="keywordtype">int</font> <a class="code" href="classRtAudio.html#a6">getDeviceCount</a>(<font class="keywordtype">void</font>);
+00257 
+00259 
+00269   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a7">getDeviceInfo</a>(<font class="keywordtype">int</font> device, RTAUDIO_DEVICE *info);
+00270 
+00272 
+00277   <font class="keywordtype">char</font> * <font class="keyword">const</font> <a class="code" href="classRtAudio.html#a8">getStreamBuffer</a>(<font class="keywordtype">int</font> streamId);
+00278 
+00280 
+00285   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a9">tickStream</a>(<font class="keywordtype">int</font> streamId);
+00286 
+00288 
+00292   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a10">closeStream</a>(<font class="keywordtype">int</font> streamId);
+00293 
+00295 
+00299   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a11">startStream</a>(<font class="keywordtype">int</font> streamId);
+00300 
+00302 
+00306   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a12">stopStream</a>(<font class="keywordtype">int</font> streamId);
+00307 
+00309 
+00313   <font class="keywordtype">void</font> <a class="code" href="classRtAudio.html#a13">abortStream</a>(<font class="keywordtype">int</font> streamId);
+00314 
+00316 
+00321   <font class="keywordtype">int</font> <a class="code" href="classRtAudio.html#a14">streamWillBlock</a>(<font class="keywordtype">int</font> streamId);
 00322 
-00323   <font class="keyword">static</font> <font class="keyword">const</font> <font class="keywordtype">unsigned</font> <font class="keywordtype">int</font> SAMPLE_RATES[MAX_SAMPLE_RATES];
+00323 <font class="keyword">protected</font>:
 00324 
-00325   <font class="keyword">enum</font> { FAILURE, SUCCESS };
+00325 <font class="keyword">private</font>:
 00326 
-00327   <font class="keyword">enum</font> STREAM_MODE {
-00328     PLAYBACK,
-00329     RECORD,
-00330     DUPLEX,
-00331     UNINITIALIZED = -75
-00332   };
-00333 
-00334   <font class="keyword">enum</font> STREAM_STATE {
-00335     STREAM_STOPPED,
-00336     STREAM_RUNNING
-00337   };
-00338 
-00339   <font class="keyword">typedef</font> <font class="keyword">struct </font>{
-00340     <font class="keywordtype">int</font> device[2];           <font class="comment">// Playback and record, respectively.</font>
-00341     STREAM_MODE mode;       <font class="comment">// PLAYBACK, RECORD, or DUPLEX.</font>
-00342     AUDIO_HANDLE handle[2]; <font class="comment">// Playback and record handles, respectively.</font>
-00343     STREAM_STATE state;     <font class="comment">// STOPPED or RUNNING</font>
-00344     <font class="keywordtype">char</font> *userBuffer;
-00345     <font class="keywordtype">char</font> *deviceBuffer;
-00346     <font class="keywordtype">bool</font> doConvertBuffer[2]; <font class="comment">// Playback and record, respectively.</font>
-00347     <font class="keywordtype">bool</font> deInterleave[2];    <font class="comment">// Playback and record, respectively.</font>
-00348     <font class="keywordtype">bool</font> doByteSwap[2];      <font class="comment">// Playback and record, respectively.</font>
-00349     <font class="keywordtype">int</font> sampleRate;
-00350     <font class="keywordtype">int</font> bufferSize;
-00351     <font class="keywordtype">int</font> nBuffers;
-00352     <font class="keywordtype">int</font> nUserChannels[2];    <font class="comment">// Playback and record, respectively.</font>
-00353     <font class="keywordtype">int</font> nDeviceChannels[2];  <font class="comment">// Playback and record channels, respectively.</font>
-00354     RTAUDIO_FORMAT userFormat;
-00355     RTAUDIO_FORMAT deviceFormat[2]; <font class="comment">// Playback and record, respectively.</font>
-00356     <font class="keywordtype">bool</font> usingCallback;
-00357     THREAD_HANDLE thread;
-00358     MUTEX mutex;
-00359     RTAUDIO_CALLBACK callback;
-00360     <font class="keywordtype">void</font> *userData;
-00361   } RTAUDIO_STREAM;
-00362 
-00363   <font class="keyword">typedef</font> <font class="keywordtype">signed</font> <font class="keywordtype">short</font> INT16;
-00364   <font class="keyword">typedef</font> <font class="keywordtype">signed</font> <font class="keywordtype">int</font> INT32;
-00365   <font class="keyword">typedef</font> <font class="keywordtype">float</font> FLOAT32;
-00366   <font class="keyword">typedef</font> <font class="keywordtype">double</font> FLOAT64;
-00367 
-00368   <font class="keywordtype">char</font> message[256];
-00369   <font class="keywordtype">int</font> nDevices;
-00370   RTAUDIO_DEVICE *devices;
+00327   <font class="keyword">static</font> <font class="keyword">const</font> <font class="keywordtype">unsigned</font> <font class="keywordtype">int</font> SAMPLE_RATES[MAX_SAMPLE_RATES];
+00328 
+00329   <font class="keyword">enum</font> { FAILURE, SUCCESS };
+00330 
+00331   <font class="keyword">enum</font> STREAM_MODE {
+00332     PLAYBACK,
+00333     RECORD,
+00334     DUPLEX,
+00335     UNINITIALIZED = -75
+00336   };
+00337 
+00338   <font class="keyword">enum</font> STREAM_STATE {
+00339     STREAM_STOPPED,
+00340     STREAM_RUNNING
+00341   };
+00342 
+00343   <font class="keyword">typedef</font> <font class="keyword">struct </font>{
+00344     <font class="keywordtype">int</font> device[2];          <font class="comment">// Playback and record, respectively.</font>
+00345     STREAM_MODE mode;       <font class="comment">// PLAYBACK, RECORD, or DUPLEX.</font>
+00346     AUDIO_HANDLE handle[2]; <font class="comment">// Playback and record handles, respectively.</font>
+00347     STREAM_STATE state;     <font class="comment">// STOPPED or RUNNING</font>
+00348     <font class="keywordtype">char</font> *userBuffer;
+00349     <font class="keywordtype">char</font> *deviceBuffer;
+00350     <font class="keywordtype">bool</font> doConvertBuffer[2]; <font class="comment">// Playback and record, respectively.</font>
+00351     <font class="keywordtype">bool</font> deInterleave[2];    <font class="comment">// Playback and record, respectively.</font>
+00352     <font class="keywordtype">bool</font> doByteSwap[2];      <font class="comment">// Playback and record, respectively.</font>
+00353     <font class="keywordtype">int</font> sampleRate;
+00354     <font class="keywordtype">int</font> bufferSize;
+00355     <font class="keywordtype">int</font> nBuffers;
+00356     <font class="keywordtype">int</font> nUserChannels[2];    <font class="comment">// Playback and record, respectively.</font>
+00357     <font class="keywordtype">int</font> nDeviceChannels[2];  <font class="comment">// Playback and record channels, respectively.</font>
+00358     RTAUDIO_FORMAT userFormat;
+00359     RTAUDIO_FORMAT deviceFormat[2]; <font class="comment">// Playback and record, respectively.</font>
+00360     <font class="keywordtype">bool</font> usingCallback;
+00361     THREAD_HANDLE thread;
+00362     MUTEX mutex;
+00363     RTAUDIO_CALLBACK callback;
+00364     <font class="keywordtype">void</font> *userData;
+00365   } RTAUDIO_STREAM;
+00366 
+00367   <font class="keyword">typedef</font> <font class="keywordtype">signed</font> <font class="keywordtype">short</font> INT16;
+00368   <font class="keyword">typedef</font> <font class="keywordtype">signed</font> <font class="keywordtype">int</font> INT32;
+00369   <font class="keyword">typedef</font> <font class="keywordtype">float</font> FLOAT32;
+00370   <font class="keyword">typedef</font> <font class="keywordtype">double</font> FLOAT64;
 00371 
-00372   std::map&lt;int, void *&gt; streams;
-00373 
-00375   <font class="keywordtype">void</font> error(RtAudioError::TYPE type);
-00376 
-00381   <font class="keywordtype">void</font> initialize(<font class="keywordtype">void</font>);
-00382 
-00384   <font class="keywordtype">void</font> clearDeviceInfo(RTAUDIO_DEVICE *info);
-00385 
-00393   <font class="keywordtype">void</font> probeDeviceInfo(RTAUDIO_DEVICE *info);
-00394 
-00401   <font class="keywordtype">bool</font> probeDeviceOpen(<font class="keywordtype">int</font> device, RTAUDIO_STREAM *stream,
-00402                        STREAM_MODE mode, <font class="keywordtype">int</font> channels, 
-00403                        <font class="keywordtype">int</font> sampleRate, RTAUDIO_FORMAT format,
-00404                        <font class="keywordtype">int</font> *bufferSize, <font class="keywordtype">int</font> numberOfBuffers);
-00405 
-00412   <font class="keywordtype">void</font> *verifyStream(<font class="keywordtype">int</font> streamID);
-00413 
-00418   <font class="keywordtype">void</font> convertStreamBuffer(RTAUDIO_STREAM *stream, STREAM_MODE mode);
-00419 
-00421   <font class="keywordtype">void</font> byteSwapBuffer(<font class="keywordtype">char</font> *buffer, <font class="keywordtype">int</font> samples, RTAUDIO_FORMAT format);
-00422 
-00424   <font class="keywordtype">int</font> formatBytes(RTAUDIO_FORMAT format);
-00425 };
+00372   <font class="keywordtype">char</font> message[256];
+00373   <font class="keywordtype">int</font> nDevices;
+00374   RTAUDIO_DEVICE *devices;
+00375 
+00376   std::map&lt;int, void *&gt; streams;
+00377 
+00379   <font class="keywordtype">void</font> error(RtError::TYPE type);
+00380 
+00385   <font class="keywordtype">void</font> initialize(<font class="keywordtype">void</font>);
+00386 
+00388   <font class="keywordtype">void</font> clearDeviceInfo(RTAUDIO_DEVICE *info);
+00389 
+00397   <font class="keywordtype">void</font> probeDeviceInfo(RTAUDIO_DEVICE *info);
+00398 
+00405   <font class="keywordtype">bool</font> probeDeviceOpen(<font class="keywordtype">int</font> device, RTAUDIO_STREAM *stream,
+00406                        STREAM_MODE mode, <font class="keywordtype">int</font> channels, 
+00407                        <font class="keywordtype">int</font> sampleRate, RTAUDIO_FORMAT format,
+00408                        <font class="keywordtype">int</font> *bufferSize, <font class="keywordtype">int</font> numberOfBuffers);
+00409 
+00416   <font class="keywordtype">void</font> *verifyStream(<font class="keywordtype">int</font> streamId);
+00417 
+00422   <font class="keywordtype">void</font> convertStreamBuffer(RTAUDIO_STREAM *stream, STREAM_MODE mode);
+00423 
+00425   <font class="keywordtype">void</font> byteSwapBuffer(<font class="keywordtype">char</font> *buffer, <font class="keywordtype">int</font> samples, RTAUDIO_FORMAT format);
 00426 
-00427 <font class="comment">// Uncomment the following definition to have extra information spewed to stderr.</font>
-00428 <font class="comment">//#define RTAUDIO_DEBUG</font>
-00429 
-00430 <font class="preprocessor">#endif</font>
+00428   <font class="keywordtype">int</font> formatBytes(RTAUDIO_FORMAT format);
+00429 };
+00430 
+00431 <font class="comment">// Uncomment the following definition to have extra information spewed to stderr.</font>
+00432 <font class="comment">//#define RTAUDIO_DEBUG</font>
+00433 
+00434 <font class="preprocessor">#endif</font>
 </font></pre></div><HR>
 
-<table><tr><td><img src="../ccrma.gif">
+<table><tr><td><img src="../images/ccrma.gif">
   <td>&copy;2001-2002 CCRMA, Stanford University. All Rights Reserved.<br>
   Maintained by Gary P. Scavone, <a href="mailto:gary@ccrma.stanford.edu">gary@ccrma.stanford.edu</a><P>
 </table>

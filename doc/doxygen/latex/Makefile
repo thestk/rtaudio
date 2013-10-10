@@ -12,7 +12,9 @@ refman.ps: refman.dvi
 	dvips -o refman.ps refman.dvi
 
 refman.pdf: refman.ps
-	ps2pdf refman.ps refman.pdf
+	pdflatex refman.tex
+	makeindex refman.idx
+	pdflatex refman.tex
 
 refman_2on1.ps: refman.ps
 	psnup -2 refman.ps >refman_2on1.ps

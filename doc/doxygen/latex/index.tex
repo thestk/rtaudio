@@ -1,9 +1,20 @@
  
 
-\begin{center}
- {\bf Introduction} {\rm (p.\,\pageref{intro})} \ \  {\bf Download} {\rm (p.\,\pageref{download})} \ \  {\bf Getting Started} {\rm (p.\,\pageref{start})} \ \  {\bf Error Handling} {\rm (p.\,\pageref{error})} \ \  {\bf Probing Device Capabilities} {\rm (p.\,\pageref{probing})} \ \  {\bf Device Settings} {\rm (p.\,\pageref{settings})} \ \  {\bf Playback (blocking functionality)} {\rm (p.\,\pageref{playbackb})} \ \  {\bf Playback (callback functionality)} {\rm (p.\,\pageref{playbackc})} \ \  {\bf Recording} {\rm (p.\,\pageref{recording})} \ \  {\bf Duplex Mode} {\rm (p.\,\pageref{duplex})} \ \  {\bf Summary of Methods} {\rm (p.\,\pageref{methods})} \ \  {\bf Compiling} {\rm (p.\,\pageref{compiling})} \ \  {\bf OS Notes} {\rm (p.\,\pageref{osnotes})} \ \  {\bf Acknowledgments} {\rm (p.\,\pageref{acknowledge})} \end{center}
-
-
+\begin{CompactItemize}
+\item 
+{\bf Introduction} {\rm (p.\,\pageref{intro})}\item 
+{\bf Getting Started} {\rm (p.\,\pageref{start})}\item 
+{\bf Error Handling} {\rm (p.\,\pageref{error})}\item 
+{\bf Probing Device Capabilities} {\rm (p.\,\pageref{probing})}\item 
+{\bf Device Settings} {\rm (p.\,\pageref{settings})}\item 
+{\bf Playback (blocking functionality)} {\rm (p.\,\pageref{playbackb})}\item 
+{\bf Playback (callback functionality)} {\rm (p.\,\pageref{playbackc})}\item 
+{\bf Recording} {\rm (p.\,\pageref{recording})}\item 
+{\bf Duplex Mode} {\rm (p.\,\pageref{duplex})}\item 
+{\bf Summary of Methods} {\rm (p.\,\pageref{methods})}\item 
+{\bf Compiling} {\rm (p.\,\pageref{compiling})}\item 
+{\bf OS Notes} {\rm (p.\,\pageref{osnotes})}\item 
+{\bf Acknowledgements} {\rm (p.\,\pageref{acknowledge})}\end{CompactItemize}
 \section{Introduction}\label{intro}
 
 
@@ -24,12 +35,7 @@ control over multiple audio streams and devices with a single instance \end{Comp
 
 {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording). Available audio devices and their capabilities can be enumerated and then specified when opening a stream. Multiple streams can run at the same time and, when allowed by the underlying audio API, a single device can serve multiple streams.
 
-The {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} API provides both blocking (synchronous) and callback (asynchronous) functionality. Callbacks are typically used in conjunction with graphical user interfaces (GUI). Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.
-
-\section{Download}\label{download}
-
-
-Latest Release (22 January 2002): {\tt Version 2.0 (111 k\-B tar/gzipped)}
+The {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} API provides both blocking (synchronous) and callback (asyncronous) functionality. Callbacks are typically used in conjunction with graphical user interfaces (GUI). Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.
 
 \section{Getting Started}\label{start}
 
@@ -46,7 +52,7 @@ int main()
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     // Handle the exception here
   }
 
@@ -60,7 +66,7 @@ Obviously, this example doesn't demonstrate any of the real functionality of {\b
 \section{Error Handling}\label{error}
 
 
-{\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} uses a C++ exception handler called {\bf Rt\-Audio\-Error} {\rm (p.\,\pageref{classRtAudioError})}, which is declared and defined within the {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} class files. The {\bf Rt\-Audio\-Error} {\rm (p.\,\pageref{classRtAudioError})} class is quite simple but it does allow errors to be \char`\"{}caught\char`\"{} by {\bf Rt\-Audio\-Error::TYPE} {\rm (p.\,\pageref{classRtAudioError_s11})}. Almost all {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} methods can \char`\"{}throw\char`\"{} an {\bf Rt\-Audio\-Error} {\rm (p.\,\pageref{classRtAudioError})}, most typically if an invalid stream identifier is supplied to a method or a driver error occurs. There are a number of cases within {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} where warning messages may be displayed but an exception is not thrown. There is a private {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} method, error(), which can be modified to globally control how these messages are handled and reported.
+{\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} uses a C++ exception handler called {\bf Rt\-Error} {\rm (p.\,\pageref{classRtError})}, which is declared and defined within the {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} class files. The {\bf Rt\-Error} {\rm (p.\,\pageref{classRtError})} class is quite simple but it does allow errors to be \char`\"{}caught\char`\"{} by {\bf Rt\-Error::TYPE} {\rm (p.\,\pageref{classRtError_s11})}. Almost all {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} methods can \char`\"{}throw\char`\"{} an {\bf Rt\-Error} {\rm (p.\,\pageref{classRtError})}, most typically if an invalid stream identifier is supplied to a method or a driver error occurs. There are a number of cases within {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} where warning messages may be displayed but an exception is not thrown. There is a private {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} method, error(), which can be modified to globally control how these messages are handled and reported.
 
 \section{Probing Device Capabilities}\label{probing}
 
@@ -69,7 +75,7 @@ A programmer may wish to query the available audio device capabilities before de
 
 \footnotesize\begin{verbatim}// probe.cpp
 
-#include <iostream.h>
+#include <iostream>
 #include "RtAudio.h"
 
 int main()
@@ -80,7 +86,7 @@ int main()
   try {
     audio = new RtAudio();
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -95,14 +101,14 @@ int main()
     try {
       audio->getDeviceInfo(i, &info);
     }
-    catch (RtAudioError &error) {
+    catch (RtError &error) {
       error.printMessage();
       break;
     }
 
     // Print, for example, the maximum number of output channels for each device
     cout << "device = " << i;
-    cout << ": maximum output channels = " << info.maxOutputChannels << endl;
+    cout << ": maximum output channels = " << info.maxOutputChannels << "\n";
   }
 
   // Clean up
@@ -142,7 +148,7 @@ The following data formats are defined and fully supported by {\bf Rt\-Audio} {\
   static const RTAUDIO_FORMAT  RTAUDIO_FLOAT64; // 64-bit double\end{verbatim}\normalsize 
 
 
-The {\em native\-Formats} member of the {\bf Rt\-Audio::RTAUDIO\_\-DEVICE} {\rm (p.\,\pageref{structRtAudio_1_1RTAUDIO__DEVICE})} structure is a bit mask of the above formats which are natively supported by the device. However, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} will automatically provide format conversion if a particular format is not natively supported. When the {\em probed} member of the RTAUDIO\_\-DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unusable.
+The {\em native\-Formats} member of the {\bf Rt\-Audio::RTAUDIO\_\-DEVICE} {\rm (p.\,\pageref{structRtAudio_1_1RTAUDIO__DEVICE})} structure is a bit mask of the above formats which are natively supported by the device. However, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} will automatically provide format conversion if a particular format is not natively supported. When the {\em probed} member of the RTAUDIO\_\-DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unuseable.
 
 In general, the user need not be concerned with the minimum channel values reported in the RTAUDIO\_\-DEVICE structure. While some audio devices may require a minimum channel value $>$ 1, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} will provide automatic channel number compensation when the number of channels set by the user is less than that required by the device. Channel compensation is {\em NOT} possible when the number of channels set by the user is greater than that supported by the device.
 
@@ -171,7 +177,7 @@ int main()
     stream = audio->openStream(device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,
                                sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -183,11 +189,9 @@ int main()
 }\end{verbatim}\normalsize 
 
 
-The {\bf Rt\-Audio::open\-Stream}() {\rm (p.\,\pageref{classRtAudio_a3})} method attempts to open a stream with a specified set of parameter values. When successful, a stream identifier is returned. In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers. When device = 0, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} first attempts to open the default audio device with the given parameters. If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters. If all attempts are unsuccessful, an {\bf Rt\-Audio\-Error} {\rm (p.\,\pageref{classRtAudioError})} is thrown. When a non-zero device value is specified, an attempt is made to open that device only.
+The {\bf Rt\-Audio::open\-Stream}() {\rm (p.\,\pageref{classRtAudio_a3})} method attempts to open a stream with a specified set of parameter values. When successful, a stream identifier is returned. In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers. When device = 0, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} first attempts to open the default audio device with the given parameters. If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters. If all attempts are unsuccessful, an {\bf Rt\-Error} {\rm (p.\,\pageref{classRtError})} is thrown. When a non-zero device value is specified, an attempt is made to open that device only.
 
 {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} provides four signed integer and two floating point data formats which can be specified using the {\bf Rt\-Audio::RTAUDIO\_\-FORMAT} {\rm (p.\,\pageref{classRtAudio_s0})} parameter values mentioned earlier. If the opened device does not natively support the given format, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} will automatically perform the necessary data format conversion.
-
-Buffer sizes in {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} are {\em ALWAYS} given in sample frame units. For example, if you open an output stream with 4 channels and set {\em buffer\-Size} to 512, you will have to write 2048 samples of data to the output buffer within your callback or between calls to {\bf Rt\-Audio::tick\-Stream}() {\rm (p.\,\pageref{classRtAudio_a9})}. In this case, a single sample frame of data contains 4 samples of data.
 
 The {\em buffer\-Size} parameter specifies the desired number of sample frames which will be written to and/or read from a device per write/read operation. The {\em n\-Buffers} parameter is used in setting the underlying device buffer parameters. Both the {\em buffer\-Size} and {\em n\-Buffers} parameters can be used to control stream latency though there is no guarantee that the passed values will be those used by a device. In general, lower values for both parameters will produce less latency but perhaps less robust performance. Both parameters can be specified with values of zero, in which case the smallest allowable values will be used. The {\em buffer\-Size} parameter is passed as a pointer and the actual value used by the stream is set during the device setup procedure. {\em buffer\-Size} values should be a power of two. Optimal and allowable buffer values tend to vary between systems and devices. Check the {\bf OS Notes} {\rm (p.\,\pageref{osnotes})} section for general guidelines.
 
@@ -219,7 +223,7 @@ int main()
     audio = new RtAudio(&stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,
                         sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -231,7 +235,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -246,7 +250,7 @@ int main()
     try {
       audio->tickStream(stream);
     }
-    catch (RtAudioError &error) {
+    catch (RtError &error) {
       error.printMessage();
       goto cleanup;
     }
@@ -259,7 +263,7 @@ int main()
     audio->stopStream(stream);
     audio->closeStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -281,7 +285,7 @@ In general, one should call the {\bf Rt\-Audio::stop\-Stream}() {\rm (p.\,\pager
 
 The primary difference in using {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} with callback functionality involves the creation of a user-defined callback function. Here is an example which produces a sawtooth waveform for playback.
 
-\footnotesize\begin{verbatim}#include <iostream.h>
+\footnotesize\begin{verbatim}#include <iostream>
 #include "RtAudio.h"
 
 // Two-channel sawtooth wave generator.
@@ -321,7 +325,7 @@ int main()
     audio = new RtAudio(&stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT64,
                         sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -333,7 +337,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -346,7 +350,7 @@ int main()
     audio->stopStream(stream);
     audio->closeStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -389,7 +393,7 @@ int main()
     audio = new RtAudio(&stream, 0, 0, device, channels,
                         RtAudio::RTAUDIO_FLOAT32, sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -401,7 +405,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -414,7 +418,7 @@ int main()
     try {
       audio->tickStream(stream);
     }
-    catch (RtAudioError &error) {
+    catch (RtError &error) {
       error.printMessage();
       goto cleanup;
     }
@@ -429,7 +433,7 @@ int main()
     // Stop the stream
     audio->stopStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -449,7 +453,7 @@ Finally, it is easy to use {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} fo
 
 \footnotesize\begin{verbatim}// duplex.cpp
 
-#include <iostream.h>
+#include <iostream>
 #include "RtAudio.h"
 
 // Pass-through function.
@@ -476,7 +480,7 @@ int main()
     audio = new RtAudio(&stream, device, channels, device, channels, RtAudio::RTAUDIO_FLOAT64,
                         sample_rate, &buffer_size, n_buffers);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -488,7 +492,7 @@ int main()
     // Start the stream
     audio->startStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
     goto cleanup;
   }
@@ -501,7 +505,7 @@ int main()
     audio->stopStream(stream);
     audio->closeStream(stream);
   }
-  catch (RtAudioError &error) {
+  catch (RtError &error) {
     error.printMessage();
   }
 
@@ -549,10 +553,10 @@ In order to compile {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} for a spe
   \begin{TabularC}{5}
 \hline
 {\bf OS:} &{\bf Audio API:} &{\bf Preprocessor Definition:} &{\bf Library:} &{\bf Example Compiler Statement:}   \\\hline
-Linux &ALSA &\_\-\_\-LINUX\_\-ALSA\_\- &{\tt libasound, libpthread} &{\tt g++ -Wall -D\_\-\_\-LINUX\_\-ALSA\_\- -o probe probe.cpp Rt\-Audio.cpp -lasound -lpthread}   \\\hline
-Linux &OSS &\_\-\_\-LINUX\_\-OSS\_\- &{\tt libpthread} &{\tt g++ -Wall -D\_\-\_\-LINUX\_\-OSS\_\- -o probe probe.cpp Rt\-Audio.cpp -lpthread}   \\\hline
-Irix &AL &\_\-\_\-IRIX\_\-AL\_\- &{\tt libaudio, libpthread} &{\tt CC -Wall -D\_\-\_\-IRIX\_\-AL\_\- -o probe probe.cpp Rt\-Audio.cpp -laudio -lpthread}   \\\hline
-Windows &Direct Sound &\_\-\_\-WINDOWS\_\-DS\_\- &{\tt dsound.lib (ver. 5.0 or higher), multithreaded} &{\em compiler specific}  \\\hline
+Linux &ALSA &\_\-\_\-LINUX\_\-ALSA\_\-\_\- &{\tt libasound, libpthread} &{\tt g++ -Wall -D\_\-\_\-LINUX\_\-ALSA\_\-\_\- -o probe probe.cpp Rt\-Audio.cpp -lasound -lpthread}   \\\hline
+Linux &OSS &\_\-\_\-LINUX\_\-OSS\_\-\_\- &{\tt libpthread} &{\tt g++ -Wall -D\_\-\_\-LINUX\_\-OSS\_\-\_\- -o probe probe.cpp Rt\-Audio.cpp -lpthread}   \\\hline
+Irix &AL &\_\-\_\-IRIX\_\-AL\_\-\_\- &{\tt libaudio, libpthread} &{\tt CC -Wall -D\_\-\_\-IRIX\_\-AL\_\-\_\- -o probe probe.cpp Rt\-Audio.cpp -laudio -lpthread}   \\\hline
+Windows &Direct Sound &\_\-\_\-WINDOWS\_\-DS\_\-\_\- &{\tt dsound.lib (ver. 5.0 or higher), multithreaded} &{\em compiler specific}  \\\hline
 \end{TabularC}
  
 
@@ -568,7 +572,7 @@ The example compiler statements above could be used to compile the {\tt probe.cp
 \subsection{Linux:}\label{linux}
 
 
-{\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} for Linux was developed under Redhat distributions 7.0 - 7.2. Two different audio APIs are supported on Linux platforms: OSS and {\tt ALSA}. The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers. Therefore, a generic Linux system is most likely to have OSS support. The ALSA API is relatively new and at this time is not part of the Linux kernel distribution. Work is in progress to make ALSA part of the 2.5 development kernel series. Despite that, the ALSA API offers significantly better functionality than the OSS API. {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} provides support for the 0.9 and higher versions of ALSA. Input/output latency on the order of 15-20 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} buffer parameters (without kernel modifications). Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority. The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.
+{\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} for Linux was developed under Redhat distributions 7.0 - 7.2. Two different audio APIs are supported on Linux platforms: OSS and {\tt ALSA}. The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers. Therefore, a generic Linux system is most likely to have OSS support. The ALSA API, although relatively new, is now part of the Linux development kernel and offers significantly better functionality than the OSS API. {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} provides support for the 0.9 and higher versions of ALSA. Input/output latency on the order of 15 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} buffer parameters (without kernel modifications). Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority. The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.
 
 The ALSA library includes OSS emulation support. That means that you can run programs compiled for the OSS API even when using the ALSA drivers and library. It should be noted however that OSS emulation under ALSA is not perfect. Specifically, channel number queries seem to consistently produce invalid results. While OSS emulation is successful for the majority of {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} tests, it is recommended that the native ALSA implementation of {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} be used on systems which have ALSA drivers installed.
 
@@ -577,19 +581,17 @@ The ALSA implementation of {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} ma
 \subsection{Irix (SGI):}\label{irix}
 
 
-The Irix version of {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was written and tested on an SGI Indy running Irix version 6.5 and the newer \char`\"{}al\char`\"{} audio library. {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} does not compile under Irix version 6.3 because the C++ compiler is too old. Despite the relatively slow speed of the Indy, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was found to behave quite well and input/output latency was very good. No problems were found with respect to using the pthread library.
+The Irix version of {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was written and tested on an SGI Indy running Irix version 6.5.4 and the newer \char`\"{}al\char`\"{} audio library. {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} does not compile under Irix version 6.3, mainly because the C++ compiler is too old. Despite the relatively slow speed of the Indy, {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was found to behave quite well and input/output latency was very good. No problems were found with respect to using the pthread library.
 
 \subsection{Windows:}\label{windows}
 
 
-{\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} under Windows is written using the Direct\-Sound API. In order to compile {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} under Windows, you must have the header and source files for Direct\-Sound version 0.5 or higher. As far as I know, you cannot compile {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} for Windows NT because there is not sufficient Direct\-Sound support. Audio output latency with Direct\-Sound can be reasonably good (on the order of 20 milliseconds). On the other hand, input audio latency tends to be terrible (100 milliseconds or more). Further, Direct\-Sound drivers tend to crash easily when experimenting with buffer parameters. On my system, I found it necessary to use values around n\-Buffers = 8 and buffer\-Size = 512 to avoid crashing my system. {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was developed with Visual C++ version 6.0. I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented. We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard.
+{\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} under Windows is written using the Direct\-Sound API. In order to compile {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} under Windows, you must have the header and source files for Direct\-Sound version 5.0 or higher. As far as I know, there is no Direct\-Sound\-Capture support for Windows NT (in which case, you cannot use {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})}). Audio output latency with Direct\-Sound can be reasonably good (on the order of 20 milliseconds). On the other hand, input audio latency tends to be terrible (100 milliseconds or more). Further, Direct\-Sound drivers tend to crash easily when experimenting with buffer parameters. On my system, I found it necessary to use values around n\-Buffers = 8 and buffer\-Size = 512 to avoid crashing my system. {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was developed with Visual C++ version 6.0. I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented. We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard.
 
-\section{Acknowledgments}\label{acknowledge}
+\section{Acknowledgements}\label{acknowledge}
 
 
 The {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} API incorporates many of the concepts developed in the {\tt Port\-Audio} project by Phil Burk and Ross Bencina. Early development also incorporated ideas from Bill Schottstaedt's {\tt sndlib}. The CCRMA {\tt Sound\-Wire group} provided valuable feedback during the API proposal stages.
 
 {\bf Rt\-Audio} {\rm (p.\,\pageref{classRtAudio})} was slowly developed over the course of many months while in residence at the {\tt Institut Universitari de L'Audiovisual (IUA)} in Barcelona, Spain, the {\tt Laboratory of Acoustics and Audio Signal Processing} at the Helsinki University of Technology, Finland, and the {\tt Center for Computer Research in Music and Acoustics (CCRMA)} at {\tt Stanford University}. This work was supported in part by the United States Air Force Office of Scientific Research (grant \#F49620-99-1-0293).
-
-These documentation files were generated using {\tt doxygen} by Dimitri van Heesch.
 

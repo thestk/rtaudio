@@ -19,33 +19,33 @@
 <tr><td colspan=2><br><h2>Public Methods</h2></td></tr>
 <tr><td nowrap align=right valign=top>&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a0">RtAudio</a> ()</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>The default constructor.</em> <a href="#a0">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a1">RtAudio</a> (int *streamID, int outputDevice, int outputChannels, int inputDevice, int inputChannels, <a class="el" href="classRtAudio.html#s0">RTAUDIO_FORMAT</a> format, int sampleRate, int *bufferSize, int numberOfBuffers)</td></tr>
+<tr><td nowrap align=right valign=top>&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a1">RtAudio</a> (int *streamId, int outputDevice, int outputChannels, int inputDevice, int inputChannels, <a class="el" href="classRtAudio.html#s0">RTAUDIO_FORMAT</a> format, int sampleRate, int *bufferSize, int numberOfBuffers)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>A constructor which can be used to open a stream during instantiation.</em> <a href="#a1">More...</a><em></em></font><br><br></td></tr>
 <tr><td nowrap align=right valign=top>&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a2">~RtAudio</a> ()</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>The destructor.</em> <a href="#a2">More...</a><em></em></font><br><br></td></tr>
 <tr><td nowrap align=right valign=top>int&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a3">openStream</a> (int outputDevice, int outputChannels, int inputDevice, int inputChannels, <a class="el" href="classRtAudio.html#s0">RTAUDIO_FORMAT</a> format, int sampleRate, int *bufferSize, int numberOfBuffers)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>A public method for opening a stream with the specified parameters.</em> <a href="#a3">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a4">setStreamCallback</a> (int streamID, <a class="el" href="classRtAudio.html#s1">RTAUDIO_CALLBACK</a> callback, void *userData)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a4">setStreamCallback</a> (int streamId, <a class="el" href="classRtAudio.html#s1">RTAUDIO_CALLBACK</a> callback, void *userData)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>A public method which sets a user-defined callback function for a given stream.</em> <a href="#a4">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a5">cancelStreamCallback</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a5">cancelStreamCallback</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>A public method which cancels a callback process and function for a given stream.</em> <a href="#a5">More...</a><em></em></font><br><br></td></tr>
 <tr><td nowrap align=right valign=top>int&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a6">getDeviceCount</a> (void)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>A public method which returns the number of audio devices found.</em> <a href="#a6">More...</a><em></em></font><br><br></td></tr>
 <tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a7">getDeviceInfo</a> (int device, <a class="el" href="structRtAudio_1_1RTAUDIO__DEVICE.html">RTAUDIO_DEVICE</a> *info)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Fill a user-supplied <a class="el" href="structRtAudio_1_1RTAUDIO__DEVICE.html">RTAUDIO_DEVICE</a> structure for a specified device.</em> <a href="#a7">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>char* const&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a8">getStreamBuffer</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>char* const&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a8">getStreamBuffer</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>A public method which returns a pointer to the buffer for an open stream.</em> <a href="#a8">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a9">tickStream</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a9">tickStream</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Public method used to trigger processing of input/output data for a stream.</em> <a href="#a9">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a10">closeStream</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a10">closeStream</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Public method which closes a stream and frees any associated buffers.</em> <a href="#a10">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a11">startStream</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a11">startStream</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Public method which starts a stream.</em> <a href="#a11">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a12">stopStream</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a12">stopStream</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Stop a stream, allowing any samples remaining in the queue to be played out and/or read in.</em> <a href="#a12">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a13">abortStream</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>void&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a13">abortStream</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Stop a stream, discarding any samples remaining in the input/output queue.</em> <a href="#a13">More...</a><em></em></font><br><br></td></tr>
-<tr><td nowrap align=right valign=top>int&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a14">streamWillBlock</a> (int streamID)</td></tr>
+<tr><td nowrap align=right valign=top>int&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#a14">streamWillBlock</a> (int streamId)</td></tr>
 <tr><td>&nbsp;</td><td><font size=-1><em>Queries a stream to determine whether a call to the <a class="el" href="classRtAudio.html#a9">tickStream</a>() method will block.</em> <a href="#a14">More...</a><em></em></font><br><br></td></tr>
 <tr><td colspan=2><br><h2>Static Public Attributes</h2></td></tr>
 <tr><td nowrap align=right valign=top>const <a class="el" href="classRtAudio.html#s0">RTAUDIO_FORMAT</a>&nbsp;</td><td valign=bottom><a class="el" href="classRtAudio.html#p0">RTAUDIO_SINT8</a></td></tr>
@@ -172,7 +172,7 @@ RtAudio::RtAudio (
 <p>
 The default constructor.
 <p>
-Probes the system to make sure at least one audio input/output device is available and determines the api-specific identifier for each device found. An <a class="el" href="classRtAudioError.html">RtAudioError</a> error can be thrown if no devices are found or if a memory allocation error occurs.     </td>
+Probes the system to make sure at least one audio input/output device is available and determines the api-specific identifier for each device found. An <a class="el" href="classRtError.html">RtError</a> error can be thrown if no devices are found or if a memory allocation error occurs.     </td>
   </tr>
 </table>
 <a name="a1" doxytag="RtAudio::RtAudio"></a><p>
@@ -185,7 +185,7 @@ Probes the system to make sure at least one audio input/output device is availab
 RtAudio::RtAudio (
           </b></td>
           <td valign="bottom"><b>
-int * <em>streamID</em>, 
+int * <em>streamId</em>, 
           </b></td>
         </tr>
         <tr>
@@ -251,7 +251,7 @@ int <em>numberOfBuffers</em>&nbsp;)
 <p>
 A constructor which can be used to open a stream during instantiation.
 <p>
-The specified output and/or input device identifiers correspond to those enumerated via the <a class="el" href="classRtAudio.html#a7">getDeviceInfo</a>() method. If device = 0, the default or first available devices meeting the given parameters is selected. If an output or input channel value is zero, the corresponding device value is ignored. When a stream is successfully opened, its identifier is returned via the "streamID" pointer. An <a class="el" href="classRtAudioError.html">RtAudioError</a> can be thrown if no devices are found for the given parameters, if a memory allocation error occurs, or if a driver error occurs. <dl compact><dt>
+The specified output and/or input device identifiers correspond to those enumerated via the <a class="el" href="classRtAudio.html#a7">getDeviceInfo</a>() method. If device = 0, the default or first available devices meeting the given parameters is selected. If an output or input channel value is zero, the corresponding device value is ignored. When a stream is successfully opened, its identifier is returned via the "streamId" pointer. An <a class="el" href="classRtError.html">RtError</a> can be thrown if no devices are found for the given parameters, if a memory allocation error occurs, or if a driver error occurs. <dl compact><dt>
 <b>See also: </b><dd>
 <a class="el" href="classRtAudio.html#a3">openStream</a>() </dl>    </td>
   </tr>
@@ -358,7 +358,7 @@ int <em>numberOfBuffers</em>&nbsp;)
 <p>
 A public method for opening a stream with the specified parameters.
 <p>
-If successful, the opened stream ID is returned. Otherwise, an <a class="el" href="classRtAudioError.html">RtAudioError</a> is thrown.<dl compact><dt>
+If successful, the opened stream ID is returned. Otherwise, an <a class="el" href="classRtError.html">RtError</a> is thrown.<dl compact><dt>
 <b>Parameters: </b><dd>
 <table border=0 cellspacing=2 cellpadding=0>
 <tr><td valign=top><em>outputDevice:</em>
@@ -399,7 +399,7 @@ A value which can be used to help control device latency. More buffers typically
 void RtAudio::setStreamCallback (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>, 
+int <em>streamId</em>, 
           </b></td>
         </tr>
         <tr>
@@ -429,7 +429,7 @@ void * <em>userData</em>&nbsp;)
 <p>
 A public method which sets a user-defined callback function for a given stream.
 <p>
-This method assigns a callback function to a specific, previously opened stream for non-blocking stream functionality. A separate process is initiated, though the user function is called only when the stream is "running" (between calls to the <a class="el" href="classRtAudio.html#a11">startStream</a>() and <a class="el" href="classRtAudio.html#a12">stopStream</a>() methods, respectively). The callback process remains active for the duration of the stream and is automatically shutdown when the stream is closed (via the <a class="el" href="classRtAudio.html#a10">closeStream</a>() method or by object destruction). The callback process can also be shutdown and the user function de-referenced through an explicit call to the <a class="el" href="classRtAudio.html#a5">cancelStreamCallback</a>() method. Note that a single stream can use only blocking or callback functionality at the same time, though it is possible to alternate modes on the same stream through the use of the <a class="el" href="classRtAudio.html#a4">setStreamCallback</a>() and <a class="el" href="classRtAudio.html#a5">cancelStreamCallback</a>() methods (the blocking <a class="el" href="classRtAudio.html#a9">tickStream</a>() method can be used before a callback is set and/or after a callback is cancelled). An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid device argument.     </td>
+This method assigns a callback function to a specific, previously opened stream for non-blocking stream functionality. A separate process is initiated, though the user function is called only when the stream is "running" (between calls to the <a class="el" href="classRtAudio.html#a11">startStream</a>() and <a class="el" href="classRtAudio.html#a12">stopStream</a>() methods, respectively). The callback process remains active for the duration of the stream and is automatically shutdown when the stream is closed (via the <a class="el" href="classRtAudio.html#a10">closeStream</a>() method or by object destruction). The callback process can also be shutdown and the user function de-referenced through an explicit call to the <a class="el" href="classRtAudio.html#a5">cancelStreamCallback</a>() method. Note that a single stream can use only blocking or callback functionality at the same time, though it is possible to alternate modes on the same stream through the use of the <a class="el" href="classRtAudio.html#a4">setStreamCallback</a>() and <a class="el" href="classRtAudio.html#a5">cancelStreamCallback</a>() methods (the blocking <a class="el" href="classRtAudio.html#a9">tickStream</a>() method can be used before a callback is set and/or after a callback is cancelled). An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid device argument.     </td>
   </tr>
 </table>
 <a name="a5" doxytag="RtAudio::cancelStreamCallback"></a><p>
@@ -442,7 +442,7 @@ This method assigns a callback function to a specific, previously opened stream 
 void RtAudio::cancelStreamCallback (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -460,7 +460,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 A public method which cancels a callback process and function for a given stream.
 <p>
-This method shuts down a callback process and de-references the user function for a specific stream. Callback functionality can subsequently be restarted on the stream via the <a class="el" href="classRtAudio.html#a4">setStreamCallback</a>() method. An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid device argument.     </td>
+This method shuts down a callback process and de-references the user function for a specific stream. Callback functionality can subsequently be restarted on the stream via the <a class="el" href="classRtAudio.html#a4">setStreamCallback</a>() method. An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid device argument.     </td>
   </tr>
 </table>
 <a name="a6" doxytag="RtAudio::getDeviceCount"></a><p>
@@ -528,7 +528,7 @@ int <em>device</em>,
 <p>
 Fill a user-supplied <a class="el" href="structRtAudio_1_1RTAUDIO__DEVICE.html">RTAUDIO_DEVICE</a> structure for a specified device.
 <p>
-Any device between 0 and <a class="el" href="classRtAudio.html#a6">getDeviceCount</a>()-1 is valid. If a device is busy or otherwise unavailable, the structure member "probed" has a value of "false". The system default input and output devices are referenced by device identifier = 0. On systems which allow dynamic default device settings, the default devices are not identified by name (specific device enumerations are assigned device identifiers &gt; 0). An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid device argument.     </td>
+Any device between 0 and <a class="el" href="classRtAudio.html#a6">getDeviceCount</a>()-1 is valid. If a device is busy or otherwise unavailable, the structure member "probed" has a value of "false". The system default input and output devices are referenced by device identifier = 0. On systems which allow dynamic default device settings, the default devices are not identified by name (specific device enumerations are assigned device identifiers &gt; 0). An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid device argument.     </td>
   </tr>
 </table>
 <a name="a8" doxytag="RtAudio::getStreamBuffer"></a><p>
@@ -541,7 +541,7 @@ Any device between 0 and <a class="el" href="classRtAudio.html#a6">getDeviceCoun
 char *const RtAudio::getStreamBuffer (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -559,7 +559,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 A public method which returns a pointer to the buffer for an open stream.
 <p>
-The user should fill and/or read the buffer data in interleaved format and then call the <a class="el" href="classRtAudio.html#a9">tickStream</a>() method. An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid stream identifier.     </td>
+The user should fill and/or read the buffer data in interleaved format and then call the <a class="el" href="classRtAudio.html#a9">tickStream</a>() method. An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid stream identifier.     </td>
   </tr>
 </table>
 <a name="a9" doxytag="RtAudio::tickStream"></a><p>
@@ -572,7 +572,7 @@ The user should fill and/or read the buffer data in interleaved format and then 
 void RtAudio::tickStream (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -590,7 +590,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 Public method used to trigger processing of input/output data for a stream.
 <p>
-This method blocks until all buffer data is read/written. An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
+This method blocks until all buffer data is read/written. An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
   </tr>
 </table>
 <a name="a10" doxytag="RtAudio::closeStream"></a><p>
@@ -603,7 +603,7 @@ This method blocks until all buffer data is read/written. An <a class="el" href=
 void RtAudio::closeStream (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -621,7 +621,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 Public method which closes a stream and frees any associated buffers.
 <p>
-If an invalid stream identifier is specified, this method issues a warning and returns (an <a class="el" href="classRtAudioError.html">RtAudioError</a> is not thrown).     </td>
+If an invalid stream identifier is specified, this method issues a warning and returns (an <a class="el" href="classRtError.html">RtError</a> is not thrown).     </td>
   </tr>
 </table>
 <a name="a11" doxytag="RtAudio::startStream"></a><p>
@@ -634,7 +634,7 @@ If an invalid stream identifier is specified, this method issues a warning and r
 void RtAudio::startStream (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -652,7 +652,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 Public method which starts a stream.
 <p>
-An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
+An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
   </tr>
 </table>
 <a name="a12" doxytag="RtAudio::stopStream"></a><p>
@@ -665,7 +665,7 @@ An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown f
 void RtAudio::stopStream (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -683,7 +683,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 Stop a stream, allowing any samples remaining in the queue to be played out and/or read in.
 <p>
-An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
+An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
   </tr>
 </table>
 <a name="a13" doxytag="RtAudio::abortStream"></a><p>
@@ -696,7 +696,7 @@ An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown f
 void RtAudio::abortStream (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -714,7 +714,7 @@ int <em>streamID</em>&nbsp;)
 <p>
 Stop a stream, discarding any samples remaining in the input/output queue.
 <p>
-An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
+An <a class="el" href="classRtError.html">RtError</a> will be thrown for an invalid stream identifier or if a driver error occurs.     </td>
   </tr>
 </table>
 <a name="a14" doxytag="RtAudio::streamWillBlock"></a><p>
@@ -727,7 +727,7 @@ An <a class="el" href="classRtAudioError.html">RtAudioError</a> will be thrown f
 int RtAudio::streamWillBlock (
           </b></td>
           <td valign="bottom"><b>
-int <em>streamID</em>&nbsp;)
+int <em>streamId</em>&nbsp;)
           </b></td>
         </tr>
 
@@ -909,7 +909,7 @@ Normalized between plus/minus 1.0.     </td>
 <li><a class="el" href="RtAudio_8h-source.html">RtAudio.h</a></ul>
 <HR>
 
-<table><tr><td><img src="../ccrma.gif">
+<table><tr><td><img src="../images/ccrma.gif">
   <td>&copy;2001-2002 CCRMA, Stanford University. All Rights Reserved.<br>
   Maintained by Gary P. Scavone, <a href="mailto:gary@ccrma.stanford.edu">gary@ccrma.stanford.edu</a><P>
 </table>

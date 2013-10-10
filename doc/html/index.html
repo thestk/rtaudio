@@ -12,10 +12,8 @@
 <p>
  
 <p>
-<center>
- <a href="index.html#intro">Introduction</a> &nbsp;&nbsp; <a href="index.html#download">Download</a> &nbsp;&nbsp; <a href="index.html#start">Getting Started</a> &nbsp;&nbsp; <a href="index.html#error">Error Handling</a> &nbsp;&nbsp; <a href="index.html#probing">Probing Device Capabilities</a> &nbsp;&nbsp; <a href="index.html#settings">Device Settings</a> &nbsp;&nbsp; <a href="index.html#playbackb">Playback (blocking functionality)</a> &nbsp;&nbsp; <a href="index.html#playbackc">Playback (callback functionality)</a> &nbsp;&nbsp; <a href="index.html#recording">Recording</a> &nbsp;&nbsp; <a href="index.html#duplex">Duplex Mode</a> &nbsp;&nbsp; <a href="index.html#methods">Summary of Methods</a> &nbsp;&nbsp; <a href="index.html#compiling">Compiling</a> &nbsp;&nbsp; <a href="index.html#osnotes">OS Notes</a> &nbsp;&nbsp; <a href="index.html#acknowledge">Acknowledgments</a> </center>
-
-<p>
+<ul>
+<li><a href="index.html#intro">Introduction</a><li><a href="index.html#start">Getting Started</a><li><a href="index.html#error">Error Handling</a><li><a href="index.html#probing">Probing Device Capabilities</a><li><a href="index.html#settings">Device Settings</a><li><a href="index.html#playbackb">Playback (blocking functionality)</a><li><a href="index.html#playbackc">Playback (callback functionality)</a><li><a href="index.html#recording">Recording</a><li><a href="index.html#duplex">Duplex Mode</a><li><a href="index.html#methods">Summary of Methods</a><li><a href="index.html#compiling">Compiling</a><li><a href="index.html#osnotes">OS Notes</a><li><a href="index.html#acknowledge">Acknowledgements</a></ul>
 <a name="intro"><h2>Introduction</h2></a>
 
 <p>
@@ -27,12 +25,7 @@
 <p>
 <a class="el" href="classRtAudio.html">RtAudio</a> incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording). Available audio devices and their capabilities can be enumerated and then specified when opening a stream. Multiple streams can run at the same time and, when allowed by the underlying audio API, a single device can serve multiple streams.
 <p>
-The <a class="el" href="classRtAudio.html">RtAudio</a> API provides both blocking (synchronous) and callback (asynchronous) functionality. Callbacks are typically used in conjunction with graphical user interfaces (GUI). Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.
-<p>
-<a name="download"><h2>Download</h2></a>
-
-<p>
-Latest Release (22 January 2002): <a href="release/rtaudio-2.0.tgz">Version 2.0 (111 kB tar/gzipped)</a>
+The <a class="el" href="classRtAudio.html">RtAudio</a> API provides both blocking (synchronous) and callback (asyncronous) functionality. Callbacks are typically used in conjunction with graphical user interfaces (GUI). Blocking functionality is often necessary for explicit control of multiple input/output stream synchronization or when audio must be synchronized with other system events.
 <p>
 <a name="start"><h2>Getting Started</h2></a>
 
@@ -49,7 +42,7 @@ The first thing that must be done when using <a class="el" href="classRtAudio.ht
   <font class="keywordflow">try</font> {
     audio = <font class="keyword">new</font> RtAudio();
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     <font class="comment">// Handle the exception here</font>
   }
 
@@ -62,7 +55,7 @@ Obviously, this example doesn't demonstrate any of the real functionality of <a 
 <a name="error"><h2>Error Handling</h2></a>
 
 <p>
-<a class="el" href="classRtAudio.html">RtAudio</a> uses a C++ exception handler called <a class="el" href="classRtAudioError.html">RtAudioError</a>, which is declared and defined within the <a class="el" href="classRtAudio.html">RtAudio</a> class files. The <a class="el" href="classRtAudioError.html">RtAudioError</a> class is quite simple but it does allow errors to be "caught" by <a class="el" href="classRtAudioError.html#s11">RtAudioError::TYPE</a>. Almost all <a class="el" href="classRtAudio.html">RtAudio</a> methods can "throw" an <a class="el" href="classRtAudioError.html">RtAudioError</a>, most typically if an invalid stream identifier is supplied to a method or a driver error occurs. There are a number of cases within <a class="el" href="classRtAudio.html">RtAudio</a> where warning messages may be displayed but an exception is not thrown. There is a private <a class="el" href="classRtAudio.html">RtAudio</a> method, error(), which can be modified to globally control how these messages are handled and reported.
+<a class="el" href="classRtAudio.html">RtAudio</a> uses a C++ exception handler called <a class="el" href="classRtError.html">RtError</a>, which is declared and defined within the <a class="el" href="classRtAudio.html">RtAudio</a> class files. The <a class="el" href="classRtError.html">RtError</a> class is quite simple but it does allow errors to be "caught" by <a class="el" href="classRtError.html#s11">RtError::TYPE</a>. Almost all <a class="el" href="classRtAudio.html">RtAudio</a> methods can "throw" an <a class="el" href="classRtError.html">RtError</a>, most typically if an invalid stream identifier is supplied to a method or a driver error occurs. There are a number of cases within <a class="el" href="classRtAudio.html">RtAudio</a> where warning messages may be displayed but an exception is not thrown. There is a private <a class="el" href="classRtAudio.html">RtAudio</a> method, error(), which can be modified to globally control how these messages are handled and reported.
 <p>
 <a name="probing"><h2>Probing Device Capabilities</h2></a>
 
@@ -71,7 +64,7 @@ A programmer may wish to query the available audio device capabilities before de
 <p>
 <div class="fragment"><pre><font class="comment">// probe.cpp</font>
 
-<font class="preprocessor">#include &lt;iostream.h&gt;</font>
+<font class="preprocessor">#include &lt;iostream&gt;</font>
 <font class="preprocessor">#include "<a class="code" href="RtAudio_8h.html">RtAudio.h</a>"</font>
 
 <font class="keywordtype">int</font> main()<font class="keyword"></font>
@@ -82,7 +75,7 @@ A programmer may wish to query the available audio device capabilities before de
   <font class="keywordflow">try</font> {
     audio = <font class="keyword">new</font> RtAudio();
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -97,14 +90,14 @@ A programmer may wish to query the available audio device capabilities before de
     <font class="keywordflow">try</font> {
       audio-&gt;<a class="code" href="classRtAudio.html#a7">getDeviceInfo</a>(i, &amp;info);
     }
-    <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+    <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
       error.printMessage();
       <font class="keywordflow">break</font>;
     }
 
     <font class="comment">// Print, for example, the maximum number of output channels for each device</font>
     cout &lt;&lt; <font class="stringliteral">"device = "</font> &lt;&lt; i;
-    cout &lt;&lt; <font class="stringliteral">": maximum output channels = "</font> &lt;&lt; info.maxOutputChannels &lt;&lt; endl;
+    cout &lt;&lt; <font class="stringliteral">": maximum output channels = "</font> &lt;&lt; info.maxOutputChannels &lt;&lt; <font class="stringliteral">"\n"</font>;
   }
 
   <font class="comment">// Clean up</font>
@@ -141,7 +134,7 @@ The following data formats are defined and fully supported by <a class="el" href
   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT  RTAUDIO_FLOAT32; <font class="comment">// 32-bit float</font>
   <font class="keyword">static</font> <font class="keyword">const</font> RTAUDIO_FORMAT  RTAUDIO_FLOAT64; <font class="comment">// 64-bit double</font></pre></div>
 <p>
-The <em>nativeFormats</em> member of the <a class="el" href="structRtAudio_1_1RTAUDIO__DEVICE.html">RtAudio::RTAUDIO_DEVICE</a> structure is a bit mask of the above formats which are natively supported by the device. However, <a class="el" href="classRtAudio.html">RtAudio</a> will automatically provide format conversion if a particular format is not natively supported. When the <em>probed</em> member of the RTAUDIO_DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unusable.
+The <em>nativeFormats</em> member of the <a class="el" href="structRtAudio_1_1RTAUDIO__DEVICE.html">RtAudio::RTAUDIO_DEVICE</a> structure is a bit mask of the above formats which are natively supported by the device. However, <a class="el" href="classRtAudio.html">RtAudio</a> will automatically provide format conversion if a particular format is not natively supported. When the <em>probed</em> member of the RTAUDIO_DEVICE structure is false, the remaining structure members are likely unknown and the device is probably unuseable.
 <p>
 In general, the user need not be concerned with the minimum channel values reported in the RTAUDIO_DEVICE structure. While some audio devices may require a minimum channel value &gt; 1, <a class="el" href="classRtAudio.html">RtAudio</a> will provide automatic channel number compensation when the number of channels set by the user is less than that required by the device. Channel compensation is <em>NOT</em> possible when the number of channels set by the user is greater than that supported by the device.
 <p>
@@ -170,7 +163,7 @@ The next step in using <a class="el" href="classRtAudio.html">RtAudio</a> is to 
     stream = audio-&gt;<a class="code" href="classRtAudio.html#a3">openStream</a>(device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,
                                sample_rate, &amp;buffer_size, n_buffers);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -181,11 +174,9 @@ The next step in using <a class="el" href="classRtAudio.html">RtAudio</a> is to 
   <font class="keywordflow">return</font> 0;
 }</pre></div>
 <p>
-The <a class="el" href="classRtAudio.html#a3">RtAudio::openStream</a>() method attempts to open a stream with a specified set of parameter values. When successful, a stream identifier is returned. In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers. When device = 0, <a class="el" href="classRtAudio.html">RtAudio</a> first attempts to open the default audio device with the given parameters. If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters. If all attempts are unsuccessful, an <a class="el" href="classRtAudioError.html">RtAudioError</a> is thrown. When a non-zero device value is specified, an attempt is made to open that device only.
+The <a class="el" href="classRtAudio.html#a3">RtAudio::openStream</a>() method attempts to open a stream with a specified set of parameter values. When successful, a stream identifier is returned. In this case, we attempt to open a playback stream on device 0 with two channels, 32-bit floating point data, a sample rate of 44100 Hz, a frame rate of 256 sample frames per read/write, and 4 internal device buffers. When device = 0, <a class="el" href="classRtAudio.html">RtAudio</a> first attempts to open the default audio device with the given parameters. If that attempt fails, an attempt is made to find a device or set of devices which will meet the given parameters. If all attempts are unsuccessful, an <a class="el" href="classRtError.html">RtError</a> is thrown. When a non-zero device value is specified, an attempt is made to open that device only.
 <p>
 <a class="el" href="classRtAudio.html">RtAudio</a> provides four signed integer and two floating point data formats which can be specified using the <a class="el" href="classRtAudio.html#s0">RtAudio::RTAUDIO_FORMAT</a> parameter values mentioned earlier. If the opened device does not natively support the given format, <a class="el" href="classRtAudio.html">RtAudio</a> will automatically perform the necessary data format conversion.
-<p>
-Buffer sizes in <a class="el" href="classRtAudio.html">RtAudio</a> are <em>ALWAYS</em> given in sample frame units. For example, if you open an output stream with 4 channels and set <em>bufferSize</em> to 512, you will have to write 2048 samples of data to the output buffer within your callback or between calls to <a class="el" href="classRtAudio.html#a9">RtAudio::tickStream</a>(). In this case, a single sample frame of data contains 4 samples of data.
 <p>
 The <em>bufferSize</em> parameter specifies the desired number of sample frames which will be written to and/or read from a device per write/read operation. The <em>nBuffers</em> parameter is used in setting the underlying device buffer parameters. Both the <em>bufferSize</em> and <em>nBuffers</em> parameters can be used to control stream latency though there is no guarantee that the passed values will be those used by a device. In general, lower values for both parameters will produce less latency but perhaps less robust performance. Both parameters can be specified with values of zero, in which case the smallest allowable values will be used. The <em>bufferSize</em> parameter is passed as a pointer and the actual value used by the stream is set during the device setup procedure. <em>bufferSize</em> values should be a power of two. Optimal and allowable buffer values tend to vary between systems and devices. Check the <a href="index.html#osnotes">OS Notes</a> section for general guidelines.
 <p>
@@ -217,7 +208,7 @@ Once the device is open for playback, there are only a few final steps necessary
     audio = <font class="keyword">new</font> RtAudio(&amp;stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT32,
                         sample_rate, &amp;buffer_size, n_buffers);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -229,7 +220,7 @@ Once the device is open for playback, there are only a few final steps necessary
     <font class="comment">// Start the stream</font>
     audio-&gt;<a class="code" href="classRtAudio.html#a11">startStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     <font class="keywordflow">goto</font> cleanup;
   }
@@ -244,7 +235,7 @@ Once the device is open for playback, there are only a few final steps necessary
     <font class="keywordflow">try</font> {
       audio-&gt;<a class="code" href="classRtAudio.html#a9">tickStream</a>(stream);
     }
-    <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+    <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
       error.printMessage();
       <font class="keywordflow">goto</font> cleanup;
     }
@@ -257,7 +248,7 @@ Once the device is open for playback, there are only a few final steps necessary
     audio-&gt;<a class="code" href="classRtAudio.html#a12">stopStream</a>(stream);
     audio-&gt;<a class="code" href="classRtAudio.html#a10">closeStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
   }
 
@@ -278,7 +269,7 @@ In general, one should call the <a class="el" href="classRtAudio.html#a12">RtAud
 <p>
 The primary difference in using <a class="el" href="classRtAudio.html">RtAudio</a> with callback functionality involves the creation of a user-defined callback function. Here is an example which produces a sawtooth waveform for playback.
 <p>
-<div class="fragment"><pre><font class="preprocessor">#include &lt;iostream.h&gt;</font>
+<div class="fragment"><pre><font class="preprocessor">#include &lt;iostream&gt;</font>
 <font class="preprocessor">#include "<a class="code" href="RtAudio_8h.html">RtAudio.h</a>"</font>
 
 <font class="comment">// Two-channel sawtooth wave generator.</font>
@@ -318,7 +309,7 @@ The primary difference in using <a class="el" href="classRtAudio.html">RtAudio</
     audio = <font class="keyword">new</font> RtAudio(&amp;stream, device, channels, 0, 0, RtAudio::RTAUDIO_FLOAT64,
                         sample_rate, &amp;buffer_size, n_buffers);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -330,7 +321,7 @@ The primary difference in using <a class="el" href="classRtAudio.html">RtAudio</
     <font class="comment">// Start the stream</font>
     audio-&gt;<a class="code" href="classRtAudio.html#a11">startStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     <font class="keywordflow">goto</font> cleanup;
   }
@@ -343,7 +334,7 @@ The primary difference in using <a class="el" href="classRtAudio.html">RtAudio</
     audio-&gt;<a class="code" href="classRtAudio.html#a12">stopStream</a>(stream);
     audio-&gt;<a class="code" href="classRtAudio.html#a10">closeStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
   }
 
@@ -385,7 +376,7 @@ Using <a class="el" href="classRtAudio.html">RtAudio</a> for audio input is almo
     audio = <font class="keyword">new</font> RtAudio(&amp;stream, 0, 0, device, channels,
                         RtAudio::RTAUDIO_FLOAT32, sample_rate, &amp;buffer_size, n_buffers);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -397,7 +388,7 @@ Using <a class="el" href="classRtAudio.html">RtAudio</a> for audio input is almo
     <font class="comment">// Start the stream</font>
     audio-&gt;<a class="code" href="classRtAudio.html#a11">startStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     <font class="keywordflow">goto</font> cleanup;
   }
@@ -410,7 +401,7 @@ Using <a class="el" href="classRtAudio.html">RtAudio</a> for audio input is almo
     <font class="keywordflow">try</font> {
       audio-&gt;<a class="code" href="classRtAudio.html#a9">tickStream</a>(stream);
     }
-    <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+    <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
       error.printMessage();
       <font class="keywordflow">goto</font> cleanup;
     }
@@ -425,7 +416,7 @@ Using <a class="el" href="classRtAudio.html">RtAudio</a> for audio input is almo
     <font class="comment">// Stop the stream</font>
     audio-&gt;<a class="code" href="classRtAudio.html#a12">stopStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
   }
 
@@ -444,7 +435,7 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
 <p>
 <div class="fragment"><pre><font class="comment">// duplex.cpp</font>
 
-<font class="preprocessor">#include &lt;iostream.h&gt;</font>
+<font class="preprocessor">#include &lt;iostream&gt;</font>
 <font class="preprocessor">#include "<a class="code" href="RtAudio_8h.html">RtAudio.h</a>"</font>
 
 <font class="comment">// Pass-through function.</font>
@@ -471,7 +462,7 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
     audio = <font class="keyword">new</font> RtAudio(&amp;stream, device, channels, device, channels, RtAudio::RTAUDIO_FLOAT64,
                         sample_rate, &amp;buffer_size, n_buffers);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     exit(EXIT_FAILURE);
   }
@@ -483,7 +474,7 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
     <font class="comment">// Start the stream</font>
     audio-&gt;<a class="code" href="classRtAudio.html#a11">startStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
     <font class="keywordflow">goto</font> cleanup;
   }
@@ -496,7 +487,7 @@ Finally, it is easy to use <a class="el" href="classRtAudio.html">RtAudio</a> fo
     audio-&gt;<a class="code" href="classRtAudio.html#a12">stopStream</a>(stream);
     audio-&gt;<a class="code" href="classRtAudio.html#a10">closeStream</a>(stream);
   }
-  <font class="keywordflow">catch</font> (<a class="code" href="classRtAudioError.html">RtAudioError</a> &amp;error) {
+  <font class="keywordflow">catch</font> (<a class="code" href="classRtError.html">RtError</a> &amp;error) {
     error.printMessage();
   }
 
@@ -529,10 +520,10 @@ In order to compile <a class="el" href="classRtAudio.html">RtAudio</a> for a spe
 
 <p>
   <table border=1 cellspacing=3 cellpadding=3><tr><td><b>OS:</b> </td><td><b>Audio API:</b> </td><td><b>Preprocessor Definition:</b> </td><td><b>Library:</b> </td><td><b>Example Compiler Statement:</b>   </td></tr>
-<tr><td>Linux </td><td>ALSA </td><td>__LINUX_ALSA_ </td><td><code>libasound, libpthread</code> </td><td><code>g++ -Wall -D__LINUX_ALSA_ -o probe probe.cpp RtAudio.cpp -lasound -lpthread</code>   </td></tr>
-<tr><td>Linux </td><td>OSS </td><td>__LINUX_OSS_ </td><td><code>libpthread</code> </td><td><code>g++ -Wall -D__LINUX_OSS_ -o probe probe.cpp RtAudio.cpp -lpthread</code>   </td></tr>
-<tr><td>Irix </td><td>AL </td><td>__IRIX_AL_ </td><td><code>libaudio, libpthread</code> </td><td><code>CC -Wall -D__IRIX_AL_ -o probe probe.cpp RtAudio.cpp -laudio -lpthread</code>   </td></tr>
-<tr><td>Windows </td><td>Direct Sound </td><td>__WINDOWS_DS_ </td><td><code>dsound.lib (ver. 5.0 or higher), multithreaded</code> </td><td><em>compiler specific</em>  </td></table>
+<tr><td>Linux </td><td>ALSA </td><td>__LINUX_ALSA__ </td><td><code>libasound, libpthread</code> </td><td><code>g++ -Wall -D__LINUX_ALSA__ -o probe probe.cpp RtAudio.cpp -lasound -lpthread</code>   </td></tr>
+<tr><td>Linux </td><td>OSS </td><td>__LINUX_OSS__ </td><td><code>libpthread</code> </td><td><code>g++ -Wall -D__LINUX_OSS__ -o probe probe.cpp RtAudio.cpp -lpthread</code>   </td></tr>
+<tr><td>Irix </td><td>AL </td><td>__IRIX_AL__ </td><td><code>libaudio, libpthread</code> </td><td><code>CC -Wall -D__IRIX_AL__ -o probe probe.cpp RtAudio.cpp -laudio -lpthread</code>   </td></tr>
+<tr><td>Windows </td><td>Direct Sound </td><td>__WINDOWS_DS__ </td><td><code>dsound.lib (ver. 5.0 or higher), multithreaded</code> </td><td><em>compiler specific</em>  </td></table>
  
 <p>
 
@@ -547,7 +538,7 @@ The example compiler statements above could be used to compile the <code>probe.c
 <a name="linux"><h3>Linux:</h3></a>
 
 <p>
-<a class="el" href="classRtAudio.html">RtAudio</a> for Linux was developed under Redhat distributions 7.0 - 7.2. Two different audio APIs are supported on Linux platforms: OSS and <a href="http://www.alsa-project.org/">ALSA</a>. The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers. Therefore, a generic Linux system is most likely to have OSS support. The ALSA API is relatively new and at this time is not part of the Linux kernel distribution. Work is in progress to make ALSA part of the 2.5 development kernel series. Despite that, the ALSA API offers significantly better functionality than the OSS API. <a class="el" href="classRtAudio.html">RtAudio</a> provides support for the 0.9 and higher versions of ALSA. Input/output latency on the order of 15-20 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the <a class="el" href="classRtAudio.html">RtAudio</a> buffer parameters (without kernel modifications). Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority. The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.
+<a class="el" href="classRtAudio.html">RtAudio</a> for Linux was developed under Redhat distributions 7.0 - 7.2. Two different audio APIs are supported on Linux platforms: OSS and <a href="http://www.alsa-project.org/">ALSA</a>. The OSS API has existed for at least 6 years and the Linux kernel is distributed with free versions of OSS audio drivers. Therefore, a generic Linux system is most likely to have OSS support. The ALSA API, although relatively new, is now part of the Linux development kernel and offers significantly better functionality than the OSS API. <a class="el" href="classRtAudio.html">RtAudio</a> provides support for the 0.9 and higher versions of ALSA. Input/output latency on the order of 15 milliseconds can typically be achieved under both OSS or ALSA by fine-tuning the <a class="el" href="classRtAudio.html">RtAudio</a> buffer parameters (without kernel modifications). Latencies on the order of 5 milliseconds or less can be achieved using a low-latency kernel patch and increasing FIFO scheduling priority. The pthread library, which is used for callback functionality, is a standard component of all Linux distributions.
 <p>
 The ALSA library includes OSS emulation support. That means that you can run programs compiled for the OSS API even when using the ALSA drivers and library. It should be noted however that OSS emulation under ALSA is not perfect. Specifically, channel number queries seem to consistently produce invalid results. While OSS emulation is successful for the majority of <a class="el" href="classRtAudio.html">RtAudio</a> tests, it is recommended that the native ALSA implementation of <a class="el" href="classRtAudio.html">RtAudio</a> be used on systems which have ALSA drivers installed.
 <p>
@@ -556,25 +547,23 @@ The ALSA implementation of <a class="el" href="classRtAudio.html">RtAudio</a> ma
 <a name="irix"><h3>Irix (SGI):</h3></a>
 
 <p>
-The Irix version of <a class="el" href="classRtAudio.html">RtAudio</a> was written and tested on an SGI Indy running Irix version 6.5 and the newer "al" audio library. <a class="el" href="classRtAudio.html">RtAudio</a> does not compile under Irix version 6.3 because the C++ compiler is too old. Despite the relatively slow speed of the Indy, <a class="el" href="classRtAudio.html">RtAudio</a> was found to behave quite well and input/output latency was very good. No problems were found with respect to using the pthread library.
+The Irix version of <a class="el" href="classRtAudio.html">RtAudio</a> was written and tested on an SGI Indy running Irix version 6.5.4 and the newer "al" audio library. <a class="el" href="classRtAudio.html">RtAudio</a> does not compile under Irix version 6.3, mainly because the C++ compiler is too old. Despite the relatively slow speed of the Indy, <a class="el" href="classRtAudio.html">RtAudio</a> was found to behave quite well and input/output latency was very good. No problems were found with respect to using the pthread library.
 <p>
 <a name="windows"><h3>Windows:</h3></a>
 
 <p>
-<a class="el" href="classRtAudio.html">RtAudio</a> under Windows is written using the DirectSound API. In order to compile <a class="el" href="classRtAudio.html">RtAudio</a> under Windows, you must have the header and source files for DirectSound version 0.5 or higher. As far as I know, you cannot compile <a class="el" href="classRtAudio.html">RtAudio</a> for Windows NT because there is not sufficient DirectSound support. Audio output latency with DirectSound can be reasonably good (on the order of 20 milliseconds). On the other hand, input audio latency tends to be terrible (100 milliseconds or more). Further, DirectSound drivers tend to crash easily when experimenting with buffer parameters. On my system, I found it necessary to use values around nBuffers = 8 and bufferSize = 512 to avoid crashing my system. <a class="el" href="classRtAudio.html">RtAudio</a> was developed with Visual C++ version 6.0. I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented. We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard.
+<a class="el" href="classRtAudio.html">RtAudio</a> under Windows is written using the DirectSound API. In order to compile <a class="el" href="classRtAudio.html">RtAudio</a> under Windows, you must have the header and source files for DirectSound version 5.0 or higher. As far as I know, there is no DirectSoundCapture support for Windows NT (in which case, you cannot use <a class="el" href="classRtAudio.html">RtAudio</a>). Audio output latency with DirectSound can be reasonably good (on the order of 20 milliseconds). On the other hand, input audio latency tends to be terrible (100 milliseconds or more). Further, DirectSound drivers tend to crash easily when experimenting with buffer parameters. On my system, I found it necessary to use values around nBuffers = 8 and bufferSize = 512 to avoid crashing my system. <a class="el" href="classRtAudio.html">RtAudio</a> was developed with Visual C++ version 6.0. I was forced in several instances to modify code in order to get it to compile under the non-standard version of C++ that Microsoft so unprofessionally implemented. We can only hope that the developers of Visual C++ 7.0 will have time to read the C++ standard.
 <p>
-<a name="acknowledge"><h2>Acknowledgments</h2></a>
+<a name="acknowledge"><h2>Acknowledgements</h2></a>
 
 <p>
 The <a class="el" href="classRtAudio.html">RtAudio</a> API incorporates many of the concepts developed in the <a href="http://www.portaudio.com/">PortAudio</a> project by Phil Burk and Ross Bencina. Early development also incorporated ideas from Bill Schottstaedt's <a href="http://www-ccrma.stanford.edu/software/snd/sndlib/">sndlib</a>. The CCRMA <a href="http://www-ccrma.stanford.edu/groups/soundwire/">SoundWire group</a> provided valuable feedback during the API proposal stages.
 <p>
 <a class="el" href="classRtAudio.html">RtAudio</a> was slowly developed over the course of many months while in residence at the <a href="http://www.iua.upf.es/">Institut Universitari de L'Audiovisual (IUA)</a> in Barcelona, Spain, the <a href="http://www.acoustics.hut.fi/">Laboratory of Acoustics and Audio Signal Processing</a> at the Helsinki University of Technology, Finland, and the <a href="http://www-ccrma.stanford.edu/">Center for Computer Research in Music and Acoustics (CCRMA)</a> at <a href="http://www.stanford.edu/">Stanford University</a>. This work was supported in part by the United States Air Force Office of Scientific Research (grant #F49620-99-1-0293).
 <p>
-These documentation files were generated using <a href="http://www.doxygen.org/">doxygen</a> by Dimitri van Heesch.
-<p>
 <HR>
 
-<table><tr><td><img src="../ccrma.gif">
+<table><tr><td><img src="../images/ccrma.gif">
   <td>&copy;2001-2002 CCRMA, Stanford University. All Rights Reserved.<br>
   Maintained by Gary P. Scavone, <a href="mailto:gary@ccrma.stanford.edu">gary@ccrma.stanford.edu</a><P>
 </table>
