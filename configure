@@ -3655,7 +3655,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -3676,7 +3676,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -4697,9 +4697,9 @@ if test "${with_jack+set}" = set; then
     { echo "$as_me:$LINENO: result: using JACK" >&5
 echo "${ECHO_T}using JACK" >&6; }
 
-{ echo "$as_me:$LINENO: checking for jack_client_new in -ljack" >&5
-echo $ECHO_N "checking for jack_client_new in -ljack... $ECHO_C" >&6; }
-if test "${ac_cv_lib_jack_jack_client_new+set}" = set; then
+{ echo "$as_me:$LINENO: checking for jack_client_open in -ljack" >&5
+echo $ECHO_N "checking for jack_client_open in -ljack... $ECHO_C" >&6; }
+if test "${ac_cv_lib_jack_jack_client_open+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -4717,11 +4717,11 @@ cat >>conftest.$ac_ext <<_ACEOF
 #ifdef __cplusplus
 extern "C"
 #endif
-char jack_client_new ();
+char jack_client_open ();
 int
 main ()
 {
-return jack_client_new ();
+return jack_client_open ();
   ;
   return 0;
 }
@@ -4744,21 +4744,21 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test ! -s conftest.err
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_jack_jack_client_new=yes
+  ac_cv_lib_jack_jack_client_open=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_jack_jack_client_new=no
+	ac_cv_lib_jack_jack_client_open=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_jack_jack_client_new" >&5
-echo "${ECHO_T}$ac_cv_lib_jack_jack_client_new" >&6; }
-if test $ac_cv_lib_jack_jack_client_new = yes; then
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_jack_jack_client_open" >&5
+echo "${ECHO_T}$ac_cv_lib_jack_jack_client_open" >&6; }
+if test $ac_cv_lib_jack_jack_client_open = yes; then
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBJACK 1
 _ACEOF
@@ -4772,6 +4772,10 @@ echo "$as_me: error: JACK support requires the jack library!" >&2;}
 fi
 
 fi
+
+
+#    AC_CHECK_HEADER(jack/jack.h, [], [AC_MSG_ERROR(Jack header file not found!)] )
+#    LIBS="$LIBS -framework jackmp" ], )
 
 
   # Look for Core flag
