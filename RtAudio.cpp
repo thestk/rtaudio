@@ -37,6 +37,7 @@
 */
 /************************************************************************/
 
+// RtAudio: Version 2.1.1, 24 October 2002
 
 #include "RtAudio.h"
 #include <vector>
@@ -1261,44 +1262,10 @@ void RtAudio :: callbackEvent( int streamId, DEVICE_ID deviceId, void *inData, v
 
   MUTEX_LOCK(&stream->mutex);
 
-  if ( stream->mode == INPUT || ( stream->mode == DUPLEX && deviceId == info->device[1] ) ) {
-
-    if (stream->doConvertBuffer[1]) {
-
-      if ( stream->deInterleave[1] ) {
-        stream->deviceBuffer = (char *) stream->callbackInfo.buffers;
-        int bufferBytes = inBufferList->mBuffers[stream->handle[1]].mDataByteSize;
-        for ( int i=0; i<stream->nDeviceChannels[1]; i++ ) {
-          memcpy(&stream->deviceBuffer[i*bufferBytes],
-                 inBufferList->mBuffers[stream->handle[1]+i].mData, bufferBytes );
-        }
-      }
-      else
-        stream->deviceBuffer = (char *) inBufferList->mBuffers[stream->handle[1]].mData;
-
-      if ( stream->doByteSwap[1] )
-        byteSwapBuffer(stream->deviceBuffer,
-                       stream->bufferSize * stream->nDeviceChannels[1],
-                       stream->deviceFormat[1]);
-      convertStreamBuffer(stream, INPUT);
-
-    }
-    else {
-      memcpy(stream->userBuffer,
-             inBufferList->mBuffers[stream->handle[1]].mData,
-             inBufferList->mBuffers[stream->handle[1]].mDataByteSize );
-
-      if (stream->doByteSwap[1])
-        byteSwapBuffer(stream->userBuffer,
-                       stream->bufferSize * stream->nUserChannels[1],
-                       stream->userFormat);
-    }
-  }
-
-  // Don't invoke the user callback if duplex mode, the input/output
-  // devices are different, and this function is called for the output
-  // device.
-  if ( info->usingCallback && (stream->mode != DUPLEX || deviceId == info->device[1] ) ) {
+  // Invoke user callback first, to get fresh output data.  Don't
+  // invoke the user callback if duplex mode, the input/output devices
+  // are different, and this function is called for the input device.
+  if ( info->usingCallback && (stream->mode != DUPLEX || deviceId == info->device[0] ) ) {
     RTAUDIO_CALLBACK callback = (RTAUDIO_CALLBACK) info->callback;
     info->stopStream = callback(stream->userBuffer, stream->bufferSize, info->userData);
   }
@@ -1336,6 +1303,40 @@ void RtAudio :: callbackEvent( int streamId, DEVICE_ID deviceId, void *inData, v
       memcpy(outBufferList->mBuffers[stream->handle[0]].mData,
              stream->userBuffer,
              outBufferList->mBuffers[stream->handle[0]].mDataByteSize );
+    }
+  }
+
+  if ( stream->mode == INPUT || ( stream->mode == DUPLEX && deviceId == info->device[1] ) ) {
+
+    if (stream->doConvertBuffer[1]) {
+
+      if ( stream->deInterleave[1] ) {
+        stream->deviceBuffer = (char *) stream->callbackInfo.buffers;
+        int bufferBytes = inBufferList->mBuffers[stream->handle[1]].mDataByteSize;
+        for ( int i=0; i<stream->nDeviceChannels[1]; i++ ) {
+          memcpy(&stream->deviceBuffer[i*bufferBytes],
+                 inBufferList->mBuffers[stream->handle[1]+i].mData, bufferBytes );
+        }
+      }
+      else
+        stream->deviceBuffer = (char *) inBufferList->mBuffers[stream->handle[1]].mData;
+
+      if ( stream->doByteSwap[1] )
+        byteSwapBuffer(stream->deviceBuffer,
+                       stream->bufferSize * stream->nDeviceChannels[1],
+                       stream->deviceFormat[1]);
+      convertStreamBuffer(stream, INPUT);
+
+    }
+    else {
+      memcpy(stream->userBuffer,
+             inBufferList->mBuffers[stream->handle[1]].mData,
+             inBufferList->mBuffers[stream->handle[1]].mDataByteSize );
+
+      if (stream->doByteSwap[1])
+        byteSwapBuffer(stream->userBuffer,
+                       stream->bufferSize * stream->nUserChannels[1],
+                       stream->userFormat);
     }
   }
 
@@ -4130,41 +4131,17 @@ void RtAudio :: callbackEvent(int streamId, int bufferIndex, void *inData, void 
   }
 
   MUTEX_LOCK(&stream->mutex);
-  int nChannels = stream->nDeviceChannels[0] + stream->nDeviceChannels[1];
-  int bufferBytes;
-  ASIOBufferInfo *bufferInfos = (ASIOBufferInfo *) info->buffers;
-  if ( stream->mode == INPUT || stream->mode == DUPLEX ) {
 
-    bufferBytes = stream->bufferSize * formatBytes(stream->deviceFormat[1]);
-    if (stream->doConvertBuffer[1]) {
-
-      // Always interleave ASIO input data.
-      for ( int i=0; i<stream->nDeviceChannels[1]; i++, bufferInfos++ )
-        memcpy(&stream->deviceBuffer[i*bufferBytes], bufferInfos->buffers[bufferIndex], bufferBytes );
-
-      if ( stream->doByteSwap[1] )
-        byteSwapBuffer(stream->deviceBuffer,
-                       stream->bufferSize * stream->nDeviceChannels[1],
-                       stream->deviceFormat[1]);
-      convertStreamBuffer(stream, INPUT);
-
-    }
-    else { // single channel only
-      memcpy(stream->userBuffer, bufferInfos->buffers[bufferIndex], bufferBytes );
-
-      if (stream->doByteSwap[1])
-        byteSwapBuffer(stream->userBuffer,
-                       stream->bufferSize * stream->nUserChannels[1],
-                       stream->userFormat);
-    }
-  }
-
+  // Invoke user callback first, to get fresh output data.
   if ( info->usingCallback ) {
     RTAUDIO_CALLBACK callback = (RTAUDIO_CALLBACK) info->callback;
     if ( callback(stream->userBuffer, stream->bufferSize, info->userData) )
       info->stopStream = true;
   }
 
+  int nChannels = stream->nDeviceChannels[0] + stream->nDeviceChannels[1];
+  int bufferBytes;
+  ASIOBufferInfo *bufferInfos = (ASIOBufferInfo *) info->buffers;
   if ( stream->mode == OUTPUT || stream->mode == DUPLEX ) {
 
     bufferBytes = stream->bufferSize * formatBytes(stream->deviceFormat[0]);
@@ -4190,6 +4167,32 @@ void RtAudio :: callbackEvent(int streamId, int bufferIndex, void *inData, void 
                        stream->userFormat);
 
       memcpy(bufferInfos->buffers[bufferIndex], stream->userBuffer, bufferBytes );
+    }
+  }
+
+  if ( stream->mode == INPUT || stream->mode == DUPLEX ) {
+
+    bufferBytes = stream->bufferSize * formatBytes(stream->deviceFormat[1]);
+    if (stream->doConvertBuffer[1]) {
+
+      // Always interleave ASIO input data.
+      for ( int i=0; i<stream->nDeviceChannels[1]; i++, bufferInfos++ )
+        memcpy(&stream->deviceBuffer[i*bufferBytes], bufferInfos->buffers[bufferIndex], bufferBytes );
+
+      if ( stream->doByteSwap[1] )
+        byteSwapBuffer(stream->deviceBuffer,
+                       stream->bufferSize * stream->nDeviceChannels[1],
+                       stream->deviceFormat[1]);
+      convertStreamBuffer(stream, INPUT);
+
+    }
+    else { // single channel only
+      memcpy(stream->userBuffer, bufferInfos->buffers[bufferIndex], bufferBytes );
+
+      if (stream->doByteSwap[1])
+        byteSwapBuffer(stream->userBuffer,
+                       stream->bufferSize * stream->nUserChannels[1],
+                       stream->userFormat);
     }
   }
 
