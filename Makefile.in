@@ -11,10 +11,8 @@ CC       = @CXX@
 AR       = @AR@
 RANLIB   = @RANLIB@
 
-DEFS     = @debug@
-DEFS    += @audio_apis@
-CFLAGS   = @CFLAGS@ -Iinclude
-CFLAGS  += @warn@
+DEFS     = @CPPFLAGS@
+CFLAGS   = @CXXFLAGS@ -Iinclude
 
 all : $(LIBRARY)
 

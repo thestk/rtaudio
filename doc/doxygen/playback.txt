@@ -5,6 +5,7 @@ In this example, we provide a complete program that demonstrates the use of RtAu
 \code
 #include "RtAudio.h"
 #include <iostream>
+#include <cstdlib>
 
 // Two-channel sawtooth wave generator.
 int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,

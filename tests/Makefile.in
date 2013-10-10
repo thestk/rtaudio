@@ -11,12 +11,10 @@ vpath %.o $(OBJECT_PATH)
 OBJECTS	=	RtAudio.o @objects@
 
 CC       = @CXX@
-DEFS     = @debug@
-DEFS    += @audio_apis@
-CFLAGS   = @CFLAGS@
-CFLAGS  += @warn@ -I$(INCLUDE) -I../include
+DEFS     = @CPPFLAGS@
+CFLAGS   = @CXXFLAGS@
+CFLAGS  += -I$(INCLUDE) -I../include
 LIBRARY  = @LIBS@
-LIBRARY += @frameworks@
 
 %.o : $(SRC_PATH)/%.cpp
 	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $(OBJECT_PATH)/$@
@@ -44,11 +42,14 @@ duplex : duplex.cpp $(OBJECTS)
 testall : testall.cpp $(OBJECTS)
 	$(CC) $(CFLAGS) $(DEFS) -o testall testall.cpp $(OBJECT_PATH)/*.o $(LIBRARY)
 
-
 clean : 
 	-rm $(OBJECT_PATH)/*.o
 	-rm $(PROGRAMS)
 	-rm -f *.raw *~ *.exe
+	-rm -fR *.dSYM
+
+distclean: clean
+	-rm Makefile
 
 strip : 
 	strip $(PROGRAMS)

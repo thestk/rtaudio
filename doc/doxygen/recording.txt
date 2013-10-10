@@ -6,6 +6,8 @@ Using RtAudio for audio input is almost identical to the way it is used for play
 \code
 #include "RtAudio.h"
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
 
 int record( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
          double streamTime, RtAudioStreamStatus status, void *userData )
