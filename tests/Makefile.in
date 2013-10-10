@@ -1,6 +1,6 @@
 ### RtAudio tests Makefile - for various flavors of unix
 
-PROGRAMS = info play_saw record_raw in_out play_raw twostreams call_saw call_inout
+PROGRAMS = probe playsaw playraw record duplex testall
 RM = /bin/rm
 SRC_PATH = ../
 INCLUDE = ../
@@ -22,34 +22,29 @@ LIBRARY += @frameworks@
 
 all : $(PROGRAMS)
 
-info : info.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o info info.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+probe : probe.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o probe probe.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
-play_saw : play_saw.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o play_saw play_saw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+playsaw : playsaw.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o playsaw playsaw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
-play_raw : play_raw.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o play_raw play_raw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+playraw : playraw.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o playraw playraw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
-record_raw : record_raw.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o record_raw record_raw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+record : record.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o record record.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
-in_out : in_out.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o in_out in_out.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+duplex : duplex.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o duplex duplex.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
-twostreams : twostreams.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o twostreams twostreams.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
+testall : testall.cpp $(OBJECTS)
+	$(CC) $(CFLAGS) $(DEFS) -o testall testall.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
-call_saw : call_saw.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o call_saw call_saw.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
-
-call_inout : call_inout.cpp $(OBJECTS)
-	$(CC) $(CFLAGS) $(DEFS) -o call_inout call_inout.cpp $(OBJECT_PATH)/RtAudio.o $(LIBRARY)
 
 clean : 
 	-rm $(OBJECT_PATH)/*.o
 	-rm $(PROGRAMS)
-	-rm -f *~
+	-rm -f *.raw *~
 
 strip : 
 	strip $(PROGRAMS)
