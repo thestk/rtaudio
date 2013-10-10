@@ -80,7 +80,6 @@ case $host in
     [AC_SUBST( audio_apis, [-D__MACOSX_CORE__] )],
     [AC_MSG_ERROR(CoreAudio header files not found!)] )
   AC_SUBST( frameworks, ["-framework CoreAudio"] )
-  AC_CHECK_LIB(stdc++, printf, , AC_MSG_ERROR(RtAudio requires the C++ library!) )
   ;;
 
   *)

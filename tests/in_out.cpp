@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   int chans, fs, buffer_size, device = 0;
   long frames, counter = 0;
   MY_TYPE *buffer;
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // minimal command-line checking
   if (argc != 3 && argc != 4 ) usage();

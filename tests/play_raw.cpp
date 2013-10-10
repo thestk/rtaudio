@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   MY_TYPE *buffer;
   char *file;
   FILE *fd;
-  RtAudio *audio;
+  RtAudio *audio = 0;
 
   // minimal command-line checking
   if (argc != 4 && argc != 5 ) usage();

@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-  RtAudio *audio;
+  RtAudio *audio = 0;
   RtAudioDeviceInfo info;
   try {
     audio = new RtAudio();

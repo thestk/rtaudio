@@ -1,6 +1,20 @@
 RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), SGI, Macintosh OS X (CoreAudio), and Windows (DirectSound and ASIO) operating systems.
 
-By Gary P. Scavone, 2001-2004.
+By Gary P. Scavone, 2001-2005.
+
+v3.0.2: (14 October 2005)
+- modification of ALSA read/write order to fix duplex under/overruns
+- added synchronization of input/output devices for ALSA duplex operation
+- cleaned up and improved error reporting throughout
+- bug fix in Windows DirectSound support for 8-bit audio
+- bug fix in Windows DirectSound support during device capture query
+- added ASIOOutputReady() call near end of callbackEvent to fix some driver behavior
+- added #include <stdio.h> to RtAudio.cpp
+- fixed bug in RtApiCore for duplex operation with different I/O devices
+- improvements to DirectX pointer chasing (by Robin Davies)
+- backdoor RtDsStatistics hook provides DirectX performance information (by Robin Davies)
+- bug fix for non-power-of-two Asio granularity used by Edirol PCR-A30 (by Robin Davies)
+- auto-call CoInitialize for DSOUND and ASIO platforms (by Robin Davies)
 
 v3.0.1: (22 March 2004)
 - bug fix in Windows DirectSound support for cards with output only

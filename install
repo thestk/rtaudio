@@ -1,6 +1,6 @@
 RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, and OSS), SGI, Macintosh OS X (CoreAudio), and Windows (DirectSound and ASIO) operating systems.
 
-By Gary P. Scavone, 2001-2004.
+By Gary P. Scavone, 2001-2005.
 
 To configure and compile (on Unix systems):
 
@@ -18,7 +18,7 @@ A few options can be passed to configure, including:
   --with-jack = choose JACK server support (linux only)
   --with-oss = choose OSS API support (linux only)
 
-Typing "./configure --help" will display all the available options.
+Typing "./configure --help" will display all the available options.  Note that you can provide more than one "--with-" flag to the configure script to enable multiple API support.
 
 If you wish to use a different compiler than that selected by configure, specify that compiler in the command line (ex. to use CC):
 

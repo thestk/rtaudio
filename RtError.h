@@ -39,7 +39,7 @@ protected:
 
 public:
   //! The constructor.
-  RtError(const std::string& message, Type type = RtError::UNSPECIFIED) : message_(message), type_(type){}
+  RtError(const std::string& message, Type type = RtError::UNSPECIFIED) : message_(message), type_(type) {}
 
   //! The destructor.
   virtual ~RtError(void) {};
