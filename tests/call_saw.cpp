@@ -46,9 +46,10 @@ void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: call_saw N fs\n";
+  cout << "\nuseage: call_saw N fs <device>\n";
   cout << "    where N = number of channels,\n";
-  cout << "    and fs = the sample rate.\n\n";
+  cout << "    fs = the sample rate,\n";
+  cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
@@ -74,20 +75,21 @@ int saw(char *buffer, int buffer_size, void *data)
 
 int main(int argc, char *argv[])
 {
-  int device, stream, buffer_size, fs;
+  int stream, buffer_size, fs, device = 0;
   RtAudio *audio;
   double *data;
   char input;
 
   // minimal command-line checking
-  if (argc != 3) usage();
+  if (argc != 3 && argc != 4 ) usage();
 
   chans = (int) atoi(argv[1]);
   fs = (int) atoi(argv[2]);
+  if ( argc == 4 )
+    device = (int) atoi(argv[3]);
 
   // Open the realtime output device
-  buffer_size = 256;
-  device = 0; // default device
+  buffer_size = 1024;
   try {
     audio = new RtAudio(&stream, device, chans, 0, 0,
                         FORMAT, fs, &buffer_size, 4);
@@ -106,7 +108,7 @@ int main(int argc, char *argv[])
     goto cleanup;
   }
 
-  cout << "\nPlaying ... press <enter> to quit.\n";
+  cout << "\nPlaying ... press <enter> to quit (buffer size = " << buffer_size << ").\n";
   cin.get(input);
 
   // Stop the stream.

@@ -29,30 +29,33 @@ typedef signed long  MY_TYPE;
 typedef signed long  MY_TYPE;
 #define FORMAT RtAudio::RTAUDIO_SINT32
 #define SCALE  2147483647.0
+*/
 
 typedef float  MY_TYPE;
 #define FORMAT RtAudio::RTAUDIO_FLOAT32
 #define SCALE  1.0;
-*/
 
+/*
 typedef double  MY_TYPE;
 #define FORMAT RtAudio::RTAUDIO_FLOAT64
 #define SCALE  1.0;
+*/
 
 void usage(void) {
   /* Error function in case of incorrect command-line
      argument specifications
   */
-  cout << "\nuseage: play_raw N fs file\n";
+  cout << "\nuseage: play_raw N fs file <device>\n";
   cout << "    where N = number of channels,\n";
   cout << "    fs = the sample rate, \n";
-  cout << "    and file = the raw file to play.\n\n"; 
+  cout << "    file = the raw file to play,\n";
+  cout << "    and device = the device to use (default = 0).\n\n";
   exit(0);
 }
 
 int main(int argc, char *argv[])
 {
-  int chans, fs, device, buffer_size, count, stream;
+  int chans, fs, buffer_size, count, stream, device = 0;
   long counter = 0;
   MY_TYPE *buffer;
   char *file;
@@ -60,11 +63,13 @@ int main(int argc, char *argv[])
   RtAudio *audio;
 
   // minimal command-line checking
-  if (argc != 4) usage();
+  if (argc != 4 && argc != 5 ) usage();
 
   chans = (int) atoi(argv[1]);
   fs = (int) atoi(argv[2]);
   file = argv[3];
+  if ( argc == 5 )
+    device = (int) atoi(argv[4]);
 
   fd = fopen(file,"rb");
   if (!fd) {
@@ -73,8 +78,7 @@ int main(int argc, char *argv[])
   }
 
   // Open the realtime output device
-  buffer_size = 256;
-  device = 0; // default device
+  buffer_size = 512;
   try {
     audio = new RtAudio(&stream, device, chans, 0, 0,
                         FORMAT, fs, &buffer_size, 2);
