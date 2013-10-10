@@ -44,9 +44,20 @@ fi
 
 CXXFLAGS="$CXXFLAGS $cxxflag"
 
+AC_CANONICAL_HOST
+
+AC_SUBST( sharedlib, ["librtaudio.so"] )
+AC_SUBST( sharedname, ["librtaudio.so.\$(RELEASE)"] )
+AC_SUBST( libflags, ["-shared -Wl,-soname,\$(SHAREDLIB).\$(MAJOR) -o \$(SHAREDLIB).\$(RELEASE)"] )
+case $host in
+  *-apple*)
+  AC_SUBST( sharedlib, ["librtaudio.dylib"] )
+  AC_SUBST( sharedname, ["librtaudio.\$(RELEASE).dylib"] )
+  AC_SUBST( libflags, ["-dynamiclib -o librtaudio.\$(RELEASE).dylib"] )
+esac
+
 # Checks for package options and external software
 AC_SUBST( api, [""] )
-AC_CANONICAL_HOST
 AC_MSG_CHECKING(for audio API)
 case $host in
   *-*-netbsd*)

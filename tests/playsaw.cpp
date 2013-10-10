@@ -40,22 +40,36 @@ typedef double  MY_TYPE;
 #define SCALE  1.0
 */
 
+// Platform-dependent sleep routines.
+#if defined( __WINDOWS_ASIO__ ) || defined( __WINDOWS_DS__ )
+  #include <windows.h>
+  #define SLEEP( milliseconds ) Sleep( (DWORD) milliseconds ) 
+#else // Unix variants
+  #include <unistd.h>
+  #define SLEEP( milliseconds ) usleep( (unsigned long) (milliseconds * 1000.0) )
+#endif
+
 #define BASE_RATE 0.005
 #define TIME   1.0
 
 void usage( void ) {
   // Error function in case of incorrect command-line
   // argument specifications
-  std::cout << "\nuseage: playsaw N fs <device> <channelOffset>\n";
+  std::cout << "\nuseage: playsaw N fs <device> <channelOffset> <time>\n";
   std::cout << "    where N = number of channels,\n";
   std::cout << "    fs = the sample rate,\n";
   std::cout << "    device = optional device to use (default = 0),\n";
-  std::cout << "    and channelOffset = an optional channel offset on the device (default = 0).\n\n";
+  std::cout << "    channelOffset = an optional channel offset on the device (default = 0),\n";
+  std::cout << "    and time = an optional time duration in seconds (default = no limit).\n\n";
   exit( 0 );
 }
 
 unsigned int channels;
 RtAudio::StreamOptions options;
+unsigned int frameCounter = 0;
+bool checkCount = false;
+unsigned int nFrames = 0;
+const unsigned int callbackReturnValue = 1;
 
 //#define USE_INTERLEAVED
 #if defined( USE_INTERLEAVED )
@@ -80,6 +94,8 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     }
   }
 
+  frameCounter += nBufferFrames;
+  if ( checkCount && ( frameCounter >= nFrames ) ) return callbackReturnValue;
   return 0;
 }
 
@@ -106,6 +122,8 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     }
   }
 
+  frameCounter += nBufferFrames;
+  if ( checkCount && ( frameCounter >= nFrames ) ) return callbackReturnValue;
   return 0;
 }
 #endif
@@ -115,7 +133,7 @@ int main( int argc, char *argv[] )
   unsigned int bufferFrames, fs, device = 0, offset = 0;
 
   // minimal command-line checking
-  if (argc < 3 || argc > 5 ) usage();
+  if (argc < 3 || argc > 6 ) usage();
 
   RtAudio dac;
   if ( dac.getDeviceCount() < 1 ) {
@@ -129,6 +147,9 @@ int main( int argc, char *argv[] )
     device = (unsigned int) atoi( argv[3] );
   if ( argc > 4 )
     offset = (unsigned int) atoi( argv[4] );
+  if ( argc > 5 )
+    nFrames = (unsigned int) (fs * atof( argv[5] ));
+  if ( nFrames > 0 ) checkCount = true;
 
   double *data = (double *) calloc( channels, sizeof( double ) );
 
@@ -156,17 +177,22 @@ int main( int argc, char *argv[] )
     goto cleanup;
   }
 
-  char input;
-  //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
-  std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << bufferFrames << ").\n";
-  std::cin.get( input );
-
-  try {
-    // Stop the stream
-    dac.stopStream();
+  if ( checkCount ) {
+    while ( dac.isStreamRunning() == true ) SLEEP( 100 );
   }
-  catch ( RtError& e ) {
-    e.printMessage();
+  else {
+    char input;
+    //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
+    std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << bufferFrames << ").\n";
+    std::cin.get( input );
+
+    try {
+      // Stop the stream
+      dac.stopStream();
+    }
+    catch ( RtError& e ) {
+      e.printMessage();
+    }
   }
 
  cleanup:
