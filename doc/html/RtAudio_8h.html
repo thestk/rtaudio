@@ -50,11 +50,11 @@
 <div class="memdoc">
 
 <p><a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> data format type. </p>
-<p>Support for signed integers and floats. Audio data fed to/from an <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> stream is assumed to ALWAYS be in host byte order. The internal routines will automatically take care of any necessary byte-swapping between the host format and the soundcard. Thus, endian-ness is not a concern in the following format definitions.</p>
+<p>Support for signed integers and floats. Audio data fed to/from an <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> stream is assumed to ALWAYS be in host byte order. The internal routines will automatically take care of any necessary byte-swapping between the host format and the soundcard. Thus, endian-ness is not a concern in the following format definitions. Note that 24-bit data is expected to be encapsulated in a 32-bit format.</p>
 <ul>
 <li><em>RTAUDIO_SINT8:</em> 8-bit signed integer.</li>
 <li><em>RTAUDIO_SINT16:</em> 16-bit signed integer.</li>
-<li><em>RTAUDIO_SINT24:</em> Upper 3 bytes of 32-bit signed integer.</li>
+<li><em>RTAUDIO_SINT24:</em> Lower 3 bytes of 32-bit signed integer.</li>
 <li><em>RTAUDIO_SINT32:</em> 32-bit signed integer.</li>
 <li><em>RTAUDIO_FLOAT32:</em> Normalized between plus/minus 1.0.</li>
 <li><em>RTAUDIO_FLOAT64:</em> Normalized between plus/minus 1.0. </li>
@@ -79,11 +79,13 @@
 <li><em>RTAUDIO_NONINTERLEAVED:</em> Use non-interleaved buffers (default = interleaved).</li>
 <li><em>RTAUDIO_MINIMIZE_LATENCY:</em> Attempt to set stream parameters for lowest possible latency.</li>
 <li><em>RTAUDIO_HOG_DEVICE:</em> Attempt grab device for exclusive use.</li>
+<li><em>RTAUDIO_ALSA_USE_DEFAULT:</em> Use the "default" PCM device (ALSA only).</li>
 </ul>
 <p>By default, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> streams pass and receive audio data from the client in an interleaved format. By passing the RTAUDIO_NONINTERLEAVED flag to the openStream() function, audio data will instead be presented in non-interleaved buffers. In this case, each buffer argument in the RtAudioCallback function will point to a single array of data, with <code>nFrames</code> samples for each channel concatenated back-to-back. For example, the first sample of data for the second channel would be located at index <code>nFrames</code> (assuming the <code>buffer</code> pointer was recast to the correct data type for the stream).</p>
 <p>Certain audio APIs offer a number of parameters that influence the I/O latency of a stream. By default, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to set these parameters internally for robust (glitch-free) performance (though some APIs, like Windows Direct Sound, make this difficult). By passing the RTAUDIO_MINIMIZE_LATENCY flag to the openStream() function, internal stream settings will be influenced in an attempt to minimize stream latency, though possibly at the expense of stream performance.</p>
 <p>If the RTAUDIO_HOG_DEVICE flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to open the input and/or output stream device(s) for exclusive use. Note that this is not possible with all supported audio APIs.</p>
-<p>If the RTAUDIO_SCHEDULE_REALTIME flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to select realtime scheduling (round-robin) for the callback thread. </p>
+<p>If the RTAUDIO_SCHEDULE_REALTIME flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to select realtime scheduling (round-robin) for the callback thread.</p>
+<p>If the RTAUDIO_ALSA_USE_DEFAULT flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to open the "default" PCM device when using the ALSA API. Note that this will override any specified input or output device id. </p>
 
 </div>
 </div>

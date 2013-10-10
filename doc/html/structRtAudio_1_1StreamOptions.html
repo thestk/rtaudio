@@ -34,11 +34,13 @@
 <li><em>RTAUDIO_MINIMIZE_LATENCY:</em> Attempt to set stream parameters for lowest possible latency.</li>
 <li><em>RTAUDIO_HOG_DEVICE:</em> Attempt grab device for exclusive use.</li>
 <li><em>RTAUDIO_SCHEDULE_REALTIME:</em> Attempt to select realtime scheduling for callback thread.</li>
+<li><em>RTAUDIO_ALSA_USE_DEFAULT:</em> Use the "default" PCM device (ALSA only).</li>
 </ul>
 <p>By default, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> streams pass and receive audio data from the client in an interleaved format. By passing the RTAUDIO_NONINTERLEAVED flag to the <a class="el" href="classRtAudio.html#afacc99740fa4c5606fb35467cdea6da8" title="A public function for opening a stream with the specified parameters.">openStream()</a> function, audio data will instead be presented in non-interleaved buffers. In this case, each buffer argument in the RtAudioCallback function will point to a single array of data, with <code>nFrames</code> samples for each channel concatenated back-to-back. For example, the first sample of data for the second channel would be located at index <code>nFrames</code> (assuming the <code>buffer</code> pointer was recast to the correct data type for the stream).</p>
 <p>Certain audio APIs offer a number of parameters that influence the I/O latency of a stream. By default, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to set these parameters internally for robust (glitch-free) performance (though some APIs, like Windows Direct Sound, make this difficult). By passing the RTAUDIO_MINIMIZE_LATENCY flag to the <a class="el" href="classRtAudio.html#afacc99740fa4c5606fb35467cdea6da8" title="A public function for opening a stream with the specified parameters.">openStream()</a> function, internal stream settings will be influenced in an attempt to minimize stream latency, though possibly at the expense of stream performance.</p>
 <p>If the RTAUDIO_HOG_DEVICE flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to open the input and/or output stream device(s) for exclusive use. Note that this is not possible with all supported audio APIs.</p>
 <p>If the RTAUDIO_SCHEDULE_REALTIME flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to select realtime scheduling (round-robin) for the callback thread. The <code>priority</code> parameter will only be used if the RTAUDIO_SCHEDULE_REALTIME flag is set. It defines the thread's realtime priority.</p>
+<p>If the RTAUDIO_ALSA_USE_DEFAULT flag is set, <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> will attempt to open the "default" PCM device when using the ALSA API. Note that this will override any specified input or output device id.</p>
 <p>The <code>numberOfBuffers</code> parameter can be used to control stream latency in the Windows DirectSound, Linux OSS, and Linux Alsa APIs only. A value of two is usually the smallest allowed. Larger numbers can potentially result in more robust stream performance, though likely at the cost of stream latency. The value set by the user is replaced during execution of the <a class="el" href="classRtAudio.html#afacc99740fa4c5606fb35467cdea6da8" title="A public function for opening a stream with the specified parameters.">RtAudio::openStream()</a> function by the value actually used by the system.</p>
 <p>The <code>streamName</code> parameter can be used to set the client name when using the Jack API. By default, the client name is set to RtApiJack. However, if you wish to create multiple instances of <a class="el" href="classRtAudio.html" title="Realtime audio i/o C++ classes.">RtAudio</a> with Jack, each instance must have a unique client name. </p>
 <hr/><h2>Member Data Documentation</h2>
@@ -52,7 +54,7 @@
       </table>
 </div>
 <div class="memdoc">
-<p>A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE). </p>
+<p>A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). </p>
 
 </div>
 </div>

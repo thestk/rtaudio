@@ -51,7 +51,7 @@
     adac.<a class="code" href="classRtAudio.html#afacc99740fa4c5606fb35467cdea6da8" title="A public function for opening a stream with the specified parameters.">openStream</a>( &amp;oParams, &amp;iParams, RTAUDIO_SINT32, 44100, &amp;bufferFrames, &amp;inout, (<span class="keywordtype">void</span> *)&amp;bufferBytes );
   }
   <span class="keywordflow">catch</span> ( <a class="code" href="classRtError.html" title="Exception handling class for RtAudio &amp;amp; RtMidi.">RtError</a>&amp; e ) {
-    e.<a class="code" href="classRtError.html#ada41f7472122f45bc5b4677f066e0943" title="Prints thrown error message to stderr.">printMessage</a>();
+    e.<a class="code" href="classRtError.html#a251dcdac396c998c91706dd2dd3b8bfc" title="Prints thrown error message to stderr.">printMessage</a>();
     exit( 0 );
   }
 
@@ -68,7 +68,7 @@
     adac.<a class="code" href="classRtAudio.html#af4c241ff86936ecc8108f0d9dfe3efdd" title="Stop a stream, allowing any samples remaining in the output queue to be played.">stopStream</a>();
   }
   <span class="keywordflow">catch</span> ( <a class="code" href="classRtError.html" title="Exception handling class for RtAudio &amp;amp; RtMidi.">RtError</a>&amp; e ) {
-    e.<a class="code" href="classRtError.html#ada41f7472122f45bc5b4677f066e0943" title="Prints thrown error message to stderr.">printMessage</a>();
+    e.<a class="code" href="classRtError.html#a251dcdac396c998c91706dd2dd3b8bfc" title="Prints thrown error message to stderr.">printMessage</a>();
     <span class="keywordflow">goto</span> cleanup;
   }
 

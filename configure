@@ -671,7 +671,6 @@ EGREP
 cppflag
 cxxflag
 object_path
-api
 build
 build_cpu
 build_vendor
@@ -680,6 +679,10 @@ host
 host_cpu
 host_vendor
 host_os
+sharedlib
+sharedname
+libflags
+api
 objects
 LIBOBJS
 LTLIBOBJS'
@@ -4099,9 +4102,6 @@ fi
 
 CXXFLAGS="$CXXFLAGS $cxxflag"
 
-# Checks for package options and external software
-api=""
-
 # Make sure we can run config.sub.
 $SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
   { { echo "$as_me:$LINENO: error: cannot run $SHELL $ac_aux_dir/config.sub" >&5
@@ -4184,6 +4184,26 @@ host_os=$*
 IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
+
+
+sharedlib="librtaudio.so"
+
+sharedname="librtaudio.so.\$(RELEASE)"
+
+libflags="-shared -Wl,-soname,\$(SHAREDLIB).\$(MAJOR) -o \$(SHAREDLIB).\$(RELEASE)"
+
+case $host in
+  *-apple*)
+  sharedlib="librtaudio.dylib"
+
+  sharedname="librtaudio.\$(RELEASE).dylib"
+
+  libflags="-dynamiclib -o librtaudio.\$(RELEASE).dylib"
+
+esac
+
+# Checks for package options and external software
+api=""
 
 { echo "$as_me:$LINENO: checking for audio API" >&5
 echo $ECHO_N "checking for audio API... $ECHO_C" >&6; }
@@ -5888,7 +5908,6 @@ EGREP!$EGREP$ac_delim
 cppflag!$cppflag$ac_delim
 cxxflag!$cxxflag$ac_delim
 object_path!$object_path$ac_delim
-api!$api$ac_delim
 build!$build$ac_delim
 build_cpu!$build_cpu$ac_delim
 build_vendor!$build_vendor$ac_delim
@@ -5897,12 +5916,16 @@ host!$host$ac_delim
 host_cpu!$host_cpu$ac_delim
 host_vendor!$host_vendor$ac_delim
 host_os!$host_os$ac_delim
+sharedlib!$sharedlib$ac_delim
+sharedname!$sharedname$ac_delim
+libflags!$libflags$ac_delim
+api!$api$ac_delim
 objects!$objects$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 68; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 71; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
