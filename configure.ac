@@ -48,7 +48,7 @@ AC_CANONICAL_HOST
 
 AC_SUBST( sharedlib, ["librtaudio.so"] )
 AC_SUBST( sharedname, ["librtaudio.so.\$(RELEASE)"] )
-AC_SUBST( libflags, ["-shared -Wl,-soname,\$(SHAREDLIB).\$(MAJOR) -o \$(SHAREDLIB).\$(RELEASE)"] )
+AC_SUBST( libflags, ["-shared -Wl,-soname,\$(SHARED).\$(MAJOR) -o \$(SHARED).\$(RELEASE)"] )
 case $host in
   *-apple*)
   AC_SUBST( sharedlib, ["librtaudio.dylib"] )
