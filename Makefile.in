@@ -45,10 +45,12 @@ install:
 	$(LN) -sf @sharedname@ $(PREFIX)/lib/$(SHARED)
 	$(LN) -sf @sharedname@ $(PREFIX)/lib/$(SHARED).$(MAJOR)
 	install --mode=644 $(LIBNAME).pc $(PREFIX)/lib/pkgconfig
+	install --mode=755 rtaudio-config $(PREFIX)/bin/
 
 uninstall:
 	-@rm -vf $(patsubst %,$(PREFIX)/lib/%, $(LIBRARIES) $(SHARED).$(MAJOR) $(SHARED).$(RELEASE))
 	-@rm -vf $(PREFIX)/lib/pkgconfig/$(LIBNAME).pc
+	-@rm -vf $(PREFIX)/bin/rtaudio-config
 
 clean : 
 	$(RM) -f $(LIBRARIES) @sharedname@ $(SHARED)*
