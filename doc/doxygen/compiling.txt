@@ -28,6 +28,14 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
 </TR>
 <TR>
   <TD>Linux</TD>
+  <TD>PulseAudio</TD>
+  <TD>RtApiPulse</TD>
+  <TD>__LINUX_PULSE__</TD>
+  <TD><TT>pthread</TT></TD>
+  <TD><TT>g++ -Wall -D__LINUX_PULSE__ -o audioprobe audioprobe.cpp RtAudio.cpp -lpthread</TT></TD>
+</TR>
+<TR>
+  <TD>Linux</TD>
   <TD>OSS</TD>
   <TD>RtApiOss</TD>
   <TD>__LINUX_OSS__</TD>

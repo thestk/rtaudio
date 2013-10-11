@@ -122,7 +122,7 @@ int main( int argc, char *argv[] )
   dac.showWarnings( true );
 
   // Set our stream parameters for output only.
-  bufferFrames = 256;
+  bufferFrames = 512;
   RtAudio::StreamParameters oParams, iParams;
   oParams.deviceId = oDevice;
   oParams.nChannels = channels;
