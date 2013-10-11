@@ -24,6 +24,8 @@ Compiling</a></h2>
 <tr>
 <td>Linux </td><td>ALSA </td><td>RtApiAlsa </td><td>__LINUX_ALSA__ </td><td><code>asound, pthread</code> </td><td><code>g++ -Wall -D__LINUX_ALSA__ -o audioprobe audioprobe.cpp RtAudio.cpp -lasound -lpthread</code>  </td></tr>
 <tr>
+<td>Linux </td><td>PulseAudio </td><td>RtApiPulse </td><td>__LINUX_PULSE__ </td><td><code>pthread</code> </td><td><code>g++ -Wall -D__LINUX_PULSE__ -o audioprobe audioprobe.cpp RtAudio.cpp -lpthread</code>  </td></tr>
+<tr>
 <td>Linux </td><td>OSS </td><td>RtApiOss </td><td>__LINUX_OSS__ </td><td><code>pthread</code> </td><td><code>g++ -Wall -D__LINUX_OSS__ -o audioprobe audioprobe.cpp RtAudio.cpp -lpthread</code>  </td></tr>
 <tr>
 <td>Linux or Macintosh OS-X </td><td>Jack Audio Server </td><td>RtApiJack </td><td>__UNIX_JACK__ </td><td><code>jack, pthread</code> </td><td><p class="starttd"><code>g++ -Wall -D__UNIX_JACK__ -o audioprobe audioprobe.cpp RtAudio.cpp `pkg-config --cflags --libs jack` -lpthread</code> </p>
@@ -41,7 +43,7 @@ Compiling</a></h2>
 <HR>
 
 <table><tr><td><img src="../images/mcgill.gif" width=165></td>
-  <td>&copy;2001-2010 Gary P. Scavone, McGill University. All Rights Reserved.<br>Maintained by <a href="http://www.music.mcgill.ca/~gary/">Gary P. Scavone</a>.</td></tr>
+  <td>&copy;2001-2012 Gary P. Scavone, McGill University. All Rights Reserved.<br>Maintained by <a href="http://www.music.mcgill.ca/~gary/">Gary P. Scavone</a>.</td></tr>
 </table>
 
 </BODY>
