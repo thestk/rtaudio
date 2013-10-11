@@ -6,7 +6,8 @@ LN = /bin/ln
 
 OBJECTS	= RtAudio.o @objects@
 
-STATIC = librtaudio.a
+LIBNAME = librtaudio
+STATIC = $(LIBNAME).a
 SHARED = @sharedlib@
 RELEASE = 4.0.12
 MAJOR = 4
@@ -18,6 +19,8 @@ RANLIB   = @RANLIB@
 
 DEFS     = @CPPFLAGS@
 CFLAGS   = @CXXFLAGS@ -Iinclude -fPIC
+
+PREFIX   = @prefix@
 
 all : $(LIBRARIES)
 
@@ -37,6 +40,20 @@ $(LIBRARIES): $(OBJECTS)
 %.o : include/%.cpp
 	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $@
 
+install:
+	install --mode=755 $(STATIC) $(PREFIX)/lib/
+	install --mode=755 @sharedname@ $(PREFIX)/lib/
+	$(LN) -sf @sharedname@ $(PREFIX)/lib/$(SHARED)
+	$(LN) -sf @sharedname@ $(PREFIX)/lib/$(SHARED).$(MAJOR)
+	install --mode=644 $(LIBNAME).pc $(PREFIX)/lib/pkgconfig
+	install --mode=644 RtAudio.h RtError.h $(PREFIX)/include/
+	install --mode=755 rtaudio-config $(PREFIX)/bin/
+
+uninstall:
+	-@rm -vf $(patsubst %,$(PREFIX)/lib/%, $(LIBRARIES) $(SHARED).$(MAJOR) $(SHARED).$(RELEASE))
+	-@rm -vf $(PREFIX)/lib/pkgconfig/$(LIBNAME).pc
+	-@rm -vf $(PREFIX)/bin/rtaudio-config
+
 clean : 
 	$(RM) -f $(LIBRARIES) @sharedname@ $(SHARED)*
 	$(RM) -f $(OBJECTS)
@@ -47,10 +64,12 @@ distclean:
 	$(RM) -f $(LIBRARIES) @sharedname@ $(SHARED)*
 	$(RM) -f $(OBJECTS)
 	$(RM) -f *~
-	$(RM) -rf config.log config.status autom4te.cache Makefile rtaudio-config librtaudio.pc
+	$(RM) -rf config.log config.status autom4te.cache Makefile rtaudio-config $(LIBNAME).pc
 	cd tests && $(MAKE) distclean
 
 strip : 
 	strip $(LIBRARIES)
 	ranlib $(LIBRARIES)
 	cd tests && $(MAKE) strip
+
+.PHONY: clean distclean strip install uninstall
