@@ -13,29 +13,29 @@
 #include <cstdlib>
 
 /*
-typedef signed long  MY_TYPE;
-#define FORMAT RTAUDIO_SINT24
-#define SCALE  2147483647.0
-
-typedef char  MY_TYPE;
+typedef char MY_TYPE;
 #define FORMAT RTAUDIO_SINT8
 #define SCALE  127.0
 */
 
-typedef signed short  MY_TYPE;
+typedef signed short MY_TYPE;
 #define FORMAT RTAUDIO_SINT16
 #define SCALE  32767.0
 
 /*
-typedef signed long  MY_TYPE;
+typedef S24 MY_TYPE;
+#define FORMAT RTAUDIO_SINT24
+#define SCALE  8388607.0
+
+typedef signed long MY_TYPE;
 #define FORMAT RTAUDIO_SINT32
 #define SCALE  2147483647.0
 
-typedef float  MY_TYPE;
+typedef float MY_TYPE;
 #define FORMAT RTAUDIO_FLOAT32
 #define SCALE  1.0
 
-typedef double  MY_TYPE;
+typedef double MY_TYPE;
 #define FORMAT RTAUDIO_FLOAT64
 #define SCALE  1.0
 */
@@ -88,7 +88,7 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
   for ( i=0; i<nBufferFrames; i++ ) {
     for ( j=0; j<channels; j++ ) {
-      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE);
+      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE * 0.5);
       lastValues[j] += BASE_RATE * (j+1+(j*0.1));
       if ( lastValues[j] >= 1.0 ) lastValues[j] -= 2.0;
     }
@@ -116,7 +116,7 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
   for ( j=0; j<channels; j++ ) {
     increment = BASE_RATE * (j+1+(j*0.1));
     for ( i=0; i<nBufferFrames; i++ ) {
-      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE);
+      *buffer++ = (MY_TYPE) (lastValues[j] * SCALE * 0.5);
       lastValues[j] += increment;
       if ( lastValues[j] >= 1.0 ) lastValues[j] -= 2.0;
     }
@@ -163,7 +163,7 @@ int main( int argc, char *argv[] )
   oParams.nChannels = channels;
   oParams.firstChannel = offset;
 
-  options.flags |= RTAUDIO_HOG_DEVICE;
+  options.flags = RTAUDIO_HOG_DEVICE;
   options.flags |= RTAUDIO_SCHEDULE_REALTIME;
 #if !defined( USE_INTERLEAVED )
   options.flags |= RTAUDIO_NONINTERLEAVED;

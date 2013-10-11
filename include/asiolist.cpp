@@ -21,17 +21,18 @@ static LONG findDrvPath (char *clsidstr,char *dllpath,int dllpathsize)
 	HFILE			hfile;
 	BOOL			found = FALSE;
 
-	CharLowerBuff(clsidstr,strlen(clsidstr));
-	if ((cr = RegOpenKey(HKEY_CLASSES_ROOT,COM_CLSID,&hkEnum)) == ERROR_SUCCESS) {
+#ifdef UNICODE
+	CharLowerBuffA(clsidstr,strlen(clsidstr));
+	if ((cr = RegOpenKeyA(HKEY_CLASSES_ROOT,COM_CLSID,&hkEnum)) == ERROR_SUCCESS) {
 
 		index = 0;
 		while (cr == ERROR_SUCCESS && !found) {
-			cr = RegEnumKey(hkEnum,index++,(LPTSTR)databuf,512);
+			cr = RegEnumKeyA(hkEnum,index++,databuf,512);
 			if (cr == ERROR_SUCCESS) {
-				CharLowerBuff(databuf,strlen(databuf));
+				CharLowerBuffA(databuf,strlen(databuf));
 				if (!(strcmp(databuf,clsidstr))) {
-					if ((cr = RegOpenKeyEx(hkEnum,(LPCTSTR)databuf,0,KEY_READ,&hksub)) == ERROR_SUCCESS) {
-						if ((cr = RegOpenKeyEx(hksub,(LPCTSTR)INPROC_SERVER,0,KEY_READ,&hkpath)) == ERROR_SUCCESS) {
+					if ((cr = RegOpenKeyExA(hkEnum,databuf,0,KEY_READ,&hksub)) == ERROR_SUCCESS) {
+						if ((cr = RegOpenKeyExA(hksub,INPROC_SERVER,0,KEY_READ,&hkpath)) == ERROR_SUCCESS) {
 							datatype = REG_SZ; datasize = (DWORD)dllpathsize;
 							cr = RegQueryValueEx(hkpath,0,0,&datatype,(LPBYTE)dllpath,&datasize);
 							if (cr == ERROR_SUCCESS) {
@@ -50,6 +51,37 @@ static LONG findDrvPath (char *clsidstr,char *dllpath,int dllpathsize)
 		}				
 		RegCloseKey(hkEnum);
 	}
+#else
+	CharLowerBuff(clsidstr,strlen(clsidstr));
+	if ((cr = RegOpenKey(HKEY_CLASSES_ROOT,COM_CLSID,&hkEnum)) == ERROR_SUCCESS) {
+
+		index = 0;
+		while (cr == ERROR_SUCCESS && !found) {
+			cr = RegEnumKey(hkEnum,index++,databuf,512);
+			if (cr == ERROR_SUCCESS) {
+				CharLowerBuff(databuf,strlen(databuf));
+				if (!(strcmp(databuf,clsidstr))) {
+					if ((cr = RegOpenKeyEx(hkEnum,databuf,0,KEY_READ,&hksub)) == ERROR_SUCCESS) {
+						if ((cr = RegOpenKeyEx(hksub,INPROC_SERVER,0,KEY_READ,&hkpath)) == ERROR_SUCCESS) {
+							datatype = REG_SZ; datasize = (DWORD)dllpathsize;
+							cr = RegQueryValueEx(hkpath,0,0,&datatype,(LPBYTE)dllpath,&datasize);
+							if (cr == ERROR_SUCCESS) {
+								memset(&ofs,0,sizeof(OFSTRUCT));
+								ofs.cBytes = sizeof(OFSTRUCT); 
+								hfile = OpenFile(dllpath,&ofs,OF_EXIST);
+								if (hfile) rc = 0; 
+							}
+							RegCloseKey(hkpath);
+						}
+						RegCloseKey(hksub);
+					}
+					found = TRUE;	// break out 
+				}
+			}
+		}				
+		RegCloseKey(hkEnum);
+	}
+#endif
 	return rc;
 }
 
@@ -65,10 +97,10 @@ static LPASIODRVSTRUCT newDrvStruct (HKEY hkey,char *keyname,int drvID,LPASIODRV
 	LONG	cr,rc;
 
 	if (!lpdrv) {
-		if ((cr = RegOpenKeyEx(hkey,(LPCTSTR)keyname,0,KEY_READ,&hksub)) == ERROR_SUCCESS) {
+		if ((cr = RegOpenKeyExA(hkey,keyname,0,KEY_READ,&hksub)) == ERROR_SUCCESS) {
 
 			datatype = REG_SZ; datasize = 256;
-			cr = RegQueryValueEx(hksub,COM_CLSID,0,&datatype,(LPBYTE)databuf,&datasize);
+			cr = RegQueryValueExA(hksub,COM_CLSID,0,&datatype,(LPBYTE)databuf,&datasize);
 			if (cr == ERROR_SUCCESS) {
 				rc = findDrvPath (databuf,dllpath,MAXPATHLEN);
 				if (rc == 0) {
@@ -82,7 +114,7 @@ static LPASIODRVSTRUCT newDrvStruct (HKEY hkey,char *keyname,int drvID,LPASIODRV
 						}
 
 						datatype = REG_SZ; datasize = 256;
-						cr = RegQueryValueEx(hksub,ASIODRV_DESC,0,&datatype,(LPBYTE)databuf,&datasize);
+						cr = RegQueryValueExA(hksub,ASIODRV_DESC,0,&datatype,(LPBYTE)databuf,&datasize);
 						if (cr == ERROR_SUCCESS) {
 							strcpy(lpdrv->drvname,databuf);
 						}
@@ -139,9 +171,17 @@ AsioDriverList::AsioDriverList ()
 	numdrv		= 0;
 	lpdrvlist	= 0;
 
+#ifdef UNICODE
+	cr = RegOpenKeyA(HKEY_LOCAL_MACHINE,ASIO_PATH,&hkEnum);
+#else
 	cr = RegOpenKey(HKEY_LOCAL_MACHINE,ASIO_PATH,&hkEnum);
+#endif
 	while (cr == ERROR_SUCCESS) {
-		if ((cr = RegEnumKey(hkEnum,index++,(LPTSTR)keyname,MAXDRVNAMELEN))== ERROR_SUCCESS) {
+#ifdef UNICODE
+		if ((cr = RegEnumKeyA(hkEnum,index++,keyname,MAXDRVNAMELEN))== ERROR_SUCCESS) {
+#else
+		if ((cr = RegEnumKey(hkEnum,index++,keyname,MAXDRVNAMELEN))== ERROR_SUCCESS) {
+#endif
 			lpdrvlist = newDrvStruct (hkEnum,keyname,0,lpdrvlist);
 		}
 		else fin = TRUE;

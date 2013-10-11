@@ -8,7 +8,7 @@ OBJECTS	= RtAudio.o @objects@
 
 STATIC = librtaudio.a
 SHARED = @sharedlib@
-RELEASE = 4.0.11
+RELEASE = 4.0.12
 MAJOR = 4
 LIBRARIES = $(STATIC) $(SHARED)
 
@@ -28,9 +28,8 @@ $(LIBRARIES): $(OBJECTS)
 	$(AR) ruv $(STATIC) $(OBJECTS)
 	ranlib $(STATIC)
 	$(CC) -fPIC @libflags@ $(OBJECTS) @LIBS@
-	$(LN) -s @sharedname@ $(SHARED)
-
-#	$(CC) -shared $(OBJECTS) -o $(SHARED) @LIBS@
+	$(LN) -sf @sharedname@ $(SHARED)
+	$(LN) -sf @sharedname@ $(SHARED).$(MAJOR)
 
 %.o : %.cpp
 	$(CC) $(CFLAGS) $(DEFS) -c $(<) -o $@
@@ -48,7 +47,7 @@ distclean:
 	$(RM) -f $(LIBRARIES) @sharedname@ $(SHARED)*
 	$(RM) -f $(OBJECTS)
 	$(RM) -f *~
-	$(RM) -rf config.log config.status autom4te.cache Makefile rtaudio-config
+	$(RM) -rf config.log config.status autom4te.cache Makefile rtaudio-config librtaudio.pc
 	cd tests && $(MAKE) distclean
 
 strip : 

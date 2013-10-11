@@ -1,12 +1,12 @@
 RtAudio - a set of C++ classes that provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
 
-By Gary P. Scavone, 2001-2012.
+By Gary P. Scavone, 2001-2013.
 
 This distribution of RtAudio contains the following:
 
 doc:      RtAudio documentation (see doc/html/index.html)
 tests:    example RtAudio programs
-asio:     header and source files necessary for ASIO compilation
+include:  header and source files necessary for ASIO, DS & OSS compilation
 tests/Windows: Visual C++ .net test program workspace and projects
 
 OVERVIEW:
@@ -34,7 +34,7 @@ LEGAL AND ETHICAL:
 The RtAudio license is similar to the MIT License.
 
     RtAudio: a set of realtime audio i/o C++ classes
-    Copyright (c) 2001-2012 Gary P. Scavone
+    Copyright (c) 2001-2013 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
