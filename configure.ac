@@ -44,6 +44,12 @@ AC_ARG_ENABLE(debug,
 # Checks for functions
 AC_CHECK_FUNC(gettimeofday, [cppflag="$cppflag -DHAVE_GETTIMEOFDAY"], )
 
+# Set paths if prefix is defined
+if test x"$prefix" != x; then
+  LIBS="$LIBS -L$prefix/lib"
+  CPPFLAGS="$CPPFLAGS -I$prefix/include"
+fi
+
 # For -I and -D flags
 CPPFLAGS="$CPPFLAGS $cppflag"
 
