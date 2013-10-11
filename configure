@@ -4190,7 +4190,7 @@ sharedlib="librtaudio.so"
 
 sharedname="librtaudio.so.\$(RELEASE)"
 
-libflags="-shared -Wl,-soname,\$(SHAREDLIB).\$(MAJOR) -o \$(SHAREDLIB).\$(RELEASE)"
+libflags="-shared -Wl,-soname,\$(SHARED).\$(MAJOR) -o \$(SHARED).\$(RELEASE)"
 
 case $host in
   *-apple*)
