@@ -186,12 +186,64 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
                                 RtAudioStreamStatus status,
                                 void *userData );
 
+/************************************************************************/
+/*! \class RtAudioError
+    \brief Exception handling class for RtAudio & RtMidi.
+
+    The RtAudioError class is quite simple but it does allow errors to be
+    "caught" by RtAudioError::Type. See the RtAudio and RtMidi
+    documentation to know which methods can throw an RtAudioError.
+
+*/
+/************************************************************************/
+
+class RtAudioError : public std::exception
+{
+ public:
+  //! Defined RtAudioError types.
+  enum Type {
+    WARNING,           /*!< A non-critical error. */
+    DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
+    UNSPECIFIED,       /*!< The default, unspecified error type. */
+    NO_DEVICES_FOUND,  /*!< No devices found on system. */
+    INVALID_DEVICE,    /*!< An invalid device ID was specified. */
+    MEMORY_ERROR,      /*!< An error occured during memory allocation. */
+    INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
+    INVALID_USE,       /*!< The function was called incorrectly. */
+    DRIVER_ERROR,      /*!< A system driver error occured. */
+    SYSTEM_ERROR,      /*!< A system error occured. */
+    THREAD_ERROR       /*!< A thread error occured. */
+  };
+
+  //! The constructor.
+  RtAudioError( const std::string& message, Type type = RtAudioError::UNSPECIFIED ) throw() : message_(message), type_(type) {}
+ 
+  //! The destructor.
+  virtual ~RtAudioError( void ) throw() {}
+
+  //! Prints thrown error message to stderr.
+  virtual void printMessage( void ) const throw() { std::cerr << '\n' << message_ << "\n\n"; }
+
+  //! Returns the thrown error message type.
+  virtual const Type& getType(void) const throw() { return type_; }
+
+  //! Returns the thrown error message string.
+  virtual const std::string& getMessage(void) const throw() { return message_; }
+
+  //! Returns the thrown error message as a c-style string.
+  virtual const char* what( void ) const throw() { return message_.c_str(); }
+
+ protected:
+  std::string message_;
+  Type type_;
+};
+
 //! RtAudio error callback function prototype.
 /*!
     \param type Type of error.
     \param errorText Error description.
  */
-typedef void (*RtAudioErrorCallback)( RtError::Type type, const std::string &errorText );
+typedef void (*RtAudioErrorCallback)( RtAudioError::Type type, const std::string &errorText );
 
 // **************************************************************** //
 //
@@ -206,7 +258,6 @@ typedef void (*RtAudioErrorCallback)( RtError::Type type, const std::string &err
 //
 // **************************************************************** //
 
-class RtAudioError;
 class RtApi;
 
 class RtAudio
@@ -367,7 +418,7 @@ class RtAudio
   /*!
 
     Any device integer between 0 and getDeviceCount() - 1 is valid.
-    If an invalid argument is provided, an RtError (type = INVALID_USE)
+    If an invalid argument is provided, an RtAudioError (type = INVALID_USE)
     will be thrown.  If a device is busy or otherwise unavailable, the
     structure member "probed" will have a value of "false" and all
     other members are undefined.  If the specified device is the
@@ -398,9 +449,9 @@ class RtAudio
 
   //! A public function for opening a stream with the specified parameters.
   /*!
-    An RtError (type = SYSTEM_ERROR) is thrown if a stream cannot be
+    An RtAudioError (type = SYSTEM_ERROR) is thrown if a stream cannot be
     opened with the specified parameters or an error occurs during
-    processing.  An RtError (type = INVALID_USE) is thrown if any
+    processing.  An RtAudioError (type = INVALID_USE) is thrown if any
     invalid device ID or channel number parameters are specified.
 
     \param outputParameters Specifies output stream parameters to use
@@ -451,8 +502,8 @@ class RtAudio
 
   //! A function that starts a stream.
   /*!
-    An RtError (type = SYSTEM_ERROR) is thrown if an error occurs
-    during processing.  An RtError (type = INVALID_USE) is thrown if a
+    An RtAudioError (type = SYSTEM_ERROR) is thrown if an error occurs
+    during processing.  An RtAudioError (type = INVALID_USE) is thrown if a
     stream is not open.  A warning is issued if the stream is already
     running.
   */
@@ -460,8 +511,8 @@ class RtAudio
 
   //! Stop a stream, allowing any samples remaining in the output queue to be played.
   /*!
-    An RtError (type = SYSTEM_ERROR) is thrown if an error occurs
-    during processing.  An RtError (type = INVALID_USE) is thrown if a
+    An RtAudioError (type = SYSTEM_ERROR) is thrown if an error occurs
+    during processing.  An RtAudioError (type = INVALID_USE) is thrown if a
     stream is not open.  A warning is issued if the stream is already
     stopped.
   */
@@ -469,8 +520,8 @@ class RtAudio
 
   //! Stop a stream, discarding any samples remaining in the input/output queue.
   /*!
-    An RtError (type = SYSTEM_ERROR) is thrown if an error occurs
-    during processing.  An RtError (type = INVALID_USE) is thrown if a
+    An RtAudioError (type = SYSTEM_ERROR) is thrown if an error occurs
+    during processing.  An RtAudioError (type = INVALID_USE) is thrown if a
     stream is not open.  A warning is issued if the stream is already
     stopped.
   */
@@ -484,7 +535,7 @@ class RtAudio
 
   //! Returns the number of elapsed seconds since the stream was started.
   /*!
-    If a stream is not open, an RtError (type = INVALID_USE) will be thrown.
+    If a stream is not open, an RtAudioError (type = INVALID_USE) will be thrown.
   */
   double getStreamTime( void );
 
@@ -494,7 +545,7 @@ class RtAudio
     caused by internal buffering by the audio system and/or hardware.
     For duplex streams, the returned value will represent the sum of
     the input and output latencies.  If a stream is not open, an
-    RtError (type = INVALID_USE) will be thrown.  If the API does not
+    RtAudioError (type = INVALID_USE) will be thrown.  If the API does not
     report latency, the return value will be zero.
   */
   long getStreamLatency( void );
@@ -503,7 +554,7 @@ class RtAudio
  /*!
    On some systems, the sample rate used may be slightly different
    than that specified in the stream parameters.  If a stream is not
-   open, an RtError (type = INVALID_USE) will be thrown.
+   open, an RtAudioError (type = INVALID_USE) will be thrown.
  */
   unsigned int getStreamSampleRate( void );
 
@@ -731,13 +782,13 @@ protected:
   void clearStreamInfo();
 
   /*!
-    Protected common method that throws an RtError (type =
+    Protected common method that throws an RtAudioError (type =
     INVALID_USE) if a stream is not open.
   */
   void verifyStream( void );
 
   //! Protected common error method to allow global control over error handling.
-  void error( RtError::Type type );
+  void error( RtAudioError::Type type );
 
   /*!
     Protected method used to perform format, channel number, and/or interleaving
@@ -1031,7 +1082,7 @@ class RtApiDummy: public RtApi
 {
 public:
 
-  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RtError::WARNING ); }
+  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RtAudioError::WARNING ); }
   RtAudio::Api getCurrentApi( void ) { return RtAudio::RTAUDIO_DUMMY; }
   unsigned int getDeviceCount( void ) { return 0; }
   RtAudio::DeviceInfo getDeviceInfo( unsigned int /*device*/ ) { RtAudio::DeviceInfo info; return info; }
@@ -1046,60 +1097,6 @@ public:
                         unsigned int /*firstChannel*/, unsigned int /*sampleRate*/,
                         RtAudioFormat /*format*/, unsigned int * /*bufferSize*/,
                         RtAudio::StreamOptions * /*options*/ ) { return false; }
-};
-
-#endif
-
-/************************************************************************/
-/*! \class RtError
-    \brief Exception handling class for RtAudio & RtMidi.
-
-    The RtError class is quite simple but it does allow errors to be
-    "caught" by RtError::Type. See the RtAudio and RtMidi
-    documentation to know which methods can throw an RtError.
-
-*/
-/************************************************************************/
-
-class RtAudioError : public std::exception
-{
- public:
-  //! Defined RtAudioError types.
-  enum Type {
-    WARNING,           /*!< A non-critical error. */
-    DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
-    UNSPECIFIED,       /*!< The default, unspecified error type. */
-    NO_DEVICES_FOUND,  /*!< No devices found on system. */
-    INVALID_DEVICE,    /*!< An invalid device ID was specified. */
-    MEMORY_ERROR,      /*!< An error occured during memory allocation. */
-    INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
-    INVALID_USE,       /*!< The function was called incorrectly. */
-    DRIVER_ERROR,      /*!< A system driver error occured. */
-    SYSTEM_ERROR,      /*!< A system error occured. */
-    THREAD_ERROR       /*!< A thread error occured. */
-  };
-
-  //! The constructor.
-  RtAudioError( const std::string& message, Type type = RtAudioError::UNSPECIFIED ) throw() : message_(message), type_(type) {}
- 
-  //! The destructor.
-  virtual ~RtAudioError( void ) throw() {}
-
-  //! Prints thrown error message to stderr.
-  virtual void printMessage( void ) const throw() { std::cerr << '\n' << message_ << "\n\n"; }
-
-  //! Returns the thrown error message type.
-  virtual const Type& getType(void) const throw() { return type_; }
-
-  //! Returns the thrown error message string.
-  virtual const std::string& getMessage(void) const throw() { return message_; }
-
-  //! Returns the thrown error message as a c-style string.
-  virtual const char* what( void ) const throw() { return message_.c_str(); }
-
- protected:
-  std::string message_;
-  Type type_;
 };
 
 #endif
