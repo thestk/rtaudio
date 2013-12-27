@@ -160,7 +160,7 @@ int main( int argc, char *argv[] )
     std::cout << "Playing again ... press <enter> to close the stream.\n";
     std::cin.get( input );
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -180,7 +180,7 @@ int main( int argc, char *argv[] )
     std::cout << "\nPlaying ... press <enter> to stop.\n";
     std::cin.get( input );
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -216,7 +216,7 @@ int main( int argc, char *argv[] )
     std::cout << "\nRunning ... press <enter> to stop.\n";
     std::cin.get( input );
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
   }
 

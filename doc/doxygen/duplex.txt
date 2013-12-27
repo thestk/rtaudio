@@ -40,7 +40,7 @@ int main()
   try {
     adac.openStream( &oParams, &iParams, RTAUDIO_SINT32, 44100, &bufferFrames, &inout, (void *)&bufferBytes );
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     exit( 0 );
   }
@@ -57,7 +57,7 @@ int main()
     // Stop the stream.
     adac.stopStream();
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }

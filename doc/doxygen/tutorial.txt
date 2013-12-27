@@ -5,7 +5,7 @@ RtAudio is a set of C++ classes that provide a common API (Application Programmi
 <UL>
   <LI>object-oriented C++ design</LI>
   <LI>simple, common API across all supported platforms</LI>
-  <LI>only one source and two header files for easy inclusion in programming projects</LI>
+  <LI>only one source and one header file for easy inclusion in programming projects</LI>
   <LI>allow simultaneous multi-api support</LI>
   <LI>support dynamic connection of devices</LI>
   <LI>provide extensive audio device parameter control</LI>

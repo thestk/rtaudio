@@ -40,7 +40,7 @@ int main()
                     sampleRate, &bufferFrames, &record );
     adc.startStream();
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     exit( 0 );
   }
@@ -53,7 +53,7 @@ int main()
     // Stop the stream
     adc.stopStream();
   }
-  catch (RtError& e) {
+  catch (RtAudioError& e) {
     e.printMessage();
   }
 

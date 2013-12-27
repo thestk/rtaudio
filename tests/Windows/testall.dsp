@@ -149,10 +149,6 @@ SOURCE=..\..\include\iasiothiscallresolver.h
 
 SOURCE=..\..\RtAudio.h
 # End Source File
-# Begin Source File
-
-SOURCE=..\..\RtError.h
-# End Source File
 # End Group
 # Begin Group "Resource Files"
 

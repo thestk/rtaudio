@@ -126,7 +126,7 @@ int main( int argc, char *argv[] )
   try {
     adc.openStream( NULL, &iParams, FORMAT, fs, &bufferFrames, &input, (void *)&data );
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
     goto cleanup;
   }
@@ -148,7 +148,7 @@ int main( int argc, char *argv[] )
   try {
     adc.startStream();
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
     goto cleanup;
   }

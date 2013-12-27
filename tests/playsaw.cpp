@@ -172,7 +172,7 @@ int main( int argc, char *argv[] )
     dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options );
     dac.startStream();
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -190,7 +190,7 @@ int main( int argc, char *argv[] )
       // Stop the stream
       dac.stopStream();
     }
-    catch ( RtError& e ) {
+    catch ( RtAudioError& e ) {
       e.printMessage();
     }
   }

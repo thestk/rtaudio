@@ -24,7 +24,7 @@ int main()
     dac.openStream( &parameters, NULL, RTAUDIO_FLOAT32,
                     sampleRate, &bufferFrames, &myCallback, NULL, &options );
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
     exit( 0 );
   }
@@ -33,7 +33,7 @@ int main()
 }
 \endcode
 
-The RtAudio::openStream() function attempts to open a stream with a specified set of parameter values.  In the above example, we attempt to open a two channel playback stream using the default output device, 32-bit floating point data, a sample rate of 44100 Hz, and a frame rate of 256 sample frames per output buffer.  If the user specifies an invalid parameter value (such as a device id greater than or equal to the number of enumerated devices), an RtError is thrown of type = INVALID_USE.   If a system error occurs or the device does not support the specified parameter values, an RtError of type = SYSTEM_ERROR is thrown.  In either case, a descriptive error message is bundled with the exception and can be queried with the RtError::getMessage() or RtError::what() functions.
+The RtAudio::openStream() function attempts to open a stream with a specified set of parameter values.  In the above example, we attempt to open a two channel playback stream using the default output device, 32-bit floating point data, a sample rate of 44100 Hz, and a frame rate of 256 sample frames per output buffer.  If the user specifies an invalid parameter value (such as a device id greater than or equal to the number of enumerated devices), an RtAudioError is thrown of type = INVALID_USE.   If a system error occurs or the device does not support the specified parameter values, an RtAudioError of type = SYSTEM_ERROR is thrown.  In either case, a descriptive error message is bundled with the exception and can be queried with the RtAudioError::getMessage() or RtAudioError::what() functions.
 
 RtAudio provides four signed integer and two floating point data formats which can be specified using the RtAudioFormat parameter values mentioned earlier.  If the opened device does not natively support the given format, RtAudio will automatically perform the necessary data format conversion.
 

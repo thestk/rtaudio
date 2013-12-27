@@ -78,7 +78,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
 </TABLE>
 <P>
 
-The example compiler statements above could be used to compile the <TT>audioprobe.cpp</TT> example file, assuming that <TT>audioprobe.cpp</TT>, <TT>RtAudio.h</TT>, <tt>RtError.h</tt>, and <TT>RtAudio.cpp</TT> all exist in the same directory.
+The example compiler statements above could be used to compile the <TT>audioprobe.cpp</TT> example file, assuming that <TT>audioprobe.cpp</TT>, <TT>RtAudio.h</TT> and <TT>RtAudio.cpp</TT> all exist in the same directory.
 
 
 */

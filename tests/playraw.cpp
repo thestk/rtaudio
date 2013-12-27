@@ -130,7 +130,7 @@ int main( int argc, char *argv[] )
     dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &output, (void *)&data );
     dac.startStream();
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
     goto cleanup;
   }

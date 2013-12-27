@@ -141,7 +141,7 @@ int main( int argc, char *argv[] )
       SLEEP( pausetime );
     }
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -168,7 +168,7 @@ int main( int argc, char *argv[] )
       SLEEP( pausetime );
     }
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -193,7 +193,7 @@ int main( int argc, char *argv[] )
       SLEEP( pausetime );
     }
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -222,7 +222,7 @@ int main( int argc, char *argv[] )
       SLEEP( pausetime );
     }
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
@@ -253,7 +253,7 @@ int main( int argc, char *argv[] )
       SLEEP( pausetime );
     }
   }
-  catch ( RtError& e ) {
+  catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
