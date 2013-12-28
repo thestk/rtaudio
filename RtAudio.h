@@ -190,9 +190,8 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
     \brief Exception handling class for RtAudio.
 
     The RtAudioError class is quite simple but it does allow errors to be
-    "caught" by RtAudioError::Type. See the RtAudio and RtMidi
-    documentation to know which methods can throw an RtAudioError.
-
+    "caught" by RtAudioError::Type. See the RtAudio documentation to know
+    which methods can throw an RtAudioError.
 */
 /************************************************************************/
 

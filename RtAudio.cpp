@@ -5358,6 +5358,8 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       goto probeParameters;
     }
   }
+  else
+    snd_ctl_close( chandle );
 
   result = snd_pcm_open( &phandle, name, stream, openMode | SND_PCM_NONBLOCK);
   if ( result < 0 ) {
@@ -5470,6 +5472,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 
   // Check that we have at least one supported format
   if ( info.nativeFormats == 0 ) {
+    snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: pcm device (" << name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
@@ -5479,8 +5482,10 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   // Get the device name
   char *cardname;
   result = snd_card_get_name( card, &cardname );
-  if ( result >= 0 )
+  if ( result >= 0 ) {
     sprintf( name, "hw:%s,%d", cardname, subdevice );
+    free( cardname );
+  }
   info.name = name;
 
   // That's all ... close the device and return
