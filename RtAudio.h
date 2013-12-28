@@ -50,8 +50,7 @@
 #include <exception>
 #include <iostream>
 
-// RtAudio version
-static const std::string RTAUDIO_VERSION( "4.1.0pre" );
+// RtAudio version: 4.1.0pre
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -375,7 +374,7 @@ class RtAudio
   };
 
   //! A static function to determine the current RtAudio version.
-  static std::string getVersion( void ) { return RTAUDIO_VERSION; } 
+  static std::string getVersion( void ) { return "4.1.0"; } 
 
   //! A static function to determine the available compiled audio APIs.
   /*!
@@ -572,7 +571,7 @@ class RtAudio
   #include <windows.h>
   #include <process.h>
 
-  typedef unsigned long ThreadHandle;
+  typedef ULONG_PTR ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
 
 #elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
@@ -762,6 +761,7 @@ protected:
   std::string errorText_;
   bool showWarnings_;
   RtApiStream stream_;
+  bool firstErrorOccurred;
 
   /*!
     Protected, api-specific method that attempts to open a device

@@ -213,6 +213,7 @@ RtApi :: RtApi()
   stream_.userBuffer[1] = 0;
   MUTEX_INITIALIZE( &stream_.mutex );
   showWarnings_ = true;
+  firstErrorOccurred = false;
 }
 
 RtApi :: ~RtApi()
@@ -6089,6 +6090,7 @@ void RtApiAlsa :: startStream()
   }
 
   if ( ( stream_.mode == INPUT || stream_.mode == DUPLEX ) && !apiInfo->synchronized ) {
+    result = snd_pcm_drop(handle[1]); // fix to remove stale data received since device has been open
     state = snd_pcm_state( handle[1] );
     if ( state != SND_PCM_STATE_PREPARED ) {
       result = snd_pcm_prepare( handle[1] );
@@ -6103,7 +6105,7 @@ void RtApiAlsa :: startStream()
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  apiInfo->runnable = true;
+  apiInfo->runnable = false; // fixes high CPU usage when stopped
   pthread_cond_signal( &apiInfo->runnable_cv );
   MUTEX_UNLOCK( &stream_.mutex );
 
@@ -6148,6 +6150,7 @@ void RtApiAlsa :: stopStream()
   }
 
  unlock:
+  apiInfo->runnable = false; // fixes high CPU usage when stopped
   MUTEX_UNLOCK( &stream_.mutex );
 
   if ( result >= 0 ) return;
@@ -6891,7 +6894,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "soundcard.h"
+#include <sys/soundcard.h>
 #include <errno.h>
 #include <math.h>
 
@@ -7837,12 +7840,11 @@ void RtApi :: error( RtAudioError::Type type )
   RtAudioErrorCallback errorCallback = (RtAudioErrorCallback) stream_.callbackInfo.errorCallback;
   if ( errorCallback ) {
     // abortStream() can generate new error messages. Ignore them. Just keep original one.
-    static bool firstErrorOccured = false;
 
-    if ( firstErrorOccured )
+    if ( firstErrorOccurred )
       return;
 
-    firstErrorOccured = true;
+    firstErrorOccurred = true;
     const std::string errorMessage = errorText_;
 
     if ( type != RtAudioError::WARNING && stream_.state != STREAM_STOPPED) {
@@ -7851,7 +7853,7 @@ void RtApi :: error( RtAudioError::Type type )
     }
 
     errorCallback( type, errorMessage );
-    firstErrorOccured = false;
+    firstErrorOccurred = false;
     return;
   }
 
