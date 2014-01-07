@@ -45,12 +45,12 @@
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
+#define RTAUDIO_VERSION "4.1.0pre"
+
 #include <string>
 #include <vector>
 #include <exception>
 #include <iostream>
-
-// RtAudio version: 4.1.0pre
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -373,7 +373,7 @@ class RtAudio
   };
 
   //! A static function to determine the current RtAudio version.
-  static std::string getVersion( void ) { return "4.1.0"; } 
+  static std::string getVersion( void ) throw();
 
   //! A static function to determine the available compiled audio APIs.
   /*!
@@ -760,7 +760,7 @@ protected:
   std::string errorText_;
   bool showWarnings_;
   RtApiStream stream_;
-  bool firstErrorOccurred;
+  bool firstErrorOccurred_;
 
   /*!
     Protected, api-specific method that attempts to open a device

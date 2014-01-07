@@ -75,6 +75,11 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 //
 // *************************************************** //
 
+std::string RtAudio :: getVersion( void ) throw()
+{
+  return std::string( RTAUDIO_VERSION );
+}
+
 void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis ) throw()
 {
   apis.clear();
@@ -176,7 +181,8 @@ RtAudio :: RtAudio( RtAudio::Api api ) throw()
   // definition __RTAUDIO_DUMMY__ is automatically defined if no
   // API-specific definitions are passed to the compiler. But just in
   // case something weird happens, we'll print out an error message.
-  std::cerr << "\nRtAudio: no compiled API support found ... critical error!!\n\n";
+  std::string errorText = "\nRtAudio: no compiled API support found ... critical error!!\n\n";
+  throw( RtAudioError( errorText, RtAudioError::UNSPECIFIED ) );
 }
 
 RtAudio :: ~RtAudio() throw()
@@ -213,7 +219,7 @@ RtApi :: RtApi()
   stream_.userBuffer[1] = 0;
   MUTEX_INITIALIZE( &stream_.mutex );
   showWarnings_ = true;
-  firstErrorOccurred = false;
+  firstErrorOccurred_ = false;
 }
 
 RtApi :: ~RtApi()
@@ -718,17 +724,36 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
     return info;
   }
 
-  Float64 minimumRate = 100000000.0, maximumRate = 0.0;
+  // The sample rate reporting mechanism is a bit of a mystery.  It
+  // seems that it can either return individual rates or a range of
+  // rates.  I assume that if the min / max range values are the same,
+  // then that represents a single supported rate and if the min / max
+  // range values are different, the device supports an arbitrary
+  // range of values (though there might be multiple ranges, so we'll
+  // use the most conservative range).
+  Float64 minimumRate = 1.0, maximumRate = 10000000000.0;
+  bool haveValueRange = false;
+  info.sampleRates.clear();
   for ( UInt32 i=0; i<nRanges; i++ ) {
-    if ( rangeList[i].mMinimum < minimumRate ) minimumRate = rangeList[i].mMinimum;
-    if ( rangeList[i].mMaximum > maximumRate ) maximumRate = rangeList[i].mMaximum;
+    if ( rangeList[i].mMinimum == rangeList[i].mMaximum )
+      info.sampleRates.push_back( (unsigned int) rangeList[i].mMinimum );
+    else {
+      haveValueRange = true;
+      if ( rangeList[i].mMinimum > minimumRate ) minimumRate = rangeList[i].mMinimum;
+      if ( rangeList[i].mMaximum < maximumRate ) maximumRate = rangeList[i].mMaximum;
+    }
   }
 
-  info.sampleRates.clear();
-  for ( unsigned int k=0; k<MAX_SAMPLE_RATES; k++ ) {
-    if ( SAMPLE_RATES[k] >= (unsigned int) minimumRate && SAMPLE_RATES[k] <= (unsigned int) maximumRate )
-      info.sampleRates.push_back( SAMPLE_RATES[k] );
+  if ( haveValueRange ) {
+    for ( unsigned int k=0; k<MAX_SAMPLE_RATES; k++ ) {
+      if ( SAMPLE_RATES[k] >= (unsigned int) minimumRate && SAMPLE_RATES[k] <= (unsigned int) maximumRate )
+        info.sampleRates.push_back( SAMPLE_RATES[k] );
+    }
   }
+
+  // Sort and remove any redundant values
+  std::sort( info.sampleRates.begin(), info.sampleRates.end() );
+  info.sampleRates.erase( unique( info.sampleRates.begin(), info.sampleRates.end() ), info.sampleRates.end() );
 
   if ( info.sampleRates.size() == 0 ) {
     errorStream_ << "RtApiCore::probeDeviceInfo: No supported sample rates found for device (" << device << ").";
@@ -791,7 +816,6 @@ static OSStatus rateListener( AudioObjectID inDevice,
                               const AudioObjectPropertyAddress /*properties*/[],
                               void* ratePointer )
 {
-
   Float64 *rate = (Float64 *) ratePointer;
   UInt32 dataSize = sizeof( Float64 );
   AudioObjectPropertyAddress property = { kAudioDevicePropertyNominalSampleRate,
@@ -863,6 +887,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, bufferList );
   if (result != noErr || dataSize == 0) {
+    free( bufferList );
     errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream configuration for device (" << device << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -1003,7 +1028,6 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   dataSize = sizeof( Float64 );
   property.mSelector = kAudioDevicePropertyNominalSampleRate;
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &nominalRate );
-
   if ( result != noErr ) {
     errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting current sample rate.";
     errorText_ = errorStream_.str();
@@ -1025,8 +1049,8 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     nominalRate = (Float64) sampleRate;
     result = AudioObjectSetPropertyData( id, &property, 0, NULL, dataSize, &nominalRate );
-
     if ( result != noErr ) {
+      AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
       errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate for device (" << device << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -7846,10 +7870,10 @@ void RtApi :: error( RtAudioError::Type type )
   if ( errorCallback ) {
     // abortStream() can generate new error messages. Ignore them. Just keep original one.
 
-    if ( firstErrorOccurred )
+    if ( firstErrorOccurred_ )
       return;
 
-    firstErrorOccurred = true;
+    firstErrorOccurred_ = true;
     const std::string errorMessage = errorText_;
 
     if ( type != RtAudioError::WARNING && stream_.state != STREAM_STOPPED) {
@@ -7858,7 +7882,7 @@ void RtApi :: error( RtAudioError::Type type )
     }
 
     errorCallback( type, errorMessage );
-    firstErrorOccurred = false;
+    firstErrorOccurred_ = false;
     return;
   }
 

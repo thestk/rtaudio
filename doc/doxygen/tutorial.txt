@@ -17,6 +17,10 @@ RtAudio incorporates the concept of audio streams, which represent audio output 
 
 \section whatsnew Latest Updates (Version 4.1.0)
 
+A minor API change was made. The RtError class was renamed RtAudioError and embedded directly in RtAudio.h.  Thus, all references to RtError should be renamed to RtAudioError and the RtError.h file should be deleted.
+
+Changes in the previous 4.0.12 release included:
+
 - new functionality to allow error reporting via a client-supplied function (thanks to Pavel Mogilevskiy)
 - new function to return the version number
 - updated RtAudio.cpp and ASIO files for UNICODE support (thanks to Renaud Schoonbroodt)
