@@ -64,6 +64,17 @@ void usage( void ) {
   exit( 0 );
 }
 
+void errorCallback( RtAudioError::Type type, const std::string &errorText )
+{
+  // This example error handling function does exactly the same thing
+  // as the embedded RtAudio::error() function.
+  std::cout << "in errorCallback" << std::endl;
+  if ( type == RtAudioError::WARNING )
+    std::cerr << '\n' << errorText << "\n\n";
+  else if ( type != RtAudioError::WARNING )
+    throw( RtAudioError( errorText, type ) );
+}
+
 unsigned int channels;
 RtAudio::StreamOptions options;
 unsigned int frameCounter = 0;
@@ -169,7 +180,7 @@ int main( int argc, char *argv[] )
   options.flags |= RTAUDIO_NONINTERLEAVED;
 #endif
   try {
-    dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options );
+    dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options, &errorCallback );
     dac.startStream();
   }
   catch ( RtAudioError& e ) {

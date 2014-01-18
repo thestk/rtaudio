@@ -602,7 +602,11 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   //const char *mname = CFStringGetCStringPtr( cfname, CFStringGetSystemEncoding() );
   int length = CFStringGetLength(cfname);
   char *mname = (char *)malloc(length * 3 + 1);
+#if defined( UNICODE ) || defined( _UNICODE )
+  CFStringGetCString(cfname, mname, length * 3 + 1, kCFStringEncodingUTF8);
+#else
   CFStringGetCString(cfname, mname, length * 3 + 1, CFStringGetSystemEncoding());
+#endif
   info.name.append( (const char *)mname, strlen(mname) );
   info.name.append( ": " );
   CFRelease( cfname );
@@ -620,7 +624,11 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   //const char *name = CFStringGetCStringPtr( cfname, CFStringGetSystemEncoding() );
   length = CFStringGetLength(cfname);
   char *name = (char *)malloc(length * 3 + 1);
+#if defined( UNICODE ) || defined( _UNICODE )
+  CFStringGetCString(cfname, name, length * 3 + 1, kCFStringEncodingUTF8);
+#else
   CFStringGetCString(cfname, name, length * 3 + 1, CFStringGetSystemEncoding());
+#endif
   info.name.append( (const char *)name, strlen(name) );
   CFRelease( cfname );
   free(name);
@@ -2775,7 +2783,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   return info;
 }
 
-static void bufferSwitch( long index, ASIOBool processNow )
+static void bufferSwitch( long index, ASIOBool /*processNow*/ )
 {
   RtApiAsio *object = (RtApiAsio *) asioCallbackInfo->object;
   object->callbackEvent( index );
@@ -3458,7 +3466,7 @@ static void sampleRateChanged( ASIOSampleRate sRate )
   std::cerr << "\nRtApiAsio: driver reports sample rate changed to " << sRate << " ... stream stopped!!!\n" << std::endl;
 }
 
-static long asioMessages( long selector, long value, void* message, double* opt )
+static long asioMessages( long selector, long value, void* /*message*/, double* /*opt*/ )
 {
   long ret = 0;
 
@@ -3697,7 +3705,7 @@ unsigned int RtApiDs :: getDeviceCount( void )
   for ( unsigned int i=0; i<indices.size(); i++ )
     dsDevices.erase( dsDevices.begin()-nErased++ );
 
-  return dsDevices.size();
+  return static_cast<unsigned int>(dsDevices.size());
 }
 
 RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
@@ -3885,7 +3893,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     return FAILURE;
   }
 
-  unsigned int nDevices = dsDevices.size();
+  size_t nDevices = dsDevices.size();
   if ( nDevices == 0 ) {
     // This should not happen because a check is made before this function is called.
     errorText_ = "RtApiDs::probeDeviceOpen: no devices found!";
@@ -5027,7 +5035,7 @@ static std::string convertTChar( LPCTSTR name )
 
 static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR description,
-                                          LPCTSTR module,
+                                          LPCTSTR /*module*/,
                                           LPVOID lpContext )
 {
   struct DsProbeData& probeInfo = *(struct DsProbeData*) lpContext;
