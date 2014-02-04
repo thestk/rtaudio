@@ -3,6 +3,12 @@ if (WIN32)
 	add_definitions(-D__WINDOWS_DS__)
 	#-D__WINDOWS_ASIO__
 endif (WIN32)
+cmake_minimum_required(VERSION 2.8.10)
+project(RtAudio)
+
+include(CTest)
+include(CheckFunctionExists)
+
 
 if (UNIX AND NOT APPLE)
 	add_definitions(-D__LINUX_PULSE__)
