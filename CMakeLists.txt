@@ -13,6 +13,19 @@ option(AUDIO_LINUX_PULSE "Build Linux PulseAudio API" OFF)
 option(AUDIO_UNIX_JACK "Build Unix JACK audio server API" OFF)
 option(AUDIO_OSX_CORE "Build Mac OSX CoreAudio API" OFF)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-D__RTAUDIO_DEBUG__)
+endif ()
+
+check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
+
+if (HAVE_GETTIMEOFDAY)
+    add_definitions(-DHAVE_GETTIMEOFDAY)
+endif ()
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif (CMAKE_COMPILER_IS_GNUCXX)
 
 set(rtaudio_SOURCES RtAudio.cpp)
 
