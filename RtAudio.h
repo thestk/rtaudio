@@ -50,7 +50,7 @@
 #include "RtError.h"
 
 // RtAudio version
-static const std::string VERSION( "4.0.12" );
+static std::string RTAUDIO_VERSION( "4.0.12" );
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -322,7 +322,7 @@ class RtAudio
   };
 
   //! A static function to determine the current RtAudio version.
-  static std::string getVersion( void ) { return VERSION; } 
+  static std::string getVersion( void ) { return RTAUDIO_VERSION; }
 
   //! A static function to determine the available compiled audio APIs.
   /*!
