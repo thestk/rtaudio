@@ -77,7 +77,7 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 
 std::string RtAudio :: getVersion( void ) throw()
 {
-  return std::string( RTAUDIO_VERSION );
+  return RTAUDIO_VERSION;
 }
 
 void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis ) throw()
@@ -1324,6 +1324,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   // Setup the device property listener for over/underload.
   property.mSelector = kAudioDeviceProcessorOverload;
+  property.mScope = kAudioObjectPropertyScopeGlobal;
   result = AudioObjectAddPropertyListener( id, &property, xrunListener, (void *) handle );
 
   return SUCCESS;
