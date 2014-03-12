@@ -7,6 +7,7 @@ v4.1.0: (?? 2014)
 - pulse audio update to support bufferFrames argument with audio input (thanks to Jonatan Wallmander)
 - fixes for ALSA API to avoid high CPU usage during stops and to clear stale data before input (thanks to Pluto Hades)
 - miscellaneous efficiency updates suggested by Martin Koegler
+- bug fix for OS-X xrun reporting problem
 
 v4.0.12: (16 April 2013)
 - new functionality to allow error reporting via a client-supplied function (thanks to Pavel Mogilevskiy)
