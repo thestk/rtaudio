@@ -180,14 +180,15 @@ RtAudio :: RtAudio( RtAudio::Api api ) throw()
   // It should not be possible to get here because the preprocessor
   // definition __RTAUDIO_DUMMY__ is automatically defined if no
   // API-specific definitions are passed to the compiler. But just in
-  // case something weird happens, we'll print out an error message.
+  // case something weird happens, we'll thow an error.
   std::string errorText = "\nRtAudio: no compiled API support found ... critical error!!\n\n";
   throw( RtAudioError( errorText, RtAudioError::UNSPECIFIED ) );
 }
 
 RtAudio :: ~RtAudio() throw()
 {
-  delete rtapi_;
+  if ( rtapi_ )
+    delete rtapi_;
 }
 
 void RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
@@ -6143,7 +6144,6 @@ void RtApiAlsa :: startStream()
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  apiInfo->runnable = false; // fixes high CPU usage when stopped
   pthread_cond_signal( &apiInfo->runnable_cv );
   MUTEX_UNLOCK( &stream_.mutex );
 
@@ -6229,6 +6229,7 @@ void RtApiAlsa :: abortStream()
   }
 
  unlock:
+  apiInfo->runnable = false; // fixes high CPU usage when stopped
   MUTEX_UNLOCK( &stream_.mutex );
 
   if ( result >= 0 ) return;
@@ -6804,6 +6805,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
   stream_.nUserChannels[mode] = channels;
   stream_.nDeviceChannels[mode] = channels + firstChannel;
   stream_.channelOffset[mode] = 0;
+  std::string streamName = "RtAudio";
 
   // Allocate necessary internal buffers.
   bufferBytes = stream_.nUserChannels[mode] * *bufferSize * formatBytes( stream_.userFormat );
@@ -6857,7 +6859,6 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
   pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
 
   int error;
-  std::string streamName = "RtAudio";
   if ( !options->streamName.empty() ) streamName = options->streamName;
   switch ( mode ) {
   case INPUT:
