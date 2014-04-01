@@ -51,8 +51,8 @@ struct MyData {
 };
 
 // Interleaved buffers
-int pulse( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-           double streamTime, RtAudioStreamStatus status, void *mydata )
+int pulse( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+           double /*streamTime*/, RtAudioStreamStatus status, void *mydata )
 {
   // Write out a pulse signal and ignore the input buffer.
   unsigned int i, j;

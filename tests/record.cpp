@@ -67,8 +67,8 @@ struct InputData {
 };
 
 // Interleaved buffers
-int input( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-           double streamTime, RtAudioStreamStatus status, void *data )
+int input( void * /*outputBuffer*/, void *inputBuffer, unsigned int nBufferFrames,
+           double /*streamTime*/, RtAudioStreamStatus /*status*/, void *data )
 {
   InputData *iData = (InputData *) data;
 

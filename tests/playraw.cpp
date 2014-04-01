@@ -70,8 +70,8 @@ struct OutputData {
 };
 
 // Interleaved buffers
-int output( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-            double streamTime, RtAudioStreamStatus status, void *data )
+int output( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+            double /*streamTime*/, RtAudioStreamStatus /*status*/, void *data )
 {
   OutputData *oData = (OutputData*) data;
 
