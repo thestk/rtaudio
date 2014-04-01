@@ -112,8 +112,8 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
 #else // Use non-interleaved buffers
 
-int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-         double streamTime, RtAudioStreamStatus status, void *data )
+int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+         double /*streamTime*/, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
   extern unsigned int channels;

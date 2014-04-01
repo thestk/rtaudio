@@ -270,6 +270,7 @@ class RtAudio
     LINUX_OSS,      /*!< The Linux Open Sound System API. */
     UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
     MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
+    WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
     WINDOWS_DS,     /*!< The Microsoft Direct Sound API. */
     RTAUDIO_DUMMY   /*!< A compilable but non-functional API. */
@@ -566,7 +567,7 @@ class RtAudio
 };
 
 // Operating system dependent thread functionality.
-#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__)
+#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) ||  defined(__WINDOWS_WASAPI__)
   #include <windows.h>
   #include <process.h>
 
@@ -973,6 +974,43 @@ public:
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options );
+};
+
+#endif
+
+#if defined(__WINDOWS_WASAPI__)
+
+struct IMMDeviceEnumerator;
+
+class RtApiWasapi : public RtApi
+{
+public:
+  RtApiWasapi();
+  ~RtApiWasapi();
+
+  RtAudio::Api getCurrentApi( void ) { return RtAudio::WINDOWS_WASAPI; }
+  unsigned int getDeviceCount( void );
+  RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
+  unsigned int getDefaultOutputDevice( void );
+  unsigned int getDefaultInputDevice( void );
+  void closeStream( void );
+  void startStream( void );
+  void stopStream( void );
+  void abortStream( void );
+
+private:
+  bool coInitialized_;
+  IMMDeviceEnumerator* deviceEnumerator_;
+
+  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int* bufferSize,
+                        RtAudio::StreamOptions* options );
+
+  static DWORD WINAPI runWasapiThread( void* wasapiPtr );
+  static DWORD WINAPI stopWasapiThread( void* wasapiPtr );
+  static DWORD WINAPI abortWasapiThread( void* wasapiPtr );
+  void wasapiThread();
 };
 
 #endif

@@ -32,8 +32,8 @@ void usage( void ) {
 unsigned int channels;
 
 // Interleaved buffers
-int sawi( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-          double streamTime, RtAudioStreamStatus status, void *data )
+int sawi( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+          double /*streamTime*/, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
   extern unsigned int channels;
@@ -55,8 +55,8 @@ int sawi( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 }
 
 // Non-interleaved buffers
-int sawni( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-           double streamTime, RtAudioStreamStatus status, void *data )
+int sawni( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+           double /*streamTime*/, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
   extern unsigned int channels;
@@ -79,8 +79,8 @@ int sawni( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
   return 0;
 }
 
-int inout( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
-           double streamTime, RtAudioStreamStatus status, void *data )
+int inout( void *outputBuffer, void *inputBuffer, unsigned int /*nBufferFrames*/,
+           double /*streamTime*/, RtAudioStreamStatus status, void *data )
 {
   // Since the number of input and output channels is equal, we can do
   // a simple buffer copy operation here.
