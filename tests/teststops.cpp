@@ -21,7 +21,7 @@
 #define REPETITIONS 10
 
 // Platform-dependent sleep routines.
-#if defined( __WINDOWS_ASIO__ ) || defined( __WINDOWS_DS__ )
+#if defined( __WINDOWS_ASIO__ ) || defined( __WINDOWS_DS__ ) || defined( __WINDOWS_WASAPI__ )
   #include <windows.h>
   #define SLEEP( milliseconds ) Sleep( (DWORD) milliseconds ) 
 #else // Unix variants

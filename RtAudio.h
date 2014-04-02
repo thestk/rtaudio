@@ -386,14 +386,14 @@ class RtAudio
 
   //! The class constructor.
   /*!
-    The constructor performs minor initialization tasks.  No exceptions
-    can be thrown.
+    The constructor performs minor initialization tasks.  An exception
+    can be thrown if no API support is compiled.
 
     If no API argument is specified and multiple API support has been
     compiled, the default order of use is JACK, ALSA, OSS (Linux
     systems) and ASIO, DS (Windows systems).
   */
-  RtAudio( RtAudio::Api api=UNSPECIFIED ) throw();
+  RtAudio( RtAudio::Api api=UNSPECIFIED );
 
   //! The destructor.
   /*!
