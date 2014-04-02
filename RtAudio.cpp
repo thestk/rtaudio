@@ -4560,11 +4560,7 @@ void RtApiWasapi::wasapiThread()
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to get capture buffer size" );
 
     // scale outBufferSize according to stream->user sample rate ratio
-    // (outBufferSize must be a multiple of the input channel count)
-    unsigned int outBufferSize = ( unsigned int ) ( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * captureSrRatio );
-    if ( outBufferSize % stream_.nDeviceChannels[INPUT] )
-      outBufferSize += stream_.nDeviceChannels[INPUT] - ( outBufferSize % stream_.nDeviceChannels[INPUT] );
-
+    unsigned int outBufferSize = ( unsigned int ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT];
     inBufferSize *= stream_.nDeviceChannels[INPUT];
 
     // set captureBuffer size
@@ -4620,12 +4616,7 @@ void RtApiWasapi::wasapiThread()
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to get render buffer size" );
 
     // scale inBufferSize according to user->stream sample rate ratio
-    // (inBufferSize must be a multiple of the output channel count)
-    unsigned int inBufferSize = ( unsigned int ) ( stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * renderSrRatio );
-    if ( inBufferSize % stream_.nDeviceChannels[OUTPUT] ) {
-      inBufferSize += stream_.nDeviceChannels[OUTPUT] - ( inBufferSize % stream_.nDeviceChannels[OUTPUT] );
-    }
-
+    unsigned int inBufferSize = ( unsigned int ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT];
     outBufferSize *= stream_.nDeviceChannels[OUTPUT];
 
     // set renderBuffer size
@@ -4660,14 +4651,14 @@ void RtApiWasapi::wasapiThread()
   char* convBuffer = NULL;
 
   if ( stream_.mode == INPUT ) {
-    convBuffer = ( char* ) malloc( ( size_t ) ( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * captureSrRatio * formatBytes( stream_.deviceFormat[INPUT] ) ) );
+    convBuffer = ( char* ) malloc( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ) );
   }
   else if ( stream_.mode == OUTPUT ) {
-    convBuffer = ( char* ) malloc( ( size_t ) ( stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * renderSrRatio * formatBytes( stream_.deviceFormat[OUTPUT] ) ) );
+    convBuffer = ( char* ) malloc( ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
   }
   else if ( stream_.mode == DUPLEX ) {
-    convBuffer = ( char* ) malloc( max( ( size_t ) ( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * captureSrRatio * formatBytes( stream_.deviceFormat[INPUT] ) ),
-                                        ( size_t ) ( stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * renderSrRatio * formatBytes( stream_.deviceFormat[OUTPUT] ) ) ) );
+    convBuffer = ( char* ) malloc( max( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
+                                        ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) ) );
   }
 
   // stream process loop
@@ -4682,7 +4673,7 @@ void RtApiWasapi::wasapiThread()
       if ( captureAudioClient ) {
         // Pull callback buffer from inputBuffer
         callbackPulled = captureBuffer.pullBuffer( convBuffer,
-                                                   ( unsigned int ) ( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * captureSrRatio ),
+                                                   ( unsigned int ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT],
                                                    stream_.deviceFormat[INPUT] );
 
         if ( callbackPulled ) {
