@@ -159,7 +159,7 @@ void RtAudio :: openRtApi( RtAudio::Api api )
 #endif
 }
 
-RtAudio :: RtAudio( RtAudio::Api api ) throw()
+RtAudio :: RtAudio( RtAudio::Api api )
 {
   rtapi_ = 0;
 
@@ -3576,7 +3576,6 @@ static const char* getAsioErrorString( ASIOError result )
 
 #if defined(__WINDOWS_WASAPI__) // Windows WASAPI API
 
-#include "RtWasapi.inl"
 #include <audioclient.h>
 #include <avrt.h>
 #include <functiondiscoverykeys.h>
@@ -3585,7 +3584,7 @@ static const char* getAsioErrorString( ASIOError result )
 //=============================================================================
 
 #define EXIT_ON_ERROR( hr, errorType, errorText )\
-if( FAILED( hr ) )\
+if ( FAILED( hr ) )\
 {\
   errorText_ = __FUNCTION__ ": " errorText;\
   error( errorType );\
@@ -3593,7 +3592,7 @@ if( FAILED( hr ) )\
 }
 
 #define SAFE_RELEASE( objectPtr )\
-if( objectPtr )\
+if ( objectPtr )\
 {\
   objectPtr->Release();\
   objectPtr = NULL;\
@@ -3634,23 +3633,21 @@ public:
   // attempt to push a buffer into the ring buffer at the current "in" index
   bool pushBuffer( char* buffer, unsigned int bufferSize, RtAudioFormat format )
   {
-    if( !buffer ||                 // incoming buffer is NULL
-        bufferSize == 0 ||         // incoming buffer has no data
-        bufferSize > bufferSize_ ) // incoming buffer too large
+    if ( !buffer ||                 // incoming buffer is NULL
+         bufferSize == 0 ||         // incoming buffer has no data
+         bufferSize > bufferSize_ ) // incoming buffer too large
     {
       return false;
     }
 
     unsigned int relOutIndex = outIndex_;
     unsigned int inIndexEnd = inIndex_ + bufferSize;
-    if( relOutIndex < inIndex_ && inIndexEnd >= bufferSize_ )
-    {
+    if ( relOutIndex < inIndex_ && inIndexEnd >= bufferSize_ ) {
       relOutIndex += bufferSize_;
     }
 
     // "in" index can end on the "out" index but cannot begin at it
-    if( inIndex_ <= relOutIndex && inIndexEnd > relOutIndex )
-    {
+    if ( inIndex_ <= relOutIndex && inIndexEnd > relOutIndex ) {
       return false; // not enough space between "in" index and "out" index
     }
 
@@ -3697,23 +3694,21 @@ public:
   // attempt to pull a buffer from the ring buffer from the current "out" index
   bool pullBuffer( char* buffer, unsigned int bufferSize, RtAudioFormat format )
   {
-    if( !buffer ||                 // incoming buffer is NULL
-        bufferSize == 0 ||         // incoming buffer has no data
-        bufferSize > bufferSize_ ) // incoming buffer too large
+    if ( !buffer ||                 // incoming buffer is NULL
+         bufferSize == 0 ||         // incoming buffer has no data
+         bufferSize > bufferSize_ ) // incoming buffer too large
     {
       return false;
     }
 
     unsigned int relInIndex = inIndex_;
     unsigned int outIndexEnd = outIndex_ + bufferSize;
-    if( relInIndex < outIndex_ && outIndexEnd >= bufferSize_ )
-    {
+    if ( relInIndex < outIndex_ && outIndexEnd >= bufferSize_ ) {
       relInIndex += bufferSize_;
     }
 
     // "out" index can begin at and end on the "in" index
-    if( outIndex_ < relInIndex && outIndexEnd > relInIndex )
-    {
+    if ( outIndex_ < relInIndex && outIndexEnd > relInIndex ) {
       return false; // not enough space between "out" index and "in" index
     }
 
@@ -3791,11 +3786,11 @@ void convertBufferWasapi( char* outBuffer,
   outSampleCount = ( unsigned int ) ( inSampleCount * sampleRatio );
 
   // frame-by-frame, copy each relative input sample into it's corresponding output sample
-  for( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
+  for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
   {
     unsigned int inSample = ( unsigned int ) inSampleFraction;
 
-    switch( format )
+    switch ( format )
     {
       case RTAUDIO_SINT8:
         memcpy( &( ( char* ) outBuffer )[ outSample * outChannelCount ], &( ( char* ) inBuffer )[ inSample * inChannelCount ], commonChannelCount * sizeof( char ) );
@@ -3851,7 +3846,7 @@ RtApiWasapi::RtApiWasapi()
   // WASAPI can run either apartment or multi-threaded
   HRESULT hr = CoInitialize( NULL );
 
-  if( !FAILED( hr ) )
+  if ( !FAILED( hr ) )
     coInitialized_ = true;
 
   // instantiate device enumerator
@@ -3859,7 +3854,7 @@ RtApiWasapi::RtApiWasapi()
                          CLSCTX_ALL, __uuidof( IMMDeviceEnumerator ),
                          ( void** ) &deviceEnumerator_ );
 
-  if( FAILED( hr ) ) {
+  if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::RtApiWasapi: Unable to instantiate device enumerator";
     error( RtAudioError::DRIVER_ERROR );
   }
@@ -3870,13 +3865,11 @@ RtApiWasapi::RtApiWasapi()
 RtApiWasapi::~RtApiWasapi()
 {
   // if this object previously called CoInitialize()
-  if( coInitialized_ )
-  {
+  if ( coInitialized_ ) {
     CoUninitialize();
   }
 
-  if( stream_.state != STREAM_CLOSED )
-  {
+  if ( stream_.state != STREAM_CLOSED ) {
     closeStream();
   }
 
@@ -3962,14 +3955,17 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
     EXIT_ON_ERROR( -1, RtAudioError::INVALID_USE, "Invalid device index" );
 
   // determine whether index falls within capture or render devices
-  if ( device < captureDeviceCount ) {
-    hr = captureDevices->Item( device, &devicePtr );
+  //if ( device < captureDeviceCount ) {
+  if ( device >= renderDeviceCount ) {
+    //hr = captureDevices->Item( device, &devicePtr );
+    hr = captureDevices->Item( device - renderDeviceCount, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve capture device handle" );
 
     isCaptureDevice = true;
   }
   else {
-    hr = renderDevices->Item( device - captureDeviceCount, &devicePtr );
+    //hr = renderDevices->Item( device - captureDeviceCount, &devicePtr );
+    hr = renderDevices->Item( device, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve render device handle" );
 
     isCaptureDevice = false;
@@ -4342,14 +4338,16 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     EXIT_ON_ERROR( -1, RtAudioError::INVALID_USE, "Invalid device index" );
 
   // determine whether index falls within capture or render devices
-  if ( device < captureDeviceCount ) {
+  //if ( device < captureDeviceCount ) {
+  if ( device >= renderDeviceCount ) {
     if ( mode != INPUT )
       EXIT_ON_ERROR( -1, RtAudioError::INVALID_USE, "Capture device selected as output device" );
 
     // retrieve captureAudioClient from devicePtr
     IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
-    hr = captureDevices->Item( device, &devicePtr );
+    //hr = captureDevices->Item( device, &devicePtr );
+    hr = captureDevices->Item( device - renderDeviceCount, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve capture device handle" );
 
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
@@ -4369,7 +4367,8 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     // retrieve renderAudioClient from devicePtr
     IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
 
-    hr = renderDevices->Item( device - captureDeviceCount, &devicePtr );
+    //hr = renderDevices->Item( device - captureDeviceCount, &devicePtr );
+    hr = renderDevices->Item( device, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve render device handle" );
 
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
@@ -4913,7 +4912,8 @@ Exit:
   CoTaskMemFree( captureFormat );
   CoTaskMemFree( renderFormat );
 
-  delete convBuffer;
+  //delete convBuffer;
+  free ( convBuffer );
 
   CoUninitialize();
 

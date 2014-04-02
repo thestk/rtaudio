@@ -18,6 +18,7 @@ int main()
   apiMap[RtAudio::MACOSX_CORE] = "OS-X Core Audio";
   apiMap[RtAudio::WINDOWS_ASIO] = "Windows ASIO";
   apiMap[RtAudio::WINDOWS_DS] = "Windows Direct Sound";
+  apiMap[RtAudio::WINDOWS_WASAPI] = "Windows WASAPI";
   apiMap[RtAudio::UNIX_JACK] = "Jack Client";
   apiMap[RtAudio::LINUX_ALSA] = "Linux ALSA";
   apiMap[RtAudio::LINUX_PULSE] = "Linux PulseAudio";
