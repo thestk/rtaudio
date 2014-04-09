@@ -5,12 +5,12 @@
     RtAudio provides a common API (Application Programming Interface)
     for realtime audio input/output across Linux (native ALSA, Jack,
     and OSS), Macintosh OS X (CoreAudio and Jack), and Windows
-    (DirectSound and ASIO) operating systems.
+    (DirectSound, ASIO and WASAPI) operating systems.
 
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2013 Gary P. Scavone
+    Copyright (c) 2001-2014 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.0.12
+// RtAudio: Version 4.1.0
 
 #include "RtAudio.h"
 #include <iostream>
@@ -249,6 +249,9 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     return;
   }
 
+  // Clear stream information potentially left from a previously open stream.
+  clearStreamInfo();
+
   if ( oParams && oParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL output StreamParameters structure cannot have an nChannels value less than one.";
     error( RtAudioError::INVALID_USE );
@@ -294,7 +297,6 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     }
   }
 
-  clearStreamInfo();
   bool result;
 
   if ( oChannels > 0 ) {
@@ -3955,16 +3957,13 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
     EXIT_ON_ERROR( -1, RtAudioError::INVALID_USE, "Invalid device index" );
 
   // determine whether index falls within capture or render devices
-  //if ( device < captureDeviceCount ) {
   if ( device >= renderDeviceCount ) {
-    //hr = captureDevices->Item( device, &devicePtr );
     hr = captureDevices->Item( device - renderDeviceCount, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve capture device handle" );
 
     isCaptureDevice = true;
   }
   else {
-    //hr = renderDevices->Item( device - captureDeviceCount, &devicePtr );
     hr = renderDevices->Item( device, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve render device handle" );
 
@@ -4338,7 +4337,6 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     EXIT_ON_ERROR( -1, RtAudioError::INVALID_USE, "Invalid device index" );
 
   // determine whether index falls within capture or render devices
-  //if ( device < captureDeviceCount ) {
   if ( device >= renderDeviceCount ) {
     if ( mode != INPUT )
       EXIT_ON_ERROR( -1, RtAudioError::INVALID_USE, "Capture device selected as output device" );
@@ -4346,7 +4344,6 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     // retrieve captureAudioClient from devicePtr
     IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
-    //hr = captureDevices->Item( device, &devicePtr );
     hr = captureDevices->Item( device - renderDeviceCount, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve capture device handle" );
 
@@ -4367,7 +4364,6 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     // retrieve renderAudioClient from devicePtr
     IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
 
-    //hr = renderDevices->Item( device - captureDeviceCount, &devicePtr );
     hr = renderDevices->Item( device, &devicePtr );
     EXIT_ON_ERROR( hr, RtAudioError::DRIVER_ERROR, "Unable to retrieve render device handle" );
 
@@ -4425,15 +4421,6 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   stream_.userBuffer[mode] = ( char* ) calloc( bufferBytes, 1 );
   if ( !stream_.userBuffer[mode] )
     EXIT_ON_ERROR( -1, RtAudioError::MEMORY_ERROR, "Error allocating user buffer memory" );
-
-  if ( stream_.doConvertBuffer[mode] && !stream_.deviceBuffer ) {
-    unsigned int deviceBufferSize = max( stream_.nUserChannels[INPUT] * stream_.bufferSize * formatBytes( stream_.userFormat ),
-                                         stream_.nUserChannels[OUTPUT] * stream_.bufferSize * formatBytes( stream_.userFormat ) );
-
-    stream_.deviceBuffer = ( char* ) calloc( deviceBufferSize, 1 );
-    if ( !stream_.deviceBuffer )
-      EXIT_ON_ERROR( -1, RtAudioError::MEMORY_ERROR, "Error allocating device buffer memory" );
-  }
 
   if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME )
     stream_.callbackInfo.priority = 15;
@@ -4648,18 +4635,22 @@ void RtApiWasapi::wasapiThread()
   int callbackResult = 0;
 
   // convBuffer is used to store converted buffers between WASAPI and the user
-  char* convBuffer = NULL;
-
+  unsigned int deviceBufferSize = 0;
   if ( stream_.mode == INPUT ) {
-    convBuffer = ( char* ) malloc( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ) );
+    deviceBufferSize = ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
   }
   else if ( stream_.mode == OUTPUT ) {
-    convBuffer = ( char* ) malloc( ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
+    deviceBufferSize = ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
   }
   else if ( stream_.mode == DUPLEX ) {
-    convBuffer = ( char* ) malloc( max( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
-                                        ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) ) );
+    deviceBufferSize = max( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
+                            ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
   }
+
+  char* convBuffer = ( char* ) malloc( deviceBufferSize );
+  stream_.deviceBuffer = ( char* ) malloc( deviceBufferSize );
+  if ( !convBuffer || !stream_.deviceBuffer )
+      EXIT_ON_ERROR( -1, RtAudioError::MEMORY_ERROR, "Error allocating device buffer memory" );
 
   // stream process loop
   while ( stream_.state != STREAM_STOPPING ) {
@@ -5053,9 +5044,10 @@ unsigned int RtApiDs :: getDeviceCount( void )
   std::vector< int > indices;
   for ( unsigned int i=0; i<dsDevices.size(); i++ )
     if ( dsDevices[i].found == false ) indices.push_back( i );
-  unsigned int nErased = 0;
+  //unsigned int nErased = 0;
   for ( unsigned int i=0; i<indices.size(); i++ )
-    dsDevices.erase( dsDevices.begin()-nErased++ );
+    dsDevices.erase( dsDevices.begin()+indices[i] );
+  //dsDevices.erase( dsDevices.begin()-nErased++ );
 
   return static_cast<unsigned int>(dsDevices.size());
 }

@@ -2,12 +2,14 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2014.
 
-v4.1.0: (?? 2014)
+v4.1.0: (?? April 2014)
 - RtError class renamed RtAudioError and embedded in RtAudio.h (RtError.h deleted)
+- new support for the Windows WASAPI API (thanks to Marcus Tomlinson)
 - pulse audio update to support bufferFrames argument with audio input (thanks to Jonatan Wallmander)
 - fixes for ALSA API to avoid high CPU usage during stops and to clear stale data before input (thanks to Pluto Hades)
 - miscellaneous efficiency updates suggested by Martin Koegler
 - bug fix for OS-X xrun reporting problem
+- bug fix related to error when opening a stream after closing a previously open stream
 
 v4.0.12: (16 April 2013)
 - new functionality to allow error reporting via a client-supplied function (thanks to Pavel Mogilevskiy)

@@ -1,6 +1,6 @@
-RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound and ASIO) operating systems.
+RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound, ASIO and WASAPI) operating systems.
 
-By Gary P. Scavone, 2001-2013.
+By Gary P. Scavone, 2001-2014.
 
 To configure and compile (on Unix systems and MinGW):
 
@@ -8,6 +8,8 @@ To configure and compile (on Unix systems and MinGW):
 2. From within the directory containing this file, run configure:
 
    ./configure
+
+   If you checked out the code from git, please run "autoconf" before "./configure".
 
 3. Typing "make" will compile static and shared libraries.
 
@@ -33,9 +35,9 @@ If you wish to use a different compiler than that selected by configure, specify
 
 WINDOWS USERS:
 
-RtAudio compiles with the MinGW compiler or MS Visual Studio.
+The DirectSound and ASIO APIs in RtAudio compile with either the MinGW compiler or MS Visual Studio.  The WASAPI API currently only compiles in MS Visual Studio.
 
-Visual C++ 6.0 project files (very old) are included for the test programs in the /tests/Windows/ directory.  These projects compile API support for both ASIO and DirectSound.
+Visual C++ 6.0 project files (very old) are included for the test programs in the /tests/Windows/ directory.  These projects compile API support for ASIO, WASAPI and DirectSound.
 
 
 LINUX OSS:

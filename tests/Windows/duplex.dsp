@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /I "../../include" /D "NDEBUG" /D "__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /I "../../include" /D "NDEBUG" /D "__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_WASAPI__" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "../../" /I "../../include" /D "_DEBUG" /D "__WINDOWS_ASIO__.__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_DS__" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "../../" /I "../../include" /D "_DEBUG" /D "__WINDOWS_ASIO__.__WINDOWS_DS__" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "__WINDOWS_ASIO__" /D "__WINDOWS_DS__" /D "__WINDOWS_WASAPI__" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe

@@ -5,12 +5,12 @@
     RtAudio provides a common API (Application Programming Interface)
     for realtime audio input/output across Linux (native ALSA, Jack,
     and OSS), Macintosh OS X (CoreAudio and Jack), and Windows
-    (DirectSound and ASIO) operating systems.
+    (DirectSound, ASIO and WASAPI) operating systems.
 
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2013 Gary P. Scavone
+    Copyright (c) 2001-2014 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -45,7 +45,7 @@
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
-#define RTAUDIO_VERSION "4.1.0pre"
+#define RTAUDIO_VERSION "4.1.0"
 
 #include <string>
 #include <vector>
