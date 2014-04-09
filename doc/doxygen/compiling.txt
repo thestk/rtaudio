@@ -75,6 +75,14 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD><I>various ASIO header and source files</I></TD>
   <TD><I>compiler specific</I></TD>
 </TR>
+<TR>
+  <TD>Windows</TD>
+  <TD>WASAPI</TD>
+  <TD>RtApiWasapi</TD>
+  <TD>__WINDOWS_WASAPI__</TD>
+  <TD><I>various ASIO header and source files</I></TD>
+  <TD><I>compiler specific ... not currently working with MingW compiler</I></TD>
+</TR>
 </TABLE>
 <P>
 

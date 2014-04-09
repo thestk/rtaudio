@@ -19,21 +19,17 @@ RtAudio incorporates the concept of audio streams, which represent audio output 
 
 A minor API change was made. The RtError class was renamed RtAudioError and embedded directly in RtAudio.h.  Thus, all references to RtError should be renamed to RtAudioError and the RtError.h file should be deleted.
 
-Changes in the previous 4.0.12 release included:
+Other changes in this release include:
 
-- new functionality to allow error reporting via a client-supplied function (thanks to Pavel Mogilevskiy)
-- new function to return the version number
-- updated RtAudio.cpp and ASIO files for UNICODE support (thanks to Renaud Schoonbroodt)
-- updates to PulseAudio API support (thanks to Peter Meerwald and Tristan Matthews)
-- updates for pkg-config support in configure script
-- 24-bit format changed to true 24-bit format, not sub-bytes of 32-bits (thanks to Marc Britton)
-- bug fixes to make sure stream status is closed if error during probeDeviceOpen
-- updates / fixes to SCHED_RR code in ALSA (thanks to Marc Lindahl)
-- various changes to avoid global variables (thanks to Martin Koegler)
+- new support for the Windows WASAPI API (thanks to Marcus Tomlinson)
+- pulse audio update to support bufferFrames argument with audio input (thanks to Jonatan Wallmander)
+- fixes for ALSA API to avoid high CPU usage during stops and to clear stale data before input (thanks to Pluto Hades)
+- miscellaneous efficiency updates suggested by Martin Koegler
+- bug fix for OS-X xrun reporting problem
 
 \section download Download
 
-Latest Release (?? 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.0.tar.gz">Version 4.1.0</A>
+Latest Release (?? April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.0.tar.gz">Version 4.1.0</A>
 
 \section documentation Documentation Links
 
@@ -48,8 +44,8 @@ Latest Release (?? 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/rele
 -# \ref apinotes
 -# \ref acknowledge
 -# \ref license
--# <A href="bugs.html">Bug Tracker</A>
--# <A href="updates.html">Possible Updates</A>
--# <A href="http://sourceforge.net/projects/rtaudio">RtAudio at SourceForge</A>
+-# <A href="bugs.html">Bug Tracker (out of date)</A>
+-# <A href="updates.html">Possible Updates (out of date)</A>
+-# <A href="http://github.com/thestk/rtaudio">RtAudio on GitHub</A>
 
 */
