@@ -2,7 +2,9 @@
 AC_INIT(RtAudio, 4.0, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
-AC_CONFIG_FILES([rtaudio-config librtaudio.pc Makefile tests/Makefile])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+
+AM_PROG_AR
 
 # Fill GXX with something before test.
 AC_SUBST( GXX, ["no"] )
@@ -186,6 +188,7 @@ esac
 
 CPPFLAGS="$CPPFLAGS $api"
 
+AC_CONFIG_FILES([rtaudio-config librtaudio.pc Makefile tests/Makefile])
 AC_OUTPUT
 
 chmod oug+x rtaudio-config
