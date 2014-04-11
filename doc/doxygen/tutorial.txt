@@ -22,14 +22,16 @@ A minor API change was made. The RtError class was renamed RtAudioError and embe
 Other changes in this release include:
 
 - new support for the Windows WASAPI API (thanks to Marcus Tomlinson)
+- CMake support (thanks to Berkus Decker)
 - pulse audio update to support bufferFrames argument with audio input (thanks to Jonatan Wallmander)
 - fixes for ALSA API to avoid high CPU usage during stops and to clear stale data before input (thanks to Pluto Hades)
 - miscellaneous efficiency updates suggested by Martin Koegler
 - bug fix for OS-X xrun reporting problem
+- bug fix if error when opening a stream after closing a previously open stream
 
 \section download Download
 
-Latest Release (?? April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.0.tar.gz">Version 4.1.0</A>
+Latest Release (10 April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.0.tar.gz">Version 4.1.0</A>
 
 \section documentation Documentation Links
 
