@@ -8,6 +8,7 @@ AM_PROG_AR
 
 # Fill GXX with something before test.
 AC_SUBST( GXX, ["no"] )
+AC_SUBST(noinst_LIBRARIES)
 
 dnl Check for pkg-config program, used for configuring some libraries.
 m4_define_default([PKG_PROG_PKG_CONFIG],
