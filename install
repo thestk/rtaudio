@@ -5,6 +5,7 @@ By Gary P. Scavone, 2001-2014.
 To configure and compile (on Unix systems and MinGW):
 
 1. Unpack the RtAudio distribution (tar -xzf rtaudio-x.x.tar.gz).
+
 2. From within the directory containing this file, run configure:
 
    ./configure
@@ -33,7 +34,16 @@ If you wish to use a different compiler than that selected by configure, specify
   ./configure CXX=CC
 
 
-WINDOWS USERS:
+CMAKE USAGE:
+
+CMake support is provided via the CMakeLists.txt files.  Assuming you have CMake installed on your system, a typical usage would involve the following steps (from within the parent distribution directory):
+
+mkdir _build_
+cd _build_
+cmake <path to CMakeLists.txt usually two dots> <options> e.g. cmake .. -DAUDIO_WINDOWS_WASAPI=ON
+
+
+WINDOWS:
 
 The DirectSound and ASIO APIs in RtAudio compile with either the MinGW compiler or MS Visual Studio.  The WASAPI API currently only compiles in MS Visual Studio.
 
