@@ -4,7 +4,7 @@
 RM = /bin/rm
 LN = /bin/ln
 
-OBJECTS	= RtAudio.o @objects@
+OBJECTS	= @top_srcdir@/RtAudio.o @objects@
 
 LIBNAME = librtaudio
 STATIC = $(LIBNAME).a
