@@ -87,7 +87,7 @@ endif (UNIX)
 
 if (WIN32)
     if (NOT AUDIO_WINDOWS_DS AND NOT AUDIO_WINDOWS_ASIO AND NOT AUDIO_WINDOWS_WASAPI)
-        set(AUDIO_WINDOWS_DS ON)
+        set(AUDIO_WINDOWS_WASAPI ON)
     endif()
 
     include_directories(include)

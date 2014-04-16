@@ -45,7 +45,7 @@
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
-#define RTAUDIO_VERSION "4.1.0"
+#define RTAUDIO_VERSION "4.1.1pre"
 
 #include <string>
 #include <vector>
@@ -567,11 +567,11 @@ class RtAudio
 };
 
 // Operating system dependent thread functionality.
-#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) ||  defined(__WINDOWS_WASAPI__)
+#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) || defined(__WINDOWS_WASAPI__)
   #include <windows.h>
   #include <process.h>
 
-  typedef ULONG_PTR ThreadHandle;
+  typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
 
 #elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
