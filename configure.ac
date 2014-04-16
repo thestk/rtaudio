@@ -6,6 +6,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 AM_PROG_AR
 
+LT_INIT([win32-dll])
+AC_CONFIG_MACRO_DIR([m4])
+
 # Fill GXX with something before test.
 AC_SUBST( GXX, ["no"] )
 AC_SUBST(noinst_LIBRARIES)
@@ -26,7 +29,6 @@ $4])
 
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
-AC_PROG_RANLIB
 AC_PATH_PROG(AR, ar, no)
 if [[ $AR = "no" ]] ; then
     AC_MSG_ERROR("Could not find ar - needed to create a library");

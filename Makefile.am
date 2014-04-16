@@ -1,4 +1,5 @@
-noinst_LIBRARIES += %D%/librtaudio.a
-%C%_librtaudio_a_SOURCES = \
+lib_LTLIBRARIES = %D%/librtaudio.la
+%C%_librtaudio_la_LDFLAGS = -no-undefined
+%C%_librtaudio_la_SOURCES = \
   %D%/RtAudio.cpp \
   %D%/RtAudio.h
