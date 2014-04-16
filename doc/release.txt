@@ -2,6 +2,9 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2014.
 
+v4.1.1pre: (??)
+- updates to WASAPI API for MinGW compiling
+
 v4.1.0: (10 April 2014)
 - RtError class renamed RtAudioError and embedded in RtAudio.h (RtError.h deleted)
 - new support for the Windows WASAPI API (thanks to Marcus Tomlinson)

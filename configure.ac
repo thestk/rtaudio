@@ -168,7 +168,13 @@ case $host in
     AC_MSG_RESULT(using DirectSound)
     LIBS="-ldsound -lwinmm $LIBS" ], )
 
-  # If no audio api flags specified, use DirectSound
+  # Look for WASAPI flag
+  AC_ARG_WITH(wasapi, [  --with-wasapi = choose Windows Audio Session API support (windoze only)], [
+    api="$api -D__WINDOWS_WASAPI__"
+    AC_MSG_RESULT(using WASAPI)
+    LIBS="-lwinmm -luuid -lksuser $LIBS" ], )
+
+  # If no audio api flags specified, use DS
   if [test "$api" == "";] then
     AC_SUBST( api, [-D__WINDOWS_DS__] )
     AC_MSG_RESULT(using DirectSound)
