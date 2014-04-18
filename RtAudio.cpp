@@ -4096,18 +4096,9 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   // sample rates
   info.sampleRates.clear();
 
-  // allow support for sample rates that are multiples of the base rate
+  // allow support for all sample rates as we have a built-in sample rate converter
   for ( unsigned int i = 0; i < MAX_SAMPLE_RATES; i++ ) {
-    if ( SAMPLE_RATES[i] < deviceFormat->nSamplesPerSec ) {
-      if ( deviceFormat->nSamplesPerSec % SAMPLE_RATES[i] == 0 ) {
-        info.sampleRates.push_back( SAMPLE_RATES[i] );
-      }
-    }
-    else {
-      if ( SAMPLE_RATES[i] % deviceFormat->nSamplesPerSec == 0 ) {
-        info.sampleRates.push_back( SAMPLE_RATES[i] );
-      }
-    }
+    info.sampleRates.push_back( SAMPLE_RATES[i] );
   }
 
   // native format
