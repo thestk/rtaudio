@@ -3578,6 +3578,12 @@ static const char* getAsioErrorString( ASIOError result )
 
 #if defined(__WINDOWS_WASAPI__) // Windows WASAPI API
 
+// Authored by Marcus Tomlinson <themarcustomlinson@gmail.com>, April 2014
+// - Introduces support for the Windows WASAPI API
+// - Aims to deliver bit streams to and from hardware at the lowest possible latency, via the absolute minimum buffer sizes required
+// - Provides flexible stream configuration to an otherwise strict and inflexible WASAPI interface
+// - Includes automatic internal conversion of sample rate, buffer size and channel count
+
 #ifndef INITGUID
   #define INITGUID
 #endif
@@ -3762,8 +3768,7 @@ private:
 // channel counts between HW and the user. The convertBufferWasapi function is used to perform
 // these conversions between HwIn->UserIn and UserOut->HwOut during the stream callback loop.
 // This sample rate converter favors speed over quality, and works best with conversions between
-// one rate and its multiple. RtApiWasapi will not populate a device's sample rate list with rates
-// that may cause artifacts via this conversion.
+// one rate and its multiple.
 void convertBufferWasapi( char* outBuffer,
                           const char* inBuffer,
                           const unsigned int& inChannelCount,
@@ -4090,18 +4095,9 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   // sample rates
   info.sampleRates.clear();
 
-  // allow support for sample rates that are multiples of the base rate
+  // allow support for all sample rates as we have a built-in sample rate converter
   for ( unsigned int i = 0; i < MAX_SAMPLE_RATES; i++ ) {
-    if ( SAMPLE_RATES[i] < deviceFormat->nSamplesPerSec ) {
-      if ( deviceFormat->nSamplesPerSec % SAMPLE_RATES[i] == 0 ) {
-        info.sampleRates.push_back( SAMPLE_RATES[i] );
-      }
-    }
-    else {
-      if ( SAMPLE_RATES[i] % deviceFormat->nSamplesPerSec == 0 ) {
-        info.sampleRates.push_back( SAMPLE_RATES[i] );
-      }
-    }
+    info.sampleRates.push_back( SAMPLE_RATES[i] );
   }
 
   // native format
@@ -4620,7 +4616,8 @@ void RtApiWasapi::wasapiThread()
 
   // convBuffer is used to store converted buffers between WASAPI and the user
   char* convBuffer = NULL;
-  unsigned int deviceBufferSize = 0;
+  unsigned int convBuffSize = 0;
+  unsigned int deviceBuffSize = 0;
 
   errorText_.clear();
   RtAudioError::Type errorType = RtAudioError::DRIVER_ERROR;
@@ -4795,18 +4792,22 @@ void RtApiWasapi::wasapiThread()
   }
 
   if ( stream_.mode == INPUT ) {
-    deviceBufferSize = ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
+    convBuffSize = ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
+    deviceBuffSize = stream_.bufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
   }
   else if ( stream_.mode == OUTPUT ) {
-    deviceBufferSize = ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
+    convBuffSize = ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
+    deviceBuffSize = stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
   }
   else if ( stream_.mode == DUPLEX ) {
-    deviceBufferSize = std::max( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
-                            ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
+    convBuffSize = std::max( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
+                             ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
+    deviceBuffSize = std::max( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
+                               stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
   }
 
-  convBuffer = ( char* ) malloc( deviceBufferSize );
-  stream_.deviceBuffer = ( char* ) malloc( deviceBufferSize );
+  convBuffer = ( char* ) malloc( convBuffSize );
+  stream_.deviceBuffer = ( char* ) malloc( deviceBuffSize );
   if ( !convBuffer || !stream_.deviceBuffer ) {
     errorType = RtAudioError::MEMORY_ERROR;
     errorText_ = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
