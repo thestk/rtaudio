@@ -3768,8 +3768,7 @@ private:
 // channel counts between HW and the user. The convertBufferWasapi function is used to perform
 // these conversions between HwIn->UserIn and UserOut->HwOut during the stream callback loop.
 // This sample rate converter favors speed over quality, and works best with conversions between
-// one rate and its multiple. RtApiWasapi will not populate a device's sample rate list with rates
-// that may cause artifacts via this conversion.
+// one rate and its multiple.
 void convertBufferWasapi( char* outBuffer,
                           const char* inBuffer,
                           const unsigned int& inChannelCount,
