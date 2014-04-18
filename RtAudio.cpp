@@ -3578,6 +3578,12 @@ static const char* getAsioErrorString( ASIOError result )
 
 #if defined(__WINDOWS_WASAPI__) // Windows WASAPI API
 
+// Authored by Marcus Tomlinson <themarcustomlinson@gmail.com>, April 2014
+// - Introduces support for the Windows WASAPI API
+// - Aims to deliver bit streams to and from hardware at the lowest possible latency, via the absolute minimum buffer sizes required
+// - Provides flexible stream configuration to an otherwise strict and inflexible WASAPI interface
+// - Includes automatic internal conversion of sample rate, buffer size and channel count
+
 #ifndef INITGUID
   #define INITGUID
 #endif
