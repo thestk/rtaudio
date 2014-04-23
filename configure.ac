@@ -2,10 +2,16 @@
 AC_INIT(RtAudio, 4.0, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
-AC_CONFIG_FILES([rtaudio-config librtaudio.pc Makefile tests/Makefile])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+
+AM_PROG_AR
+
+LT_INIT([win32-dll])
+AC_CONFIG_MACRO_DIR([m4])
 
 # Fill GXX with something before test.
 AC_SUBST( GXX, ["no"] )
+AC_SUBST(noinst_LIBRARIES)
 
 dnl Check for pkg-config program, used for configuring some libraries.
 m4_define_default([PKG_PROG_PKG_CONFIG],
@@ -23,7 +29,6 @@ $4])
 
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
-AC_PROG_RANLIB
 AC_PATH_PROG(AR, ar, no)
 if [[ $AR = "no" ]] ; then
     AC_MSG_ERROR("Could not find ar - needed to create a library");
@@ -192,6 +197,7 @@ esac
 
 CPPFLAGS="$CPPFLAGS $api"
 
+AC_CONFIG_FILES([rtaudio-config librtaudio.pc Makefile tests/Makefile])
 AC_OUTPUT
 
 chmod oug+x rtaudio-config
