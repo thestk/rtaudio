@@ -1682,11 +1682,12 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
         }
       }
     }
+  }
 
-    if ( handle->drainCounter ) {
-      handle->drainCounter++;
-      goto unlock;
-    }
+  // Don't bother draining input
+  if ( handle->drainCounter ) {
+    handle->drainCounter++;
+    goto unlock;
   }
 
   AudioDeviceID inputDevice;
@@ -2572,11 +2573,12 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
         memcpy( jackbuffer, &stream_.userBuffer[0][i*bufferBytes], bufferBytes );
       }
     }
+  }
 
-    if ( handle->drainCounter ) {
-      handle->drainCounter++;
-      goto unlock;
-    }
+  // Don't bother draining input
+  if ( handle->drainCounter ) {
+    handle->drainCounter++;
+    goto unlock;
   }
 
   if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
@@ -3403,11 +3405,12 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
       }
 
     }
+  }
 
-    if ( handle->drainCounter ) {
-      handle->drainCounter++;
-      goto unlock;
-    }
+  // Don't bother draining input
+  if ( handle->drainCounter ) {
+    handle->drainCounter++;
+    goto unlock;
   }
 
   if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
@@ -6063,6 +6066,8 @@ void RtApiDs :: stopStream()
 
     stream_.state = STREAM_STOPPED;
 
+    MUTEX_LOCK( &stream_.mutex );
+
     // Stop the buffer and clear memory
     LPDIRECTSOUNDBUFFER buffer = (LPDIRECTSOUNDBUFFER) handle->buffer[0];
     result = buffer->Stop();
@@ -6103,6 +6108,9 @@ void RtApiDs :: stopStream()
 
     stream_.state = STREAM_STOPPED;
 
+    if ( stream_.mode != DUPLEX )
+      MUTEX_LOCK( &stream_.mutex );
+
     result = buffer->Stop();
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::stopStream: error (" << getErrorString( result ) << ") stopping input buffer!";
@@ -6136,6 +6144,8 @@ void RtApiDs :: stopStream()
 
  unlock:
   timeEndPeriod( 1 ); // revert to normal scheduler frequency on lesser windows.
+  MUTEX_UNLOCK( &stream_.mutex );
+
   if ( FAILED( result ) ) error( RtAudioError::SYSTEM_ERROR );
 }
 
@@ -6221,6 +6231,12 @@ void RtApiDs :: callbackEvent()
 
   char *buffer;
   long bufferBytes;
+
+  MUTEX_LOCK( &stream_.mutex );
+  if ( stream_.state == STREAM_STOPPED ) {
+    MUTEX_UNLOCK( &stream_.mutex );
+    return;
+  }
 
   if ( buffersRolling == false ) {
     if ( stream_.mode == DUPLEX ) {
@@ -6402,11 +6418,12 @@ void RtApiDs :: callbackEvent()
     }
     nextWritePointer = ( nextWritePointer + bufferSize1 + bufferSize2 ) % dsBufferSize;
     handle->bufferPointer[0] = nextWritePointer;
+  }
 
-    if ( handle->drainCounter ) {
-      handle->drainCounter++;
-      goto unlock;
-    }
+  // Don't bother draining input
+  if ( handle->drainCounter ) {
+    handle->drainCounter++;
+    goto unlock;
   }
 
   if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
@@ -6545,6 +6562,7 @@ void RtApiDs :: callbackEvent()
   }
 
  unlock:
+  MUTEX_UNLOCK( &stream_.mutex );
   RtApi::tickStreamTime();
 }
 
