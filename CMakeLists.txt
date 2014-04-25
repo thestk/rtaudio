@@ -91,15 +91,17 @@ if (WIN32)
     endif()
 
     include_directories(include)
-    list(APPEND LINKLIBS dsound winmm ole32)
+    list(APPEND LINKLIBS winmm ole32)
 
     if (AUDIO_WINDOWS_DS)
         add_definitions(-D__WINDOWS_DS__)
         message(STATUS "Using Windows DirectSound")
+        list(APPEND LINKLIBS dsound)
     endif (AUDIO_WINDOWS_DS)
     if (AUDIO_WINDOWS_WASAPI)
         add_definitions(-D__WINDOWS_WASAPI__)
         message(STATUS "Using Windows WASAPI")
+        list(APPEND LINKLIBS uuid ksuser)
     endif (AUDIO_WINDOWS_WASAPI)
     if (AUDIO_WINDOWS_ASIO)
         list(APPEND rtaudio_SOURCES
