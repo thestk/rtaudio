@@ -3850,7 +3850,6 @@ RtApiWasapi::RtApiWasapi()
 {
   // WASAPI can run either apartment or multi-threaded
   HRESULT hr = CoInitialize( NULL );
-
   if ( !FAILED( hr ) )
     coInitialized_ = true;
 
@@ -3869,16 +3868,14 @@ RtApiWasapi::RtApiWasapi()
 
 RtApiWasapi::~RtApiWasapi()
 {
-  // if this object previously called CoInitialize()
-  if ( coInitialized_ ) {
-    CoUninitialize();
-  }
-
-  if ( stream_.state != STREAM_CLOSED ) {
+  if ( stream_.state != STREAM_CLOSED )
     closeStream();
-  }
 
   SAFE_RELEASE( deviceEnumerator_ );
+
+  // If this object previously called CoInitialize()
+  if ( coInitialized_ )
+    CoUninitialize();
 }
 
 //=============================================================================
@@ -5095,7 +5092,6 @@ Exit:
   CoTaskMemFree( captureFormat );
   CoTaskMemFree( renderFormat );
 
-  //delete convBuffer;
   free ( convBuffer );
 
   CoUninitialize();
