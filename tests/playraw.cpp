@@ -125,6 +125,9 @@ int main( int argc, char *argv[] )
   oParams.nChannels = channels;
   oParams.firstChannel = offset;
 
+  if ( device == 0 )
+    oParams.deviceId = dac.getDefaultOutputDevice();
+
   data.channels = channels;
   try {
     dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &output, (void *)&data );

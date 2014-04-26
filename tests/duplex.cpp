@@ -97,6 +97,11 @@ int main( int argc, char *argv[] )
   oParams.nChannels = channels;
   oParams.firstChannel = oOffset;
 
+  if ( iDevice == 0 )
+    iParams.deviceId = adac.getDefaultInputDevice();
+  if ( oDevice == 0 )
+    oParams.deviceId = adac.getDefaultOutputDevice();
+
   RtAudio::StreamOptions options;
   //options.flags |= RTAUDIO_NONINTERLEAVED;
 

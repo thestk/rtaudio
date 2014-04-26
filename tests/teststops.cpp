@@ -121,6 +121,11 @@ int main( int argc, char *argv[] )
   iParams.nChannels = mydata.channels;
   iParams.firstChannel = iOffset;
 
+  if ( iDevice == 0 )
+    iParams.deviceId = adc->getDefaultInputDevice();
+  if ( oDevice == 0 )
+    oParams.deviceId = adc->getDefaultOutputDevice();
+
   // First, test external stopStream() calls.
   mydata.pulseCount = PULSE_RATE * fs;
   mydata.nFrames = 50 * fs;
