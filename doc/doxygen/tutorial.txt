@@ -15,12 +15,21 @@ RtAudio is a set of C++ classes that provide a common API (Application Programmi
 
 RtAudio incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording).  Available audio devices and their capabilities can be enumerated and then specified when opening a stream.  Where applicable, multiple API support can be compiled and a particular API specified when creating an RtAudio instance.  See the \ref apinotes section for information specific to each of the supported audio APIs.
 
-\section whatsnew Latest Updates (Version 4.1.0)
+\section whatsnew Latest Updates (Version 4.1.1)
 
-A minor API change was made. The RtError class was renamed RtAudioError and embedded directly in RtAudio.h.  Thus, all references to RtError should be renamed to RtAudioError and the RtError.h file should be deleted.
+Changes in this release include:
 
-Other changes in this release include:
+- updates to WASAPI API for MinGW compiling
+- WASAPI bug fixes for audio INPUT mode (thanks to Marcus Tomlinson)
+- DirectSound bug fix for INPUT mode
+- Bug fixes in Core, Jack, ASIO and DS for internal draining in INPUT mode
+- updates to test programs for default device specifiers
+- CMake buildfile update for WASAPI
+- new setStreamTime function
 
+Changes in the previous 4.1.0 release included:
+
+- RtError class renamed RtAudioError and embedded in RtAudio.h (RtError.h deleted)
 - new support for the Windows WASAPI API (thanks to Marcus Tomlinson)
 - CMake support (thanks to Berkus Decker)
 - pulse audio update to support bufferFrames argument with audio input (thanks to Jonatan Wallmander)
@@ -31,7 +40,7 @@ Other changes in this release include:
 
 \section download Download
 
-Latest Release (10 April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.0.tar.gz">Version 4.1.0</A>
+Latest Release (26 April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.1.tar.gz">Version 4.1.1</A>
 
 \section documentation Documentation Links
 
@@ -46,8 +55,9 @@ Latest Release (10 April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudi
 -# \ref apinotes
 -# \ref acknowledge
 -# \ref license
--# <A href="bugs.html">Bug Tracker (out of date)</A>
--# <A href="updates.html">Possible Updates (out of date)</A>
 -# <A href="http://github.com/thestk/rtaudio">RtAudio on GitHub</A>
 
 */
+
+-# <A href="bugs.html">Bug Tracker (out of date)</A>
+-# <A href="updates.html">Possible Updates (out of date)</A>

@@ -38,7 +38,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 4.1.1pre
+// RtAudio: Version 4.1.1
 
 #include "RtAudio.h"
 #include <iostream>
@@ -402,6 +402,14 @@ double RtApi :: getStreamTime( void )
 #else
   return stream_.streamTime;
 #endif
+}
+
+void RtApi :: setStreamTime( double time )
+{
+  verifyStream();
+
+  if ( time >= 0.0 )
+    stream_.streamTime = time;
 }
 
 unsigned int RtApi :: getStreamSampleRate( void )

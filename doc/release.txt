@@ -2,8 +2,14 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2014.
 
-v4.1.1pre: (??)
+v4.1.1: (26 April 2014)
 - updates to WASAPI API for MinGW compiling
+- WASAPI bug fixes for audio INPUT mode
+- DirectSound bug fix for INPUT mode
+- Bug fixes in Core, Jack, ASIO and DS for internal draining in INPUT mode
+- updates to test programs for default device specifiers
+- CMake buildfile update for WASAPI
+- new setStreamTime function
 
 v4.1.0: (10 April 2014)
 - RtError class renamed RtAudioError and embedded in RtAudio.h (RtError.h deleted)
