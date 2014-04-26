@@ -5,7 +5,7 @@ includedir=${prefix}/include
 
 Name: librtaudio
 Description: RtAudio - a set of C++ classes that provide a common API for realtime audio input/output
-Version: 4.1.0
+Version: 4.1.1
 Requires: @req@ 
 Libs: -L${libdir} -lrtaudio
 Libs.private: -lpthread

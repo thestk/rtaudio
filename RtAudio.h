@@ -45,7 +45,7 @@
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
-#define RTAUDIO_VERSION "4.1.1pre"
+#define RTAUDIO_VERSION "4.1.1"
 
 #include <string>
 #include <vector>
@@ -538,6 +538,12 @@ class RtAudio
   */
   double getStreamTime( void );
 
+  //! Set the stream time to a time in seconds greater than or equal to 0.0.
+  /*!
+    If a stream is not open, an RtAudioError (type = INVALID_USE) will be thrown.
+  */
+  void setStreamTime( double time );
+
   //! Returns the internal stream latency in sample frames.
   /*!
     The stream latency refers to delay in audio input and/or output
@@ -686,6 +692,7 @@ public:
   long getStreamLatency( void );
   unsigned int getStreamSampleRate( void );
   virtual double getStreamTime( void );
+  virtual void setStreamTime( double time );
   bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; }
   bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }
   void showWarnings( bool value ) { showWarnings_ = value; }
@@ -830,6 +837,7 @@ inline bool RtAudio :: isStreamRunning( void ) const throw() { return rtapi_->is
 inline long RtAudio :: getStreamLatency( void ) { return rtapi_->getStreamLatency(); }
 inline unsigned int RtAudio :: getStreamSampleRate( void ) { return rtapi_->getStreamSampleRate(); }
 inline double RtAudio :: getStreamTime( void ) { return rtapi_->getStreamTime(); }
+inline void RtAudio :: setStreamTime( double time ) { return rtapi_->setStreamTime( time ); }
 inline void RtAudio :: showWarnings( bool value ) throw() { rtapi_->showWarnings( value ); }
 
 // RtApi Subclass prototypes.
