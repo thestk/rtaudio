@@ -174,6 +174,9 @@ int main( int argc, char *argv[] )
   oParams.nChannels = channels;
   oParams.firstChannel = offset;
 
+  if ( device == 0 )
+    oParams.deviceId = dac.getDefaultOutputDevice();
+
   options.flags = RTAUDIO_HOG_DEVICE;
   options.flags |= RTAUDIO_SCHEDULE_REALTIME;
 #if !defined( USE_INTERLEAVED )

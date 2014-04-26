@@ -128,6 +128,9 @@ int main( int argc, char *argv[] )
   oParams.nChannels = channels;
   oParams.firstChannel = oOffset;
 
+  if ( oDevice == 0 )
+    oParams.deviceId = dac.getDefaultOutputDevice();
+
   RtAudio::StreamOptions options;
   options.flags = RTAUDIO_HOG_DEVICE;
   try {
@@ -192,6 +195,8 @@ int main( int argc, char *argv[] )
   iParams.deviceId = iDevice;
   iParams.nChannels = channels;
   iParams.firstChannel = iOffset;
+  if ( iDevice == 0 )
+    iParams.deviceId = dac.getDefaultInputDevice();
   options.flags = RTAUDIO_NONINTERLEAVED;
   try {
     dac.openStream( &oParams, &iParams, RTAUDIO_SINT32, fs, &bufferFrames, &inout, (void *)&bufferBytes, &options );
