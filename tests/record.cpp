@@ -117,7 +117,10 @@ int main( int argc, char *argv[] )
   // Set our stream parameters for input only.
   bufferFrames = 512;
   RtAudio::StreamParameters iParams;
-  iParams.deviceId = device;
+  if ( device == 0 )
+    iParams.deviceId = adc.getDefaultInputDevice();
+  else
+    iParams.deviceId = device;
   iParams.nChannels = channels;
   iParams.firstChannel = offset;
 
