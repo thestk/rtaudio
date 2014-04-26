@@ -4953,6 +4953,10 @@ void RtApiWasapi::wasapiThread()
                                                 convBufferSize * stream_.nDeviceChannels[OUTPUT],
                                                 stream_.deviceFormat[OUTPUT] );
     }
+    else {
+      // if there is no render stream, set callbackPushed flag
+      callbackPushed = true;
+    }
 
     // Stream Capture
     // ==============
