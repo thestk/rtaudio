@@ -107,8 +107,7 @@ case $host in
     api="$api -D__LINUX_PULSE__"
     req="$req libpulse-simple"
     AC_MSG_RESULT(using PulseAudio)
-    PKG_CHECK_MODULES([PULSE], [libpulse-simple], , AC_MSG_ERROR(PulseAudio support requires the pulse-simple library!))
-        LIBS="$LIBS `pkg-config --libs libpulse-simple`" ], )
+    AC_CHECK_LIB(pulse-simple, pa_simple_flush, , AC_MSG_ERROR(PulseAudio support requires the pulse-simple library!))], )
 
   # Look for OSS flag
   AC_ARG_WITH(oss, [  --with-oss = choose OSS API support (linux only)], [
