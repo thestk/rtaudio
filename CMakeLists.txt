@@ -113,6 +113,7 @@ if (WIN32)
     endif (AUDIO_WINDOWS_ASIO)
 endif (WIN32)
 
+cmake_policy(SET CMP0042 OLD)
 add_library(rtaudio SHARED ${rtaudio_SOURCES})
 add_library(rtaudio_static STATIC ${rtaudio_SOURCES})
 
