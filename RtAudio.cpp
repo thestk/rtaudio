@@ -58,6 +58,22 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
+
+  #include "tchar.h"
+
+  static std::string convertCharPointerToStdString(const char *text)
+  {
+    return std::string(text);
+  }
+
+  static std::string convertCharPointerToStdString(const wchar_t *text)
+  {
+    int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
+    std::string s( length-1, '\0' );
+    WideCharToMultiByte(CP_UTF8, 0, text, -1, &s[0], length, NULL, NULL);
+    return s;
+  }
+
 #elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
   // pthread API
   #define MUTEX_INITIALIZE(A) pthread_mutex_init(A, NULL)
@@ -3794,7 +3810,7 @@ void convertBufferWasapi( char* outBuffer,
   float sampleStep = 1.0f / sampleRatio;
   float inSampleFraction = 0.0f;
 
-  outSampleCount = ( unsigned int ) ( inSampleCount * sampleRatio );
+  outSampleCount = ( unsigned int ) roundf( inSampleCount * sampleRatio );
 
   // frame-by-frame, copy each relative input sample into it's corresponding output sample
   for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
@@ -3940,7 +3956,6 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   RtAudio::DeviceInfo info;
   unsigned int captureDeviceCount = 0;
   unsigned int renderDeviceCount = 0;
-  std::wstring deviceName;
   std::string defaultDeviceName;
   bool isCaptureDevice = false;
 
@@ -4043,8 +4058,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
     goto Exit;
   }
 
-  deviceName = defaultDeviceNameProp.pwszVal;
-  defaultDeviceName = std::string( deviceName.begin(), deviceName.end() );
+  defaultDeviceName = convertCharPointerToStdString(defaultDeviceNameProp.pwszVal);
 
   // name
   hr = devicePtr->OpenPropertyStore( STGM_READ, &devicePropStore );
@@ -4061,8 +4075,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
     goto Exit;
   }
 
-  deviceName = deviceNameProp.pwszVal;
-  info.name = std::string( deviceName.begin(), deviceName.end() );
+  info.name =convertCharPointerToStdString(deviceNameProp.pwszVal);
 
   // is default
   if ( isCaptureDevice ) {
@@ -6577,21 +6590,6 @@ static unsigned __stdcall callbackHandler( void *ptr )
   return 0;
 }
 
-#include "tchar.h"
-
-static std::string convertTChar( LPCTSTR name )
-{
-#if defined( UNICODE ) || defined( _UNICODE )
-  int length = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
-  std::string s( length-1, '\0' );
-  WideCharToMultiByte(CP_UTF8, 0, name, -1, &s[0], length, NULL, NULL);
-#else
-  std::string s( name );
-#endif
-
-  return s;
-}
-
 static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR description,
                                           LPCTSTR /*module*/,
@@ -6633,7 +6631,7 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
   }
 
   // If good device, then save its name and guid.
-  std::string name = convertTChar( description );
+  std::string name = convertCharPointerToStdString( description );
   //if ( name == "Primary Sound Driver" || name == "Primary Sound Capture Driver" )
   if ( lpguid == NULL )
     name = "Default Device";
