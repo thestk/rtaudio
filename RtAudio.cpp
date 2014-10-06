@@ -3086,6 +3086,19 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     infos->buffers[0] = infos->buffers[1] = 0;
   }
 
+  // prepare for callbacks
+  stream_.sampleRate = sampleRate;
+  stream_.device[mode] = device;
+  if ( stream_.mode == OUTPUT && mode == INPUT )
+    // We had already set up an output stream.
+    stream_.mode = DUPLEX;
+  else
+    stream_.mode = mode;
+
+  // store this class instance before registering callbacks, that are going to use it
+  asioCallbackInfo = &stream_.callbackInfo;
+  stream_.callbackInfo.object = (void *) this;
+
   // Set up the ASIO callback structure and create the ASIO data buffers.
   asioCallbacks.bufferSwitch = &bufferSwitch;
   asioCallbacks.sampleRateDidChange = &sampleRateChanged;
@@ -3093,11 +3106,21 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   asioCallbacks.bufferSwitchTimeInfo = NULL;
   result = ASIOCreateBuffers( handle->bufferInfos, nChannels, stream_.bufferSize, &asioCallbacks );
   if ( result != ASE_OK ) {
+    // Standard method failed. This can happen with strict/misbehaving drivers that return valid buffer size ranges
+    // but only accept the preferred buffer size as parameter for ASIOCreateBuffers. eg. Creatives ASIO driver
+    // in that case, let's be naïve and try that instead
+    *bufferSize = preferSize;
+    stream_.bufferSize = *bufferSize;
+    result = ASIOCreateBuffers( handle->bufferInfos, nChannels, stream_.bufferSize, &asioCallbacks );
+  }
+
+  if ( result != ASE_OK ) {
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error (" << getAsioErrorString( result ) << ") creating buffers.";
     errorText_ = errorStream_.str();
     goto error;
   }
   buffersAllocated = true;
+  stream_.state = STREAM_STOPPED;
 
   // Set flags for buffer conversion.
   stream_.doConvertBuffer[mode] = false;
@@ -3120,11 +3143,9 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     bool makeBuffer = true;
     bufferBytes = stream_.nDeviceChannels[mode] * formatBytes( stream_.deviceFormat[mode] );
-    if ( mode == INPUT ) {
-      if ( stream_.mode == OUTPUT && stream_.deviceBuffer ) {
-        unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
-        if ( bufferBytes <= bytesOut ) makeBuffer = false;
-      }
+    if ( stream_.mode == DUPLEX && stream_.deviceBuffer ) {
+      unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
+      if ( bufferBytes <= bytesOut ) makeBuffer = false;
     }
 
     if ( makeBuffer ) {
@@ -3137,17 +3158,6 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       }
     }
   }
-
-  stream_.sampleRate = sampleRate;
-  stream_.device[mode] = device;
-  stream_.state = STREAM_STOPPED;
-  asioCallbackInfo = &stream_.callbackInfo;
-  stream_.callbackInfo.object = (void *) this;
-  if ( stream_.mode == OUTPUT && mode == INPUT )
-    // We had already set up an output stream.
-    stream_.mode = DUPLEX;
-  else
-    stream_.mode = mode;
 
   // Determine device latencies
   result = ASIOGetLatencies( &inputLatency, &outputLatency );
