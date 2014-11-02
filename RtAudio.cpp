@@ -6816,6 +6816,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 
   // Count cards and devices
   card = -1;
+  subdevice = -1;
   snd_card_next( &card );
   while ( card >= 0 ) {
     sprintf( name, "hw:%d", card );
