@@ -179,7 +179,7 @@ RtAudio :: RtAudio( RtAudio::Api api )
   getCompiledApi( apis );
   for ( unsigned int i=0; i<apis.size(); i++ ) {
     openRtApi( apis[i] );
-    if ( rtapi_->getDeviceCount() ) break;
+    if ( rtapi_ && rtapi_->getDeviceCount() ) break;
   }
 
   if ( rtapi_ ) return;
