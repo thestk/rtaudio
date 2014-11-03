@@ -59,6 +59,22 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
+
+  #include "tchar.h"
+
+  static std::string convertCharPointerToStdString(const char *text)
+  {
+    return std::string(text);
+  }
+
+  static std::string convertCharPointerToStdString(const wchar_t *text)
+  {
+    int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
+    std::string s( length-1, '\0' );
+    WideCharToMultiByte(CP_UTF8, 0, text, -1, &s[0], length, NULL, NULL);
+    return s;
+  }
+
 #elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
   // pthread API
   #define MUTEX_INITIALIZE(A) pthread_mutex_init(A, NULL)
@@ -762,9 +778,14 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   bool haveValueRange = false;
   info.sampleRates.clear();
   for ( UInt32 i=0; i<nRanges; i++ ) {
-    if ( rangeList[i].mMinimum == rangeList[i].mMaximum )
-      info.sampleRates.push_back( (unsigned int) rangeList[i].mMinimum );
-    else {
+    if ( rangeList[i].mMinimum == rangeList[i].mMaximum ) {
+      unsigned int tmpSr = (unsigned int) rangeList[i].mMinimum;
+      info.sampleRates.push_back( tmpSr );
+
+      if ( !info.preferredSampleRate || ( tmpSr <= 48000 && tmpSr > info.preferredSampleRate ) )
+        info.preferredSampleRate = tmpSr;
+
+    } else {
       haveValueRange = true;
       if ( rangeList[i].mMinimum > minimumRate ) minimumRate = rangeList[i].mMinimum;
       if ( rangeList[i].mMaximum < maximumRate ) maximumRate = rangeList[i].mMaximum;
@@ -773,8 +794,12 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
 
   if ( haveValueRange ) {
     for ( unsigned int k=0; k<MAX_SAMPLE_RATES; k++ ) {
-      if ( SAMPLE_RATES[k] >= (unsigned int) minimumRate && SAMPLE_RATES[k] <= (unsigned int) maximumRate )
+      if ( SAMPLE_RATES[k] >= (unsigned int) minimumRate && SAMPLE_RATES[k] <= (unsigned int) maximumRate ) {
         info.sampleRates.push_back( SAMPLE_RATES[k] );
+
+        if ( !info.preferredSampleRate || ( SAMPLE_RATES[k] <= 48000 && SAMPLE_RATES[k] > info.preferredSampleRate ) )
+          info.preferredSampleRate = SAMPLE_RATES[k];
+      }
     }
   }
 
@@ -1985,7 +2010,9 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
 
   // Get the current jack server sample rate.
   info.sampleRates.clear();
-  info.sampleRates.push_back( jack_get_sample_rate( client ) );
+
+  info.preferredSampleRate = jack_get_sample_rate( client );
+  info.sampleRates.push_back( info.preferredSampleRate );
 
   // Count the available ports containing the client name as device
   // channels.  Jack "input ports" equal RtAudio output channels.
@@ -2765,8 +2792,12 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   info.sampleRates.clear();
   for ( unsigned int i=0; i<MAX_SAMPLE_RATES; i++ ) {
     result = ASIOCanSampleRate( (ASIOSampleRate) SAMPLE_RATES[i] );
-    if ( result == ASE_OK )
+    if ( result == ASE_OK ) {
       info.sampleRates.push_back( SAMPLE_RATES[i] );
+
+      if ( !info.preferredSampleRate || ( SAMPLE_RATES[i] <= 48000 && SAMPLE_RATES[i] > info.preferredSampleRate ) )
+        info.preferredSampleRate = SAMPLE_RATES[i];
+    }
   }
 
   // Determine supported data types ... just check first channel and assume rest are the same.
@@ -2825,9 +2856,12 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
                                    unsigned int firstChannel, unsigned int sampleRate,
                                    RtAudioFormat format, unsigned int *bufferSize,
                                    RtAudio::StreamOptions *options )
-{
+{////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  bool isDuplexInput =  mode == INPUT && stream_.mode == OUTPUT;
+
   // For ASIO, a duplex stream MUST use the same driver.
-  if ( mode == INPUT && stream_.mode == OUTPUT && stream_.device[0] != device ) {
+  if ( isDuplexInput && stream_.device[0] != device ) {
     errorText_ = "RtApiAsio::probeDeviceOpen: an ASIO duplex stream must use the same device for input and output!";
     return FAILURE;
   }
@@ -2841,7 +2875,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   // Only load the driver once for duplex stream.
-  if ( mode != INPUT || stream_.mode != OUTPUT ) {
+  if ( !isDuplexInput ) {
     // The getDeviceInfo() function will not work when a stream is open
     // because ASIO does not allow multiple devices to run at the same
     // time.  Thus, we'll probe the system before opening a stream and
@@ -2862,22 +2896,26 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
   }
 
+  // keep them before any "goto error", they are used for error cleanup + goto device boundary checks
+  bool buffersAllocated = false;
+  AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
+  unsigned int nChannels;
+
+
   // Check the device channel count.
   long inputChannels, outputChannels;
   result = ASIOGetChannels( &inputChannels, &outputChannels );
   if ( result != ASE_OK ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: error (" << getAsioErrorString( result ) << ") getting channel count (" << driverName << ").";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
 
   if ( ( mode == OUTPUT && (channels+firstChannel) > (unsigned int) outputChannels) ||
        ( mode == INPUT && (channels+firstChannel) > (unsigned int) inputChannels) ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") does not support requested channel count (" << channels << ") + offset (" << firstChannel << ").";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
   stream_.nDeviceChannels[mode] = channels;
   stream_.nUserChannels[mode] = channels;
@@ -2886,30 +2924,27 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Verify the sample rate is supported.
   result = ASIOCanSampleRate( (ASIOSampleRate) sampleRate );
   if ( result != ASE_OK ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") does not support requested sample rate (" << sampleRate << ").";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
 
   // Get the current sample rate
   ASIOSampleRate currentRate;
   result = ASIOGetSampleRate( &currentRate );
   if ( result != ASE_OK ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error getting sample rate.";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
 
   // Set the sample rate only if necessary
   if ( currentRate != sampleRate ) {
     result = ASIOSetSampleRate( (ASIOSampleRate) sampleRate );
     if ( result != ASE_OK ) {
-      drivers.removeCurrentDriver();
       errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error setting sample rate (" << sampleRate << ").";
       errorText_ = errorStream_.str();
-      return FAILURE;
+      goto error;
     }
   }
 
@@ -2920,10 +2955,9 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   else channelInfo.isInput = true;
   result = ASIOGetChannelInfo( &channelInfo );
   if ( result != ASE_OK ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error (" << getAsioErrorString( result ) << ") getting data format.";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
 
   // Assuming WINDOWS host is always little-endian.
@@ -2952,10 +2986,9 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   if ( stream_.deviceFormat[mode] == 0 ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
 
   // Set the buffer size.  For a duplex stream, this will end up
@@ -2964,49 +2997,62 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   long minSize, maxSize, preferSize, granularity;
   result = ASIOGetBufferSize( &minSize, &maxSize, &preferSize, &granularity );
   if ( result != ASE_OK ) {
-    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error (" << getAsioErrorString( result ) << ") getting buffer size.";
     errorText_ = errorStream_.str();
-    return FAILURE;
+    goto error;
   }
 
-  if ( *bufferSize < (unsigned int) minSize ) *bufferSize = (unsigned int) minSize;
-  else if ( *bufferSize > (unsigned int) maxSize ) *bufferSize = (unsigned int) maxSize;
-  else if ( granularity == -1 ) {
-    // Make sure bufferSize is a power of two.
-    int log2_of_min_size = 0;
-    int log2_of_max_size = 0;
+  if ( isDuplexInput ) {
+    // When this is the duplex input (output was opened before), then we have to use the same
+    // buffersize as the output, because it might use the preferred buffer size, which most
+    // likely wasn't passed as input to this. The buffer sizes have to be identically anyway,
+    // So instead of throwing an error, make them equal. The caller uses the reference
+    // to the "bufferSize" param as usual to set up processing buffers.
 
-    for ( unsigned int i = 0; i < sizeof(long) * 8; i++ ) {
-      if ( minSize & ((long)1 << i) ) log2_of_min_size = i;
-      if ( maxSize & ((long)1 << i) ) log2_of_max_size = i;
-    }
+    *bufferSize = stream_.bufferSize;
 
-    long min_delta = std::abs( (long)*bufferSize - ((long)1 << log2_of_min_size) );
-    int min_delta_num = log2_of_min_size;
-
-    for (int i = log2_of_min_size + 1; i <= log2_of_max_size; i++) {
-      long current_delta = std::abs( (long)*bufferSize - ((long)1 << i) );
-      if (current_delta < min_delta) {
-        min_delta = current_delta;
-        min_delta_num = i;
-      }
-    }
-
-    *bufferSize = ( (unsigned int)1 << min_delta_num );
+  } else {
     if ( *bufferSize < (unsigned int) minSize ) *bufferSize = (unsigned int) minSize;
     else if ( *bufferSize > (unsigned int) maxSize ) *bufferSize = (unsigned int) maxSize;
-  }
-  else if ( granularity != 0 ) {
-    // Set to an even multiple of granularity, rounding up.
-    *bufferSize = (*bufferSize + granularity-1) / granularity * granularity;
+    else if ( granularity == -1 ) {
+      // Make sure bufferSize is a power of two.
+      int log2_of_min_size = 0;
+      int log2_of_max_size = 0;
+
+      for ( unsigned int i = 0; i < sizeof(long) * 8; i++ ) {
+        if ( minSize & ((long)1 << i) ) log2_of_min_size = i;
+        if ( maxSize & ((long)1 << i) ) log2_of_max_size = i;
+      }
+
+      long min_delta = std::abs( (long)*bufferSize - ((long)1 << log2_of_min_size) );
+      int min_delta_num = log2_of_min_size;
+
+      for (int i = log2_of_min_size + 1; i <= log2_of_max_size; i++) {
+        long current_delta = std::abs( (long)*bufferSize - ((long)1 << i) );
+        if (current_delta < min_delta) {
+          min_delta = current_delta;
+          min_delta_num = i;
+        }
+      }
+
+      *bufferSize = ( (unsigned int)1 << min_delta_num );
+      if ( *bufferSize < (unsigned int) minSize ) *bufferSize = (unsigned int) minSize;
+      else if ( *bufferSize > (unsigned int) maxSize ) *bufferSize = (unsigned int) maxSize;
+    }
+    else if ( granularity != 0 ) {
+      // Set to an even multiple of granularity, rounding up.
+      *bufferSize = (*bufferSize + granularity-1) / granularity * granularity;
+    }
   }
 
-  if ( mode == INPUT && stream_.mode == OUTPUT && stream_.bufferSize != *bufferSize ) {
-    drivers.removeCurrentDriver();
+  /*
+  // we don't use it anymore, see above!
+  // Just left it here for the case...
+  if ( isDuplexInput && stream_.bufferSize != *bufferSize ) {
     errorText_ = "RtApiAsio::probeDeviceOpen: input/output buffersize discrepancy!";
-    return FAILURE;
+    goto error;
   }
+  */
 
   stream_.bufferSize = *bufferSize;
   stream_.nBuffers = 2;
@@ -3018,16 +3064,13 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   stream_.deviceInterleaved[mode] = false;
 
   // Allocate, if necessary, our AsioHandle structure for the stream.
-  AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   if ( handle == 0 ) {
     try {
       handle = new AsioHandle;
     }
     catch ( std::bad_alloc& ) {
-      //if ( handle == NULL ) {    
-      drivers.removeCurrentDriver();
       errorText_ = "RtApiAsio::probeDeviceOpen: error allocating AsioHandle memory.";
-      return FAILURE;
+      goto error;
     }
     handle->bufferInfos = 0;
 
@@ -3042,15 +3085,14 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Create the ASIO internal buffers.  Since RtAudio sets up input
   // and output separately, we'll have to dispose of previously
   // created output buffers for a duplex stream.
-  long inputLatency, outputLatency;
   if ( mode == INPUT && stream_.mode == OUTPUT ) {
     ASIODisposeBuffers();
     if ( handle->bufferInfos ) free( handle->bufferInfos );
   }
 
   // Allocate, initialize, and save the bufferInfos in our stream callbackInfo structure.
-  bool buffersAllocated = false;
-  unsigned int i, nChannels = stream_.nDeviceChannels[0] + stream_.nDeviceChannels[1];
+  unsigned int i;
+  nChannels = stream_.nDeviceChannels[0] + stream_.nDeviceChannels[1];
   handle->bufferInfos = (ASIOBufferInfo *) malloc( nChannels * sizeof(ASIOBufferInfo) );
   if ( handle->bufferInfos == NULL ) {
     errorStream_ << "RtApiAsio::probeDeviceOpen: error allocating bufferInfo memory for driver (" << driverName << ").";
@@ -3071,6 +3113,15 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     infos->buffers[0] = infos->buffers[1] = 0;
   }
 
+  // prepare for callbacks
+  stream_.sampleRate = sampleRate;
+  stream_.device[mode] = device;
+  stream_.mode = isDuplexInput ? DUPLEX : mode;
+
+  // store this class instance before registering callbacks, that are going to use it
+  asioCallbackInfo = &stream_.callbackInfo;
+  stream_.callbackInfo.object = (void *) this;
+
   // Set up the ASIO callback structure and create the ASIO data buffers.
   asioCallbacks.bufferSwitch = &bufferSwitch;
   asioCallbacks.sampleRateDidChange = &sampleRateChanged;
@@ -3078,11 +3129,21 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   asioCallbacks.bufferSwitchTimeInfo = NULL;
   result = ASIOCreateBuffers( handle->bufferInfos, nChannels, stream_.bufferSize, &asioCallbacks );
   if ( result != ASE_OK ) {
+    // Standard method failed. This can happen with strict/misbehaving drivers that return valid buffer size ranges
+    // but only accept the preferred buffer size as parameter for ASIOCreateBuffers. eg. Creatives ASIO driver
+    // in that case, let's be naïve and try that instead
+    *bufferSize = preferSize;
+    stream_.bufferSize = *bufferSize;
+    result = ASIOCreateBuffers( handle->bufferInfos, nChannels, stream_.bufferSize, &asioCallbacks );
+  }
+
+  if ( result != ASE_OK ) {
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error (" << getAsioErrorString( result ) << ") creating buffers.";
     errorText_ = errorStream_.str();
     goto error;
   }
-  buffersAllocated = true;
+  buffersAllocated = true;  
+  stream_.state = STREAM_STOPPED;
 
   // Set flags for buffer conversion.
   stream_.doConvertBuffer[mode] = false;
@@ -3105,11 +3166,9 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     bool makeBuffer = true;
     bufferBytes = stream_.nDeviceChannels[mode] * formatBytes( stream_.deviceFormat[mode] );
-    if ( mode == INPUT ) {
-      if ( stream_.mode == OUTPUT && stream_.deviceBuffer ) {
-        unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
-        if ( bufferBytes <= bytesOut ) makeBuffer = false;
-      }
+    if ( isDuplexInput && stream_.deviceBuffer ) {
+      unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
+      if ( bufferBytes <= bytesOut ) makeBuffer = false;
     }
 
     if ( makeBuffer ) {
@@ -3123,18 +3182,8 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
   }
 
-  stream_.sampleRate = sampleRate;
-  stream_.device[mode] = device;
-  stream_.state = STREAM_STOPPED;
-  asioCallbackInfo = &stream_.callbackInfo;
-  stream_.callbackInfo.object = (void *) this;
-  if ( stream_.mode == OUTPUT && mode == INPUT )
-    // We had already set up an output stream.
-    stream_.mode = DUPLEX;
-  else
-    stream_.mode = mode;
-
   // Determine device latencies
+  long inputLatency, outputLatency;
   result = ASIOGetLatencies( &inputLatency, &outputLatency );
   if ( result != ASE_OK ) {
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error (" << getAsioErrorString( result ) << ") getting latency.";
@@ -3154,32 +3203,38 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   return SUCCESS;
 
  error:
-  if ( buffersAllocated )
-    ASIODisposeBuffers();
-  drivers.removeCurrentDriver();
+  if ( !isDuplexInput ) {
+    // the cleanup for error in the duplex input, is done by RtApi::openStream
+    // So we clean up for single channel only
 
-  if ( handle ) {
-    CloseHandle( handle->condition );
-    if ( handle->bufferInfos )
-      free( handle->bufferInfos );
-    delete handle;
-    stream_.apiHandle = 0;
-  }
+    if ( buffersAllocated )
+      ASIODisposeBuffers();
 
-  for ( int i=0; i<2; i++ ) {
-    if ( stream_.userBuffer[i] ) {
-      free( stream_.userBuffer[i] );
-      stream_.userBuffer[i] = 0;
+    drivers.removeCurrentDriver();
+
+    if ( handle ) {
+      CloseHandle( handle->condition );
+      if ( handle->bufferInfos )
+        free( handle->bufferInfos );
+
+      delete handle;
+      stream_.apiHandle = 0;
+    }
+
+
+    if ( stream_.userBuffer[mode] ) {
+      free( stream_.userBuffer[mode] );
+      stream_.userBuffer[mode] = 0;
+    }
+
+    if ( stream_.deviceBuffer ) {
+      free( stream_.deviceBuffer );
+      stream_.deviceBuffer = 0;
     }
   }
 
-  if ( stream_.deviceBuffer ) {
-    free( stream_.deviceBuffer );
-    stream_.deviceBuffer = 0;
-  }
-
   return FAILURE;
-}
+}////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void RtApiAsio :: closeStream()
 {
@@ -3795,7 +3850,7 @@ void convertBufferWasapi( char* outBuffer,
   float sampleStep = 1.0f / sampleRatio;
   float inSampleFraction = 0.0f;
 
-  outSampleCount = ( unsigned int ) ( inSampleCount * sampleRatio );
+  outSampleCount = ( unsigned int ) roundf( inSampleCount * sampleRatio );
 
   // frame-by-frame, copy each relative input sample into it's corresponding output sample
   for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
@@ -3941,7 +3996,6 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   RtAudio::DeviceInfo info;
   unsigned int captureDeviceCount = 0;
   unsigned int renderDeviceCount = 0;
-  std::wstring deviceName;
   std::string defaultDeviceName;
   bool isCaptureDevice = false;
 
@@ -4044,8 +4098,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
     goto Exit;
   }
 
-  deviceName = defaultDeviceNameProp.pwszVal;
-  defaultDeviceName = std::string( deviceName.begin(), deviceName.end() );
+  defaultDeviceName = convertCharPointerToStdString(defaultDeviceNameProp.pwszVal);
 
   // name
   hr = devicePtr->OpenPropertyStore( STGM_READ, &devicePropStore );
@@ -4062,8 +4115,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
     goto Exit;
   }
 
-  deviceName = deviceNameProp.pwszVal;
-  info.name = std::string( deviceName.begin(), deviceName.end() );
+  info.name =convertCharPointerToStdString(deviceNameProp.pwszVal);
 
   // is default
   if ( isCaptureDevice ) {
@@ -4106,6 +4158,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   for ( unsigned int i = 0; i < MAX_SAMPLE_RATES; i++ ) {
     info.sampleRates.push_back( SAMPLE_RATES[i] );
   }
+  info.preferredSampleRate = deviceFormat->nSamplesPerSec;
 
   // native format
   info.nativeFormats = 0;
@@ -5304,8 +5357,12 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   info.sampleRates.clear();
   for ( unsigned int k=0; k<MAX_SAMPLE_RATES; k++ ) {
     if ( SAMPLE_RATES[k] >= (unsigned int) outCaps.dwMinSecondarySampleRate &&
-         SAMPLE_RATES[k] <= (unsigned int) outCaps.dwMaxSecondarySampleRate )
+         SAMPLE_RATES[k] <= (unsigned int) outCaps.dwMaxSecondarySampleRate ) {
       info.sampleRates.push_back( SAMPLE_RATES[k] );
+
+      if ( !info.preferredSampleRate || ( SAMPLE_RATES[k] <= 48000 && SAMPLE_RATES[k] > info.preferredSampleRate ) )
+        info.preferredSampleRate = SAMPLE_RATES[k];
+    }
   }
 
   // Get format information.
@@ -6578,21 +6635,6 @@ static unsigned __stdcall callbackHandler( void *ptr )
   return 0;
 }
 
-#include "tchar.h"
-
-static std::string convertTChar( LPCTSTR name )
-{
-#if defined( UNICODE ) || defined( _UNICODE )
-  int length = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
-  std::string s( length-1, '\0' );
-  WideCharToMultiByte(CP_UTF8, 0, name, -1, &s[0], length, NULL, NULL);
-#else
-  std::string s( name );
-#endif
-
-  return s;
-}
-
 static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR description,
                                           LPCTSTR /*module*/,
@@ -6634,7 +6676,7 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
   }
 
   // If good device, then save its name and guid.
-  std::string name = convertTChar( description );
+  std::string name = convertCharPointerToStdString( description );
   //if ( name == "Primary Sound Driver" || name == "Primary Sound Capture Driver" )
   if ( lpguid == NULL )
     name = "Default Device";
@@ -7030,8 +7072,12 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   // Test our discrete set of sample rate values.
   info.sampleRates.clear();
   for ( unsigned int i=0; i<MAX_SAMPLE_RATES; i++ ) {
-    if ( snd_pcm_hw_params_test_rate( phandle, params, SAMPLE_RATES[i], 0 ) == 0 )
+    if ( snd_pcm_hw_params_test_rate( phandle, params, SAMPLE_RATES[i], 0 ) == 0 ) {
       info.sampleRates.push_back( SAMPLE_RATES[i] );
+
+      if ( !info.preferredSampleRate || ( SAMPLE_RATES[i] <= 48000 && SAMPLE_RATES[i] > info.preferredSampleRate ) )
+        info.preferredSampleRate = SAMPLE_RATES[i];
+    }
   }
   if ( info.sampleRates.size() == 0 ) {
     snd_pcm_close( phandle );
@@ -8064,6 +8110,7 @@ RtAudio::DeviceInfo RtApiPulse::getDeviceInfo( unsigned int /*device*/ )
   for ( const unsigned int *sr = SUPPORTED_SAMPLERATES; *sr; ++sr )
     info.sampleRates.push_back( *sr );
 
+  info.preferredSampleRate = 48000;
   info.nativeFormats = RTAUDIO_SINT16 | RTAUDIO_SINT32 | RTAUDIO_FLOAT32;
 
   return info;
@@ -8632,6 +8679,10 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
       for ( unsigned int k=0; k<MAX_SAMPLE_RATES; k++ ) {
         if ( ainfo.rates[i] == SAMPLE_RATES[k] ) {
           info.sampleRates.push_back( SAMPLE_RATES[k] );
+
+          if ( !info.preferredSampleRate || ( SAMPLE_RATES[k] <= 48000 && SAMPLE_RATES[k] > info.preferredSampleRate ) )
+            info.preferredSampleRate = SAMPLE_RATES[k];
+
           break;
         }
       }
@@ -8640,8 +8691,12 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   else {
     // Check min and max rate values;
     for ( unsigned int k=0; k<MAX_SAMPLE_RATES; k++ ) {
-      if ( ainfo.min_rate <= (int) SAMPLE_RATES[k] && ainfo.max_rate >= (int) SAMPLE_RATES[k] )
+      if ( ainfo.min_rate <= (int) SAMPLE_RATES[k] && ainfo.max_rate >= (int) SAMPLE_RATES[k] ) {
         info.sampleRates.push_back( SAMPLE_RATES[k] );
+
+        if ( !info.preferredSampleRate || ( SAMPLE_RATES[k] <= 48000 && SAMPLE_RATES[k] > info.preferredSampleRate ) )
+          info.preferredSampleRate = SAMPLE_RATES[k];
+      }
     }
   }
 
