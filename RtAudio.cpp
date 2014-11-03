@@ -3631,12 +3631,12 @@ public:
       outIndex_( 0 ) {}
 
   ~WasapiBuffer() {
-    delete buffer_;
+    free( buffer_ );
   }
 
   // sets the length of the internal ring buffer
   void setBufferSize( unsigned int bufferSize, unsigned int formatBytes ) {
-    delete buffer_;
+    free( buffer_ );
 
     buffer_ = ( char* ) calloc( bufferSize, formatBytes );
 
