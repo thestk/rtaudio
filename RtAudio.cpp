@@ -8425,7 +8425,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
   pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
 
   int error;
-  if ( !options->streamName.empty() ) streamName = options->streamName;
+  if ( options && !options->streamName.empty() ) streamName = options->streamName;
   switch ( mode ) {
   case INPUT:
     pa_buffer_attr buffer_attr;
