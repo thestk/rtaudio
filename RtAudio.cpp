@@ -6317,6 +6317,7 @@ void RtApiDs :: callbackEvent()
       if ( FAILED( result ) ) {
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
         error( RtAudioError::SYSTEM_ERROR );
         return;
       }
@@ -6324,6 +6325,7 @@ void RtApiDs :: callbackEvent()
       if ( FAILED( result ) ) {
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
         errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
         error( RtAudioError::SYSTEM_ERROR );
         return;
       }
@@ -6332,6 +6334,7 @@ void RtApiDs :: callbackEvent()
         if ( FAILED( result ) ) {
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
           errorText_ = errorStream_.str();
+          MUTEX_UNLOCK( &stream_.mutex );
           error( RtAudioError::SYSTEM_ERROR );
           return;
         }
@@ -6339,6 +6342,7 @@ void RtApiDs :: callbackEvent()
         if ( FAILED( result ) ) {
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
           errorText_ = errorStream_.str();
+          MUTEX_UNLOCK( &stream_.mutex );
           error( RtAudioError::SYSTEM_ERROR );
           return;
         }
@@ -6360,6 +6364,7 @@ void RtApiDs :: callbackEvent()
       if ( FAILED( result ) ) {
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
         error( RtAudioError::SYSTEM_ERROR );
         return;
       }
@@ -6452,6 +6457,7 @@ void RtApiDs :: callbackEvent()
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") locking buffer during playback!";
       errorText_ = errorStream_.str();
+      MUTEX_UNLOCK( &stream_.mutex );
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
@@ -6465,6 +6471,7 @@ void RtApiDs :: callbackEvent()
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") unlocking buffer during playback!";
       errorText_ = errorStream_.str();
+      MUTEX_UNLOCK( &stream_.mutex );
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
@@ -6501,6 +6508,7 @@ void RtApiDs :: callbackEvent()
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
       errorText_ = errorStream_.str();
+      MUTEX_UNLOCK( &stream_.mutex );
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
@@ -6562,6 +6570,7 @@ void RtApiDs :: callbackEvent()
         if ( FAILED( result ) ) {
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
           errorText_ = errorStream_.str();
+          MUTEX_UNLOCK( &stream_.mutex );
           error( RtAudioError::SYSTEM_ERROR );
           return;
         }
@@ -6576,6 +6585,7 @@ void RtApiDs :: callbackEvent()
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") locking capture buffer!";
       errorText_ = errorStream_.str();
+      MUTEX_UNLOCK( &stream_.mutex );
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
@@ -6597,6 +6607,7 @@ void RtApiDs :: callbackEvent()
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") unlocking capture buffer!";
       errorText_ = errorStream_.str();
+      MUTEX_UNLOCK( &stream_.mutex );
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
