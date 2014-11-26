@@ -7197,6 +7197,15 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   if ( options && options->flags & RTAUDIO_ALSA_USE_DEFAULT )
     snprintf(name, sizeof(name), "%s", "default");
+  else if (options && options->deviceName.size() != 0){ //Patch for some embedded devices can only access with a hidden name.
+    strcpy( name, options->deviceName.c_str() );
+//    int ncard = snd_card_get_index(name);
+//    if(ncard<0)
+//      std::cerr <<"snd_card_get_index error:"<< snd_strerror( ncard ) <<std::endl;
+//    else
+//      std::cerr <<"snd_card_get_index:"<< ncard <<std::endl;
+    goto foundDevice;
+  }
   else {
     // Count cards and devices
     card = -1;
@@ -7252,7 +7261,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // The getDeviceInfo() function will not work for a device that is
   // already open.  Thus, we'll probe the system before opening a
   // stream and save the results for use by getDeviceInfo().
-  if ( mode == OUTPUT || ( mode == INPUT && stream_.mode != OUTPUT ) ) // only do once
+  if (options && options->deviceName.size() != 0){ //Patch for some embedded devices can only access with a hidden name.
+  }
+  else if ( mode == OUTPUT || ( mode == INPUT && stream_.mode != OUTPUT ) ) // only do once
     this->saveDeviceInfo();
 
   snd_pcm_stream_t stream;

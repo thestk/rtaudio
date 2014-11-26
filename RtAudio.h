@@ -368,6 +368,7 @@ class RtAudio
     unsigned int numberOfBuffers;  /*!< Number of stream buffers. */
     std::string streamName;        /*!< A stream name (currently used only in Jack). */
     int priority;                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
+    std::string deviceName;        /*!< Use for some embedded devices can only access with a hidden name. */
 
     // Default constructor.
     StreamOptions()
