@@ -3012,7 +3012,8 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     *bufferSize = stream_.bufferSize;
 
   } else {
-    if ( *bufferSize < (unsigned int) minSize ) *bufferSize = (unsigned int) minSize;
+    if ( *bufferSize == 0 ) *bufferSize = preferSize;
+    else if ( *bufferSize < (unsigned int) minSize ) *bufferSize = (unsigned int) minSize;
     else if ( *bufferSize > (unsigned int) maxSize ) *bufferSize = (unsigned int) maxSize;
     else if ( granularity == -1 ) {
       // Make sure bufferSize is a power of two.
