@@ -48,7 +48,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>RtApiJack</TD>
   <TD>__UNIX_JACK__</TD>
   <TD><TT>jack, pthread</TT></TD>
-  <TD><TT>g++ -Wall -D__UNIX_JACK__ -o audioprobe audioprobe.cpp RtAudio.cpp `pkg-config --cflags --libs jack` -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__UNIX_JACK__ -o audioprobe audioprobe.cpp RtAudio.cpp $(pkg-config --cflags --libs jack) -lpthread</TT></TD>
 </TR>
 
 <TR>
