@@ -5295,14 +5295,11 @@ unsigned int RtApiDs :: getDeviceCount( void )
     error( RtAudioError::WARNING );
   }
 
-  // Clean out any devices that may have disappeared.
-  std::vector< int > indices;
-  for ( unsigned int i=0; i<dsDevices.size(); i++ )
-    if ( dsDevices[i].found == false ) indices.push_back( i );
-  //unsigned int nErased = 0;
-  for ( unsigned int i=0; i<indices.size(); i++ )
-    dsDevices.erase( dsDevices.begin()+indices[i] );
-  //dsDevices.erase( dsDevices.begin()-nErased++ );
+  // Clean out any devices that may have disappeared (code update submitted by Eli Zehngut).
+  for ( unsigned int i=0; i<dsDevices.size(); ) {
+    if ( dsDevices[i].found == false ) dsDevices.erase( dsDevices.begin() + i );
+    else i++;
+  }
 
   return static_cast<unsigned int>(dsDevices.size());
 }
