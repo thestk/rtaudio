@@ -1406,6 +1406,19 @@ void RtApiCore :: closeStream( void )
 
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
+  if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
+    if (handle) {
+      AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster };
+
+      property.mSelector = kAudioDeviceProcessorOverload;
+      property.mScope = kAudioObjectPropertyScopeGlobal;
+      if (AudioObjectRemovePropertyListener( handle->id[0], &property, xrunListener, (void *) handle ) != noErr) {
+        errorText_ = "RtApiCore::closeStream(): error removing property listener!";
+        error( RtAudioError::WARNING );
+      }
+    }
     if ( stream_.state == STREAM_RUNNING )
       AudioDeviceStop( handle->id[0], callbackHandler );
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
@@ -1417,6 +1430,18 @@ void RtApiCore :: closeStream( void )
   }
 
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
+    if (handle) {
+      AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster };
+
+      property.mSelector = kAudioDeviceProcessorOverload;
+      property.mScope = kAudioObjectPropertyScopeGlobal;
+      if (AudioObjectRemovePropertyListener( handle->id[1], &property, xrunListener, (void *) handle ) != noErr) {
+        errorText_ = "RtApiCore::closeStream(): error removing property listener!";
+        error( RtAudioError::WARNING );
+      }
+    }
     if ( stream_.state == STREAM_RUNNING )
       AudioDeviceStop( handle->id[1], callbackHandler );
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
