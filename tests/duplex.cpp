@@ -55,7 +55,7 @@ int inout( void *outputBuffer, void *inputBuffer, unsigned int /*nBufferFrames*/
   // a simple buffer copy operation here.
   if ( status ) std::cout << "Stream over/underflow detected." << std::endl;
 
-  unsigned int *bytes = (unsigned int *) data;
+  uint32_t *bytes = (uint32_t *) data;
   memcpy( outputBuffer, inputBuffer, *bytes );
   return 0;
 }
