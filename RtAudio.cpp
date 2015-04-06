@@ -8036,6 +8036,8 @@ void RtApiAlsa :: callbackEvent()
             errorStream_ << "RtApiAlsa::callbackEvent: error preparing device after underrun, " << snd_strerror( result ) << ".";
             errorText_ = errorStream_.str();
           }
+          else
+            errorText_ =  "RtApiAlsa::callbackEvent: audio write error, underrun.";
         }
         else {
           errorStream_ << "RtApiAlsa::callbackEvent: error, current state is " << snd_pcm_state_name( state ) << ", " << snd_strerror( result ) << ".";
