@@ -1406,7 +1406,6 @@ void RtApiCore :: closeStream( void )
 
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
-  if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     if (handle) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
         kAudioObjectPropertyScopeGlobal,
