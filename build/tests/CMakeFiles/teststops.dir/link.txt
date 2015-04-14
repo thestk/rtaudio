@@ -1,0 +1,1 @@
+/usr/bin/c++    -std=c++11 -Wall   CMakeFiles/teststops.dir/teststops.cpp.o  -o teststops -rdynamic ../librtaudio_static.a -lasound -lpthread 

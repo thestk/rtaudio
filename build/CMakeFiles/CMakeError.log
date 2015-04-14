@@ -1,0 +1,57 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/noob/rtaudio/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/gmake" "cmTryCompileExec2898579532/fast"
+/usr/bin/gmake -f CMakeFiles/cmTryCompileExec2898579532.dir/build.make CMakeFiles/cmTryCompileExec2898579532.dir/build
+gmake[1]: Entering directory '/home/noob/rtaudio/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/noob/rtaudio/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2898579532.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec2898579532.dir/CheckSymbolExists.c.o   -c /home/noob/rtaudio/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTryCompileExec2898579532
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2898579532.dir/link.txt --verbose=1
+/usr/bin/cc      CMakeFiles/cmTryCompileExec2898579532.dir/CheckSymbolExists.c.o  -o cmTryCompileExec2898579532 -rdynamic 
+CMakeFiles/cmTryCompileExec2898579532.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTryCompileExec2898579532.dir/build.make:88: recipe for target 'cmTryCompileExec2898579532' failed
+gmake[1]: *** [cmTryCompileExec2898579532] Error 1
+gmake[1]: Leaving directory '/home/noob/rtaudio/build/CMakeFiles/CMakeTmp'
+Makefile:118: recipe for target 'cmTryCompileExec2898579532/fast' failed
+gmake: *** [cmTryCompileExec2898579532/fast] Error 2
+
+File /home/noob/rtaudio/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/noob/rtaudio/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/gmake" "cmTryCompileExec2069114406/fast"
+/usr/bin/gmake -f CMakeFiles/cmTryCompileExec2069114406.dir/build.make CMakeFiles/cmTryCompileExec2069114406.dir/build
+gmake[1]: Entering directory '/home/noob/rtaudio/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/noob/rtaudio/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2069114406.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTryCompileExec2069114406.dir/CheckFunctionExists.c.o   -c /usr/share/cmake/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec2069114406
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2069114406.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   CMakeFiles/cmTryCompileExec2069114406.dir/CheckFunctionExists.c.o  -o cmTryCompileExec2069114406 -rdynamic -lpthreads 
+/usr/lib/gcc/x86_64-pc-linux-gnu/4.8.3/../../../../x86_64-pc-linux-gnu/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTryCompileExec2069114406.dir/build.make:88: recipe for target 'cmTryCompileExec2069114406' failed
+gmake[1]: *** [cmTryCompileExec2069114406] Error 1
+gmake[1]: Leaving directory '/home/noob/rtaudio/build/CMakeFiles/CMakeTmp'
+Makefile:118: recipe for target 'cmTryCompileExec2069114406/fast' failed
+gmake: *** [cmTryCompileExec2069114406/fast] Error 2
+
+

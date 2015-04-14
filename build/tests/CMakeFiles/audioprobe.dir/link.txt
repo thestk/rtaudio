@@ -1,0 +1,1 @@
+/usr/bin/c++    -std=c++11 -Wall   CMakeFiles/audioprobe.dir/audioprobe.cpp.o  -o audioprobe -rdynamic ../librtaudio_static.a -lasound -lpthread 
