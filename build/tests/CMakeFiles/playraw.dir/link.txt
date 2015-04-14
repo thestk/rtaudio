@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11 -Wall   CMakeFiles/playraw.dir/playraw.cpp.o  -o playraw -rdynamic ../librtaudio_static.a -lasound -lpthread 

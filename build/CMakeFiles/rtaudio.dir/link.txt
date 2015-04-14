@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC  -std=c++11 -Wall  -shared -Wl,-soname,librtaudio.so -o librtaudio.so CMakeFiles/rtaudio.dir/RtAudio.cpp.o -lasound -lpthread 

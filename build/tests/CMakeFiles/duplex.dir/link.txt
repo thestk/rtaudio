@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11 -Wall   CMakeFiles/duplex.dir/duplex.cpp.o  -o duplex -rdynamic ../librtaudio_static.a -lasound -lpthread 

@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11 -Wall   CMakeFiles/testall.dir/testall.cpp.o  -o testall -rdynamic ../librtaudio_static.a -lasound -lpthread 

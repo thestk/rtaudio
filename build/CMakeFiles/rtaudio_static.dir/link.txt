@@ -1,2 +1,0 @@
-/usr/bin/ar cq librtaudio_static.a  CMakeFiles/rtaudio_static.dir/RtAudio.cpp.o
-/usr/bin/ranlib librtaudio_static.a
