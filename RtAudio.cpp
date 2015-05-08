@@ -8522,7 +8522,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     }
     break;
   case OUTPUT:
-    pah->s_play = pa_simple_new( NULL, "RtAudio", PA_STREAM_PLAYBACK, NULL, "Playback", &ss, NULL, NULL, &error );
+    pah->s_play = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_PLAYBACK, NULL, "Playback", &ss, NULL, NULL, &error );
     if ( !pah->s_play ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error connecting output to PulseAudio server.";
       goto error;
