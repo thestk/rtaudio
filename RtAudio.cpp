@@ -6438,6 +6438,7 @@ void RtApiDs :: callbackEvent()
       if ( FAILED( result ) ) {
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
         error( RtAudioError::SYSTEM_ERROR );
         return;
       }
