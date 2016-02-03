@@ -8070,7 +8070,7 @@ static void *alsaCallbackHandler( void *ptr )
   bool *isRunning = &info->isRunning;
 
 #ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
-  if ( &info->doRealtime ) {
+  if ( info->doRealtime ) {
     pthread_t tID = pthread_self();	 // ID of this thread
     sched_param prio = { info->priority }; // scheduling priority of thread
     pthread_setschedparam( tID, SCHED_RR, &prio );
@@ -10142,8 +10142,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
 
 void RtApi :: byteSwapBuffer( char *buffer, unsigned int samples, RtAudioFormat format )
 {
-  register char val;
-  register char *ptr;
+  char val;
+  char *ptr;
 
   ptr = buffer;
   if ( format == RTAUDIO_SINT16 ) {
