@@ -5158,10 +5158,10 @@ void RtApiWasapi::wasapiThread()
     // if the callback buffer was pushed renderBuffer reset callbackPulled flag
     if ( callbackPushed ) {
       callbackPulled = false;
+      // tick stream time
+      RtApi::tickStreamTime();
     }
 
-    // tick stream time
-    RtApi::tickStreamTime();
   }
 
 Exit:
