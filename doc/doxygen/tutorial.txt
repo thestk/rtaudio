@@ -2,32 +2,24 @@
 
 RtAudio is a set of C++ classes that provide a common API (Application Programming Interface) for realtime audio input/output across Linux, Macintosh OS-X and Windows operating systems.  RtAudio significantly simplifies the process of interacting with computer audio hardware.  It was designed with the following objectives:
 
-<UL>
-  <LI>object-oriented C++ design</LI>
-  <LI>simple, common API across all supported platforms</LI>
-  <LI>only one source and one header file for easy inclusion in programming projects</LI>
-  <LI>allow simultaneous multi-api support</LI>
-  <LI>support dynamic connection of devices</LI>
-  <LI>provide extensive audio device parameter control</LI>
-  <LI>allow audio device capability probing</LI>
-  <LI>automatic internal conversion for data format, channel number compensation, (de)interleaving, and byte-swapping</LI>
-</UL>
+- object-oriented C++ design
+- simple, common API across all supported platforms
+- only one source and one header file for easy inclusion in programming projects
+- allow simultaneous multi-api support
+- support dynamic connection of devices
+- provide extensive audio device parameter control
+- allow audio device capability probing
+- automatic internal conversion for data format, channel number compensation, (de)interleaving, and byte-swapping
 
 RtAudio incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording).  Available audio devices and their capabilities can be enumerated and then specified when opening a stream.  Where applicable, multiple API support can be compiled and a particular API specified when creating an RtAudio instance.  See the \ref apinotes section for information specific to each of the supported audio APIs.
 
-\section whatsnew Latest Updates (Version 4.1.1)
+\section whatsnew Latest Updates (Version 4.1.2)
 
 Changes in this release include:
 
-- updates to WASAPI API for MinGW compiling
-- WASAPI bug fixes for audio INPUT mode (thanks to Marcus Tomlinson)
-- DirectSound bug fix for INPUT mode
-- Bug fixes in Core, Jack, ASIO and DS for internal draining in INPUT mode
-- updates to test programs for default device specifiers
-- CMake buildfile update for WASAPI
-- new setStreamTime function
+- miscellaneous small fixes for the various systems (more details in  <A href="http://github.com/thestk/rtaudio">GitHub</A>)
 
-Changes in the previous 4.1.0 release included:
+Changes in the 4.1.0 release included:
 
 - RtError class renamed RtAudioError and embedded in RtAudio.h (RtError.h deleted)
 - new support for the Windows WASAPI API (thanks to Marcus Tomlinson)
@@ -40,7 +32,7 @@ Changes in the previous 4.1.0 release included:
 
 \section download Download
 
-Latest Release (26 April 2014): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.1.tar.gz">Version 4.1.1</A>
+Latest Release (?? February 2016): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.2.tar.gz">Version 4.1.2</A>
 
 \section documentation Documentation Links
 
