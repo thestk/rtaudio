@@ -2,7 +2,7 @@
 AC_INIT(RtAudio, 4.1.1, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
-AC_CONFIG_FILES([rtaudio-config librtaudio.pc Makefile tests/Makefile doc/doxygen/Doxyfile])
+AC_CONFIG_FILES([rtaudio-config rtaudio.pc Makefile tests/Makefile doc/doxygen/Doxyfile])
 
 # Fill GXX with something before test.
 AC_SUBST( GXX, ["no"] )
