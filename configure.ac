@@ -58,6 +58,13 @@ m4_define_default([PKG_CHECK_MODULES],
 AC_MSG_RESULT([no])
 $4])
 
+# Check for debug
+AC_MSG_CHECKING(whether to compile debug version)
+AC_ARG_ENABLE(debug,
+  [AS_HELP_STRING([--enable-debug],[enable various debug output])],
+  [: ${CXXFLAGS="-g -O0"};] [AC_DEFINE([__RTAUDIO_DEBUG__])],
+  [: ${CXXFLAGS="-O3"}])
+
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
 AM_PROG_AR
@@ -74,35 +81,17 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 
-# Check for debug
-AC_MSG_CHECKING(whether to compile debug version)
-AC_ARG_ENABLE(debug,
-  [  --enable-debug = enable various debug output],
-  [AC_SUBST( cppflag, [-D__RTAUDIO_DEBUG__] ) AC_SUBST( cxxflag, [-g] ) AC_SUBST( object_path, [Debug] ) AC_MSG_RESULT(yes)],
-  [AC_SUBST( cppflag, [] ) AC_SUBST( cxxflag, [-O2] ) AC_SUBST( object_path, [Release] ) AC_MSG_RESULT(no)])
+# Check compiler and use -Wall if gnu
+if test x"$GXX" = "xyes"; then
+  CXXFLAGS="${CXXFLAGS} -Wall -Wextra"
+  # Add -Werror in debug mode
+  if test x"${enable_debug+set}" = xset; then
+    CXXFLAGS="${CXXFLAGS} -Werror"
+  fi
+fi
 
 # Checks for functions
 AC_CHECK_FUNC(gettimeofday, [cppflag="$cppflag -DHAVE_GETTIMEOFDAY"], )
-
-# Set paths if prefix is defined
-if test "x$prefix" != "x" && test "x$prefix" != "xNONE"; then
-  LIBS="$LIBS -L$prefix/lib"
-  CPPFLAGS="$CPPFLAGS -I$prefix/include"
-fi
-
-# For -I and -D flags
-CPPFLAGS="$CPPFLAGS $cppflag"
-
-# For debugging and optimization ... overwrite default because it has both -g and -O2
-#CXXFLAGS="$CXXFLAGS $cxxflag"
-CXXFLAGS="$cxxflag"
-
-# Check compiler and use -Wall if gnu.
-if [test $GXX = "yes" ;] then
-  AC_SUBST( cxxflag, ["-Wall -Wextra"] )
-fi
-
-CXXFLAGS="$CXXFLAGS $cxxflag"
 
 # Checks for doxygen
 AC_CHECK_PROG( DOXYGEN, [doxygen], [doxygen] )
