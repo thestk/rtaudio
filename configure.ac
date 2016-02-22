@@ -28,6 +28,15 @@ m4_define([lt_current_minus_age], [m4_eval(lt_current - lt_age)])
 SO_VERSION=lt_version_info
 AC_SUBST(SO_VERSION)
 
+# Check version number coherency between RtAudio.h and configure.ac
+AC_MSG_CHECKING([that version numbers are coherent])
+AC_RUN_IFELSE(
+   [AC_LANG_PROGRAM([#include <string.h>
+                     `grep "define RTAUDIO_VERSION" $srcdir/RtAudio.h`],
+                    [return strcmp(RTAUDIO_VERSION, PACKAGE_VERSION);])],
+   [AC_MSG_RESULT([yes])],
+   [AC_MSG_FAILURE([testing RTAUDIO_VERSION==PACKAGE_VERSION failed, check that RtAudio.h defines RTAUDIO_VERSION as "$PACKAGE_VERSION" or that the first line of configure.ac has been updated.])])
+
 # Enable some nice automake features if they are available
 m4_ifdef([AM_MAINTAINER_MODE], [AM_MAINTAINER_MODE])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -49,6 +58,13 @@ m4_define_default([PKG_CHECK_MODULES],
 AC_MSG_RESULT([no])
 $4])
 
+# Check for debug
+AC_MSG_CHECKING(whether to compile debug version)
+AC_ARG_ENABLE(debug,
+  [AS_HELP_STRING([--enable-debug],[enable various debug output])],
+  [: ${CXXFLAGS="-g -O0"};] [AC_DEFINE([__RTAUDIO_DEBUG__])],
+  [: ${CXXFLAGS="-O3"}])
+
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
 AM_PROG_AR
@@ -65,44 +81,17 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 
-# Check version number coherency between RtAudio.h and configure.ac
-AC_MSG_CHECKING([that version numbers are coherent])
-AC_RUN_IFELSE(
-   [AC_LANG_PROGRAM([#include <string.h>
-                     `grep "define RTAUDIO_VERSION" $srcdir/RtAudio.h`],
-                    [return strcmp(RTAUDIO_VERSION, PACKAGE_VERSION);])],
-   [AC_MSG_RESULT([yes])],
-   [AC_MSG_FAILURE([testing RTAUDIO_VERSION==PACKAGE_VERSION failed, check that RtAudio.h defines RTAUDIO_VERSION as "$PACKAGE_VERSION" or that the first line of configure.ac has been updated.])])
-
-# Check for debug
-AC_MSG_CHECKING(whether to compile debug version)
-AC_ARG_ENABLE(debug,
-  [  --enable-debug = enable various debug output],
-  [AC_SUBST( cppflag, [-D__RTAUDIO_DEBUG__] ) AC_SUBST( cxxflag, [-g] ) AC_SUBST( object_path, [Debug] ) AC_MSG_RESULT(yes)],
-  [AC_SUBST( cppflag, [] ) AC_SUBST( cxxflag, [-O2] ) AC_SUBST( object_path, [Release] ) AC_MSG_RESULT(no)])
+# Check compiler and use -Wall if gnu
+if test x"$GXX" = "xyes"; then
+  CXXFLAGS="${CXXFLAGS} -Wall -Wextra"
+  # Add -Werror in debug mode
+  if test x"${enable_debug+set}" = xset; then
+    CXXFLAGS="${CXXFLAGS} -Werror"
+  fi
+fi
 
 # Checks for functions
 AC_CHECK_FUNC(gettimeofday, [cppflag="$cppflag -DHAVE_GETTIMEOFDAY"], )
-
-# Set paths if prefix is defined
-if test "x$prefix" != "x" && test "x$prefix" != "xNONE"; then
-  LIBS="$LIBS -L$prefix/lib"
-  CPPFLAGS="$CPPFLAGS -I$prefix/include"
-fi
-
-# For -I and -D flags
-CPPFLAGS="$CPPFLAGS $cppflag"
-
-# For debugging and optimization ... overwrite default because it has both -g and -O2
-#CXXFLAGS="$CXXFLAGS $cxxflag"
-CXXFLAGS="$cxxflag"
-
-# Check compiler and use -Wall if gnu.
-if [test $GXX = "yes" ;] then
-  AC_SUBST( cxxflag, ["-Wall -Wextra"] )
-fi
-
-CXXFLAGS="$CXXFLAGS $cxxflag"
 
 # Checks for doxygen
 AC_CHECK_PROG( DOXYGEN, [doxygen], [doxygen] )
