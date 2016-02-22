@@ -1,6 +1,6 @@
 RtAudio - a set of C++ classes which provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio, and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound, ASIO and WASAPI) operating systems.
 
-By Gary P. Scavone, 2001-2014.
+By Gary P. Scavone, 2001-2016.
 
 To configure and compile (on Unix systems and MinGW):
 
@@ -10,13 +10,11 @@ To configure and compile (on Unix systems and MinGW):
 
    ./configure
 
-   If you checked out the code from git, please run "autoconf" before "./configure".
+   If you checked out the code from git, just run "autogen.sh".
 
-3. Typing "make" will compile static and shared libraries.
+3. Typing "make" will compile static and shared libraries, as well as the example programs in the "tests/" directory.
 
-4. From within the "tests" directory, type "make" to compile the example programs.
-
-A few options can be passed to configure, including:
+A few options can be passed to configure (or the autogen.sh script), including:
 
   --enable-debug = enable various debug output
   --with-alsa = choose native ALSA API support (linux only)
