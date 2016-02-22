@@ -32,7 +32,7 @@ Changes in the 4.1.0 release included:
 
 \section download Download
 
-Latest Release (?? February 2016): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.2.tar.gz">Version 4.1.2</A>
+Latest Release (22 February 2016): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.2.tar.gz">Version 4.1.2</A>
 
 \section documentation Documentation Links
 
