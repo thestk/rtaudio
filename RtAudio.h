@@ -86,6 +86,7 @@ static const RtAudioFormat RTAUDIO_FLOAT64 = 0x20; // Normalized between plus/mi
     - \e RTAUDIO_MINIMIZE_LATENCY: Attempt to set stream parameters for lowest possible latency.
     - \e RTAUDIO_HOG_DEVICE:       Attempt grab device for exclusive use.
     - \e RTAUDIO_ALSA_USE_DEFAULT: Use the "default" PCM device (ALSA only).
+    - \e RTAUDIO_JACK_DONT_CONNECT: Do not automatically connect ports (JACK only).
 
     By default, RtAudio streams pass and receive audio data from the
     client in an interleaved format.  By passing the
@@ -117,6 +118,9 @@ static const RtAudioFormat RTAUDIO_FLOAT64 = 0x20; // Normalized between plus/mi
     If the RTAUDIO_ALSA_USE_DEFAULT flag is set, RtAudio will attempt to
     open the "default" PCM device when using the ALSA API. Note that this
     will override any specified input or output device id.
+
+    If the RTAUDIO_JACK_DONT_CONNECT flag is set, RtAudio will not attempt
+    to automatically connect the ports of the client to the audio device.
 */
 typedef unsigned int RtAudioStreamFlags;
 static const RtAudioStreamFlags RTAUDIO_NONINTERLEAVED = 0x1;    // Use non-interleaved buffers (default = interleaved).
@@ -124,6 +128,7 @@ static const RtAudioStreamFlags RTAUDIO_MINIMIZE_LATENCY = 0x2;  // Attempt to s
 static const RtAudioStreamFlags RTAUDIO_HOG_DEVICE = 0x4;        // Attempt grab device and prevent use by others.
 static const RtAudioStreamFlags RTAUDIO_SCHEDULE_REALTIME = 0x8; // Try to select realtime scheduling for callback thread.
 static const RtAudioStreamFlags RTAUDIO_ALSA_USE_DEFAULT = 0x10; // Use the "default" PCM device (ALSA only).
+static const RtAudioStreamFlags RTAUDIO_JACK_DONT_CONNECT = 0x20; // Do not automatically connect ports (JACK only).
 
 /*! \typedef typedef unsigned long RtAudioStreamStatus;
     \brief RtAudio stream status (over- or underflow) flags.
@@ -912,6 +917,8 @@ public:
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options );
+
+  bool shouldAutoconnect_;
 };
 
 #endif
