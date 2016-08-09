@@ -214,22 +214,22 @@ class RtAudioError : public std::exception
   };
 
   //! The constructor.
-  RtAudioError( const std::string& message, Type type = RtAudioError::UNSPECIFIED ) throw() : message_(message), type_(type) {}
+  RtAudioError( const std::string& message, Type type = RtAudioError::UNSPECIFIED )  : message_(message), type_(type) {}
  
   //! The destructor.
-  virtual ~RtAudioError( void ) throw() {}
+  virtual ~RtAudioError( void ) {}
 
   //! Prints thrown error message to stderr.
-  virtual void printMessage( void ) const throw() { std::cerr << '\n' << message_ << "\n\n"; }
+  virtual void printMessage( void ) const { std::cerr << '\n' << message_ << "\n\n"; }
 
   //! Returns the thrown error message type.
-  virtual const Type& getType(void) const throw() { return type_; }
+  virtual const Type& getType(void) const { return type_; }
 
   //! Returns the thrown error message string.
-  virtual const std::string& getMessage(void) const throw() { return message_; }
+  virtual const std::string& getMessage(void) const { return message_; }
 
   //! Returns the thrown error message as a c-style string.
-  virtual const char* what( void ) const throw() { return message_.c_str(); }
+  virtual const char* what( void ) const { return message_.c_str(); }
 
  protected:
   std::string message_;
@@ -375,7 +375,7 @@ class RtAudio
   };
 
   //! A static function to determine the current RtAudio version.
-  static std::string getVersion( void ) throw();
+  static std::string getVersion( void );
 
   //! A static function to determine the available compiled audio APIs.
   /*!
@@ -383,7 +383,7 @@ class RtAudio
     the enumerated list values.  Note that there can be more than one
     API compiled for certain operating systems.
   */
-  static void getCompiledApi( std::vector<RtAudio::Api> &apis ) throw();
+  static void getCompiledApi( std::vector<RtAudio::Api> &apis );
 
   //! The class constructor.
   /*!
@@ -401,10 +401,10 @@ class RtAudio
     If a stream is running or open, it will be stopped and closed
     automatically.
   */
-  ~RtAudio() throw();
+  ~RtAudio();
 
   //! Returns the audio API specifier for the current instance of RtAudio.
-  RtAudio::Api getCurrentApi( void ) throw();
+  RtAudio::Api getCurrentApi( void );
 
   //! A public function that queries for the number of audio devices available.
   /*!
@@ -412,7 +412,7 @@ class RtAudio
     is called, thus supporting devices connected \e after instantiation. If
     a system error occurs during processing, a warning will be issued. 
   */
-  unsigned int getDeviceCount( void ) throw();
+  unsigned int getDeviceCount( void );
 
   //! Return an RtAudio::DeviceInfo structure for a specified device number.
   /*!
@@ -435,7 +435,7 @@ class RtAudio
     client's responsibility to verify that a device is available
     before attempting to open a stream.
   */
-  unsigned int getDefaultOutputDevice( void ) throw();
+  unsigned int getDefaultOutputDevice( void );
 
   //! A function that returns the index of the default input device.
   /*!
@@ -445,7 +445,7 @@ class RtAudio
     client's responsibility to verify that a device is available
     before attempting to open a stream.
   */
-  unsigned int getDefaultInputDevice( void ) throw();
+  unsigned int getDefaultInputDevice( void );
 
   //! A public function for opening a stream with the specified parameters.
   /*!
@@ -498,7 +498,7 @@ class RtAudio
     If a stream is not open, this function issues a warning and
     returns (no exception is thrown).
   */
-  void closeStream( void ) throw();
+  void closeStream( void );
 
   //! A function that starts a stream.
   /*!
@@ -528,10 +528,10 @@ class RtAudio
   void abortStream( void );
 
   //! Returns true if a stream is open and false if not.
-  bool isStreamOpen( void ) const throw();
+  bool isStreamOpen( void ) const;
 
   //! Returns true if the stream is running and false if it is stopped or not open.
-  bool isStreamRunning( void ) const throw();
+  bool isStreamRunning( void ) const;
 
   //! Returns the number of elapsed seconds since the stream was started.
   /*!
@@ -565,7 +565,7 @@ class RtAudio
   unsigned int getStreamSampleRate( void );
 
   //! Specify whether warning messages should be printed to stderr.
-  void showWarnings( bool value = true ) throw();
+  void showWarnings( bool value = true );
 
  protected:
 
@@ -824,22 +824,22 @@ protected:
 //
 // **************************************************************** //
 
-inline RtAudio::Api RtAudio :: getCurrentApi( void ) throw() { return rtapi_->getCurrentApi(); }
-inline unsigned int RtAudio :: getDeviceCount( void ) throw() { return rtapi_->getDeviceCount(); }
+inline RtAudio::Api RtAudio :: getCurrentApi( void ) { return rtapi_->getCurrentApi(); }
+inline unsigned int RtAudio :: getDeviceCount( void ) { return rtapi_->getDeviceCount(); }
 inline RtAudio::DeviceInfo RtAudio :: getDeviceInfo( unsigned int device ) { return rtapi_->getDeviceInfo( device ); }
-inline unsigned int RtAudio :: getDefaultInputDevice( void ) throw() { return rtapi_->getDefaultInputDevice(); }
-inline unsigned int RtAudio :: getDefaultOutputDevice( void ) throw() { return rtapi_->getDefaultOutputDevice(); }
-inline void RtAudio :: closeStream( void ) throw() { return rtapi_->closeStream(); }
+inline unsigned int RtAudio :: getDefaultInputDevice( void ) { return rtapi_->getDefaultInputDevice(); }
+inline unsigned int RtAudio :: getDefaultOutputDevice( void ) { return rtapi_->getDefaultOutputDevice(); }
+inline void RtAudio :: closeStream( void ) { return rtapi_->closeStream(); }
 inline void RtAudio :: startStream( void ) { return rtapi_->startStream(); }
 inline void RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
 inline void RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
-inline bool RtAudio :: isStreamOpen( void ) const throw() { return rtapi_->isStreamOpen(); }
-inline bool RtAudio :: isStreamRunning( void ) const throw() { return rtapi_->isStreamRunning(); }
+inline bool RtAudio :: isStreamOpen( void ) const { return rtapi_->isStreamOpen(); }
+inline bool RtAudio :: isStreamRunning( void ) const { return rtapi_->isStreamRunning(); }
 inline long RtAudio :: getStreamLatency( void ) { return rtapi_->getStreamLatency(); }
 inline unsigned int RtAudio :: getStreamSampleRate( void ) { return rtapi_->getStreamSampleRate(); }
 inline double RtAudio :: getStreamTime( void ) { return rtapi_->getStreamTime(); }
 inline void RtAudio :: setStreamTime( double time ) { return rtapi_->setStreamTime( time ); }
-inline void RtAudio :: showWarnings( bool value ) throw() { rtapi_->showWarnings( value ); }
+inline void RtAudio :: showWarnings( bool value ) { rtapi_->showWarnings( value ); }
 
 // RtApi Subclass prototypes.
 
