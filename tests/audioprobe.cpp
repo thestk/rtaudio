@@ -23,6 +23,7 @@ int main()
   apiMap[RtAudio::LINUX_ALSA] = "Linux ALSA";
   apiMap[RtAudio::LINUX_PULSE] = "Linux PulseAudio";
   apiMap[RtAudio::LINUX_OSS] = "Linux OSS";
+  apiMap[RtAudio::GENODE_AUDIO] = "Genode Audio_out and Audio_in";
   apiMap[RtAudio::RTAUDIO_DUMMY] = "RtAudio Dummy";
 
   std::vector< RtAudio::Api > apis;
