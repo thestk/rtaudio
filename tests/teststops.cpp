@@ -107,8 +107,8 @@ int main( int argc, char *argv[] )
   // Let RtAudio print messages to stderr.
   adc->showWarnings( true );
 
-  runtime = RUNTIME * 1000;
-  pausetime = PAUSETIME * 1000;
+  runtime = static_cast<unsigned int>(RUNTIME * 1000);
+  pausetime = static_cast<unsigned int>(PAUSETIME * 1000);
 
   // Set our stream parameters for a duplex stream.
   bufferFrames = 512;
@@ -127,7 +127,7 @@ int main( int argc, char *argv[] )
     oParams.deviceId = adc->getDefaultOutputDevice();
 
   // First, test external stopStream() calls.
-  mydata.pulseCount = PULSE_RATE * fs;
+  mydata.pulseCount = static_cast<unsigned int>(PULSE_RATE * fs);
   mydata.nFrames = 50 * fs;
   mydata.returnValue = 0;
   try {
