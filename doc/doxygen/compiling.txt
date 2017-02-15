@@ -57,7 +57,7 @@ In order to compile RtAudio for a specific OS and audio API, it is necessary to 
   <TD>RtApiCore</TD>
   <TD>__MACOSX_CORE__</TD>
   <TD><TT>pthread, CoreAudio</TT></TD>
-  <TD><TT>g++ -Wall -D__MACOSX_CORE__ -o audioprobe audioprobe.cpp RtAudio.cpp -framework CoreAudio -lpthread</TT></TD>
+  <TD><TT>g++ -Wall -D__MACOSX_CORE__ -o audioprobe audioprobe.cpp RtAudio.cpp -framework CoreAudio -framework CoreFoundation -lpthread</TT></TD>
 </TR>
 <TR>
   <TD>Windows</TD>
