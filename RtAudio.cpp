@@ -3926,7 +3926,7 @@ void convertBufferWasapi( char* outBuffer,
           {
             char fromSample = ( ( char* ) inBuffer )[ ( inSample * channelCount ) + channel ];
             char toSample = ( ( char* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - floor( inSampleFraction ) );
+            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
             ( ( char* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( char ) sampleDiff;
           }
           break;
@@ -3937,7 +3937,7 @@ void convertBufferWasapi( char* outBuffer,
           {
             short fromSample = ( ( short* ) inBuffer )[ ( inSample * channelCount ) + channel ];
             short toSample = ( ( short* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - floor( inSampleFraction ) );
+            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
             ( ( short* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( short ) sampleDiff;
           }
           break;
@@ -3948,7 +3948,7 @@ void convertBufferWasapi( char* outBuffer,
           {
             int fromSample = ( ( S24* ) inBuffer )[ ( inSample * channelCount ) + channel ].asInt();
             int toSample = ( ( S24* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ].asInt();
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - floor( inSampleFraction ) );
+            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
             ( ( S24* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( int ) sampleDiff;
           }
           break;
@@ -3959,7 +3959,7 @@ void convertBufferWasapi( char* outBuffer,
           {
             int fromSample = ( ( int* ) inBuffer )[ ( inSample * channelCount ) + channel ];
             int toSample = ( ( int* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - floor( inSampleFraction ) );
+            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
             ( ( int* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( int ) sampleDiff;
           }
           break;
@@ -3970,7 +3970,7 @@ void convertBufferWasapi( char* outBuffer,
           {
             float fromSample = ( ( float* ) inBuffer )[ ( inSample * channelCount ) + channel ];
             float toSample = ( ( float* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - floor( inSampleFraction ) );
+            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
             ( ( float* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + sampleDiff;
           }
           break;
@@ -3981,7 +3981,7 @@ void convertBufferWasapi( char* outBuffer,
           {
             double fromSample = ( ( double* ) inBuffer )[ ( inSample * channelCount ) + channel ];
             double toSample = ( ( double* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            double sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - floor( inSampleFraction ) );
+            double sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
             ( ( double* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + sampleDiff;
           }
           break;
