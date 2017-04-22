@@ -3917,72 +3917,81 @@ void convertBufferWasapi( char* outBuffer,
     for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
     {
       unsigned int inSample = ( unsigned int ) inSampleFraction;
+      float inSampleDec = inSampleFraction - inSample;
+      unsigned int frameInSample = inSample * channelCount;
+      unsigned int frameOutSample = outSample * channelCount;
 
       switch ( format )
       {
         case RTAUDIO_SINT8:
         {
+          char* convInBuffer = ( char* ) inBuffer;
           for ( unsigned int channel = 0; channel < channelCount; channel++ )
           {
-            char fromSample = ( ( char* ) inBuffer )[ ( inSample * channelCount ) + channel ];
-            char toSample = ( ( char* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
-            ( ( char* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( char ) sampleDiff;
+            char fromSample = convInBuffer[ frameInSample + channel ];
+            char toSample = convInBuffer[ frameInSample + channelCount + channel ];
+            char sampleDiff = ( char ) ( ( toSample - fromSample ) * inSampleDec );
+            ( ( char* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
           }
           break;
         }
         case RTAUDIO_SINT16:
         {
+          short* convInBuffer = ( short* ) inBuffer;
           for ( unsigned int channel = 0; channel < channelCount; channel++ )
           {
-            short fromSample = ( ( short* ) inBuffer )[ ( inSample * channelCount ) + channel ];
-            short toSample = ( ( short* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
-            ( ( short* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( short ) sampleDiff;
+            short fromSample = convInBuffer[ frameInSample + channel ];
+            short toSample = convInBuffer[ frameInSample + channelCount + channel ];
+            short sampleDiff = ( short ) ( ( toSample - fromSample ) * inSampleDec );
+            ( ( short* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
           }
           break;
         }
         case RTAUDIO_SINT24:
         {
+          S24* convInBuffer = ( S24* ) inBuffer;
           for ( unsigned int channel = 0; channel < channelCount; channel++ )
           {
-            int fromSample = ( ( S24* ) inBuffer )[ ( inSample * channelCount ) + channel ].asInt();
-            int toSample = ( ( S24* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ].asInt();
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
-            ( ( S24* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( int ) sampleDiff;
+            int fromSample = convInBuffer[ frameInSample + channel ].asInt();
+            int toSample = convInBuffer[ frameInSample + channelCount + channel ].asInt();
+            int sampleDiff = ( int ) ( ( toSample - fromSample ) * inSampleDec );
+            ( ( S24* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
           }
           break;
         }
         case RTAUDIO_SINT32:
         {
+          int* convInBuffer = ( int* ) inBuffer;
           for ( unsigned int channel = 0; channel < channelCount; channel++ )
           {
-            int fromSample = ( ( int* ) inBuffer )[ ( inSample * channelCount ) + channel ];
-            int toSample = ( ( int* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
-            ( ( int* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + ( int ) sampleDiff;
+            int fromSample = convInBuffer[ frameInSample + channel ];
+            int toSample = convInBuffer[ frameInSample + channelCount + channel ];
+            int sampleDiff = ( int ) ( ( toSample - fromSample ) * inSampleDec );
+            ( ( int* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
           }
           break;
         }
         case RTAUDIO_FLOAT32:
         {
+          float* convInBuffer = ( float* ) inBuffer;
           for ( unsigned int channel = 0; channel < channelCount; channel++ )
           {
-            float fromSample = ( ( float* ) inBuffer )[ ( inSample * channelCount ) + channel ];
-            float toSample = ( ( float* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            float sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
-            ( ( float* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + sampleDiff;
+            float fromSample = convInBuffer[ frameInSample + channel ];
+            float toSample = convInBuffer[ frameInSample + channelCount + channel ];
+            float sampleDiff = ( toSample - fromSample ) * inSampleDec;
+            ( ( float* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
           }
           break;
         }
         case RTAUDIO_FLOAT64:
         {
+          double* convInBuffer = ( double* ) inBuffer;
           for ( unsigned int channel = 0; channel < channelCount; channel++ )
           {
-            double fromSample = ( ( double* ) inBuffer )[ ( inSample * channelCount ) + channel ];
-            double toSample = ( ( double* ) inBuffer )[ ( ( inSample + 1 ) * channelCount ) + channel ];
-            double sampleDiff = ( toSample - fromSample ) * ( inSampleFraction - inSample );
-            ( ( double* ) outBuffer )[ ( outSample * channelCount ) + channel ] = fromSample + sampleDiff;
+            double fromSample = convInBuffer[ frameInSample + channel ];
+            double toSample = convInBuffer[ frameInSample + channelCount + channel ];
+            double sampleDiff = ( toSample - fromSample ) * inSampleDec;
+            ( ( double* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
           }
           break;
         }
