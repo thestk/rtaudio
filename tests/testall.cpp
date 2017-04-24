@@ -66,7 +66,7 @@ int sawni( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrame
   if ( status )
     std::cout << "Stream underflow detected!" << std::endl;
 
-  float increment;
+  double increment;
   for ( j=0; j<channels; j++ ) {
     increment = BASE_RATE * (j+1+(j*0.1));
     for ( i=0; i<nBufferFrames; i++ ) {
