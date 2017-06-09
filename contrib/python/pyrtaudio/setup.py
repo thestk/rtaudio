@@ -18,8 +18,7 @@ sources = ['rtaudiomodule.cpp', '../../../RtAudio.cpp']
 
 if OSNAME == 'Linux':
     define_macros=[("__LINUX_ALSA__", ''),
-                   ('__LINUX_JACK__', ''),
-                   ('__LINUX_OSS__', '')]
+                   ('__LINUX_JACK__', '')]
     libraries = ['asound', 'jack', 'pthread']
 
 elif OSNAME == 'Darwin':
