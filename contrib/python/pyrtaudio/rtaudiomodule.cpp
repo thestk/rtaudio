@@ -48,7 +48,7 @@ extern "C" {
         PyObject *callback_func;
     } PyRtAudio;
 
-    static PyObject *RtAudioError;
+    static PyObject *RtAudioErrorException;
 
     static int callback(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
         double streamTime, RtAudioStreamStatus status, void *data )
@@ -151,9 +151,9 @@ extern "C" {
             else if(!strcmp(api, "directsound"))
                 self->dac = new RtAudio(RtAudio::WINDOWS_DS);
         }
-        catch (RtError &error) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch (RtAudioError &error) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
 
@@ -261,9 +261,9 @@ extern "C" {
                 self->dac->closeStream();
             self->dac->openStream(&oParams, &iParams, self->_format, fs, &bf, &callback, self, &options);
         }
-        catch ( RtError& error ) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch ( RtAudioError& error ) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
 
@@ -281,9 +281,9 @@ extern "C" {
             self->dac->closeStream();
             Py_CLEAR(self->callback_func);
         }
-        catch(RtError &error) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch(RtAudioError &error) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
 
@@ -297,9 +297,9 @@ extern "C" {
         try {
             self->dac->startStream();
         }
-        catch(RtError &error) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch(RtAudioError &error) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
 
@@ -315,9 +315,9 @@ extern "C" {
         try {
             self->dac->stopStream();
         }
-        catch(RtError &error) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch(RtAudioError &error) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
 
@@ -332,9 +332,9 @@ extern "C" {
         try {
             self->dac->abortStream();
         }
-        catch(RtError &error) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch(RtAudioError &error) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
         Py_RETURN_NONE;
@@ -430,9 +430,9 @@ extern "C" {
             return info_dict;
 
         }
-        catch(RtError &error) {
-            PyErr_SetString(RtAudioError, error.getMessage().c_str());
-            Py_INCREF(RtAudioError);
+        catch(RtAudioError &error) {
+            PyErr_SetString(RtAudioErrorException, error.getMessage().c_str());
+            Py_INCREF(RtAudioErrorException);
             return NULL;
         }
     }
@@ -598,8 +598,8 @@ extern "C" {
         Py_INCREF(&RtAudio_type);
         PyModule_AddObject(module, "RtAudio", (PyObject *)&RtAudio_type);
 
-        RtAudioError = PyErr_NewException("rtaudio.RtError", NULL, NULL);
-        Py_INCREF(RtAudioError);
-        PyModule_AddObject(module, "RtError", RtAudioError);
+        RtAudioErrorException = PyErr_NewException("rtaudio.RtError", NULL, NULL);
+        Py_INCREF(RtAudioErrorException);
+        PyModule_AddObject(module, "RtError", RtAudioErrorException);
     }
 }
