@@ -52,6 +52,10 @@
 #include <exception>
 #include <iostream>
 
+#ifndef _GLIBCXX_USE_NOEXCEPT
+#define _GLIBCXX_USE_NOEXCEPT
+#endif
+
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
 
@@ -217,7 +221,7 @@ class RtAudioError : public std::exception
   RtAudioError( const std::string& message, Type type = RtAudioError::UNSPECIFIED )  : message_(message), type_(type) {}
  
   //! The destructor.
-  virtual ~RtAudioError( void ) {}
+  virtual ~RtAudioError( void ) _GLIBCXX_USE_NOEXCEPT {}
 
   //! Prints thrown error message to stderr.
   virtual void printMessage( void ) const { std::cerr << '\n' << message_ << "\n\n"; }
@@ -229,7 +233,7 @@ class RtAudioError : public std::exception
   virtual const std::string& getMessage(void) const { return message_; }
 
   //! Returns the thrown error message as a c-style string.
-  virtual const char* what( void ) const { return message_.c_str(); }
+  virtual const char* what( void ) const _GLIBCXX_USE_NOEXCEPT { return message_.c_str(); }
 
  protected:
   std::string message_;
