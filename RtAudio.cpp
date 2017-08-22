@@ -5363,8 +5363,8 @@ RtApiDs :: RtApiDs()
 
 RtApiDs :: ~RtApiDs()
 {
-  if ( coInitialized_ ) CoUninitialize(); // balanced call.
   if ( stream_.state != STREAM_CLOSED ) closeStream();
+  if ( coInitialized_ ) CoUninitialize(); // balanced call.
 }
 
 // The DirectSound default output is always the first device.
