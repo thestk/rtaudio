@@ -92,12 +92,12 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 //
 // *************************************************** //
 
-std::string RtAudio :: getVersion( void ) throw()
+std::string RtAudio :: getVersion( void )
 {
   return RTAUDIO_VERSION;
 }
 
-void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis ) throw()
+void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
 {
   apis.clear();
 
@@ -209,7 +209,7 @@ RtAudio :: RtAudio( RtAudio::Api api )
   throw( RtAudioError( errorText, RtAudioError::UNSPECIFIED ) );
 }
 
-RtAudio :: ~RtAudio() throw()
+RtAudio :: ~RtAudio()
 {
   if ( rtapi_ )
     delete rtapi_;
