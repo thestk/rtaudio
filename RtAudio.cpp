@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <climits>
+#include <cmath>
 #include <algorithm>
 
 // Static variable definitions.
@@ -3875,7 +3876,7 @@ void convertBufferWasapi( char* outBuffer,
   float sampleStep = 1.0f / sampleRatio;
   float inSampleFraction = 0.0f;
 
-  outSampleCount = ( unsigned int ) roundf( inSampleCount * sampleRatio );
+  outSampleCount = ( unsigned int ) std::roundf( inSampleCount * sampleRatio );
 
   // if inSampleRate is a multiple of outSampleRate (or vice versa) there's no need to interpolate
   if ( floor( sampleRatio ) == sampleRatio || floor( sampleRatioInv ) == sampleRatioInv )
