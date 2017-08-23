@@ -49,20 +49,8 @@
 
 #include <string>
 #include <vector>
-#include <exception>
+#include <stdexcept>
 #include <iostream>
-
-#ifndef _NOEXCEPT
-#ifdef _GLIBCXX_NOEXCEPT
-#define _NOEXCEPT _GLIBCXX_NOEXCEPT
-#else
-#ifdef _GLIBCXX_USE_NOEXCEPT
-#define _NOEXCEPT _GLIBCXX_USE_NOEXCEPT
-#else
-#define _NOEXCEPT
-#endif
-#endif
-#endif
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -207,7 +195,7 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
 */
 /************************************************************************/
 
-class RtAudioError : public std::exception
+class RtAudioError : public std::runtime_error
 {
  public:
   //! Defined RtAudioError types.
@@ -226,25 +214,22 @@ class RtAudioError : public std::exception
   };
 
   //! The constructor.
-  RtAudioError( const std::string& message, Type type = RtAudioError::UNSPECIFIED )  : message_(message), type_(type) {}
- 
-  //! The destructor.
-  virtual ~RtAudioError( void ) _NOEXCEPT {}
+  RtAudioError( const std::string& message,
+                Type type = RtAudioError::UNSPECIFIED )
+    : std::runtime_error(message), type_(type) {}
 
   //! Prints thrown error message to stderr.
-  virtual void printMessage( void ) const { std::cerr << '\n' << message_ << "\n\n"; }
+  virtual void printMessage( void ) const
+    { std::cerr << '\n' << what() << "\n\n"; }
 
   //! Returns the thrown error message type.
   virtual const Type& getType(void) const { return type_; }
 
   //! Returns the thrown error message string.
-  virtual const std::string& getMessage(void) const { return message_; }
-
-  //! Returns the thrown error message as a c-style string.
-  virtual const char* what( void ) const _NOEXCEPT { return message_.c_str(); }
+  virtual const std::string getMessage(void) const
+    { return std::string(what()); }
 
  protected:
-  std::string message_;
   Type type_;
 };
 
