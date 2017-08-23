@@ -428,6 +428,9 @@ void RtApi :: setStreamTime( double time )
 
   if ( time >= 0.0 )
     stream_.streamTime = time;
+#if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+#endif
 }
 
 unsigned int RtApi :: getStreamSampleRate( void )
