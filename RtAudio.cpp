@@ -1947,7 +1947,7 @@ struct JackHandle {
 static void jackSilentError( const char * ) {};
 
 RtApiJack :: RtApiJack()
-{
+    :shouldAutoconnect_(true) {
   // Nothing to do here.
 #if !defined(__RTAUDIO_DEBUG__)
   // Turn off Jack's internal error reporting.
@@ -2358,6 +2358,8 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // here.
   if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, 0 );
 
+  if ( options && options->flags & RTAUDIO_JACK_DONT_CONNECT ) shouldAutoconnect_ = false;
+
   return SUCCESS;
 
  error:
@@ -2447,7 +2449,7 @@ void RtApiJack :: startStream( void )
   const char **ports;
 
   // Get the list of available ports.
-  if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
+  if ( shouldAutoconnect_ && (stream_.mode == OUTPUT || stream_.mode == DUPLEX) ) {
     result = 1;
     ports = jack_get_ports( handle->client, handle->deviceName[0].c_str(), NULL, JackPortIsInput);
     if ( ports == NULL) {
@@ -2471,7 +2473,7 @@ void RtApiJack :: startStream( void )
     free(ports);
   }
 
-  if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
+  if ( shouldAutoconnect_ && (stream_.mode == INPUT || stream_.mode == DUPLEX) ) {
     result = 1;
     ports = jack_get_ports( handle->client, handle->deviceName[1].c_str(), NULL, JackPortIsOutput );
     if ( ports == NULL) {
