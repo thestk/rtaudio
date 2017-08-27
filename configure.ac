@@ -131,17 +131,21 @@ AS_IF([test "x$with_jack" == "xyes"], [
 
 case $host in
   *-*-netbsd*)
+  if [test "$api" == ""; ] then
     AC_MSG_RESULT(using OSS)
     api="$api -D__LINUX_OSS__"
     LIBS="$LIBS -lossaudio"
     AC_CHECK_LIB(pthread, pthread_create, , AC_MSG_ERROR(RtAudio requires the pthread library!))
+  fi
   ;;
 
   *-*-freebsd*)
+  if [test "$api" == ""; ] then
     AC_MSG_RESULT(using OSS)
     api="$api -D__LINUX_OSS__"
     LIBS="$LIBS -lossaudio"
     AC_CHECK_LIB(pthread, pthread_create, , AC_MSG_ERROR(RtAudio requires the pthread library!))
+  fi
   ;;
 
   *-*-linux*)
