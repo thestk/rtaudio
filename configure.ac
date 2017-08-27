@@ -135,8 +135,7 @@ case $host in
   AS_IF([test "x$with_jack" == "xyes"], [
     api="$api -D__UNIX_JACK__"
     AC_MSG_RESULT(using JACK)
-    AC_CHECK_LIB(jack, jack_client_open, , AC_MSG_ERROR(JACK support requires the jack library!))
-    AC_CHECK_LIB(asound, snd_pcm_open, , AC_MSG_ERROR(Jack support also requires the asound library!))])
+    AC_CHECK_LIB(jack, jack_client_open, , AC_MSG_ERROR(JACK support requires the jack library!))])
 
   # Look for ALSA flag
   AC_ARG_WITH(alsa, [  --with-alsa = choose native ALSA API support (linux only)])
