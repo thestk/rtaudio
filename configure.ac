@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(RtAudio, 4.1.2, gary@music.mcgill.ca, rtaudio)
+AC_INIT(RtAudio, 5.0.0, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
 AC_CONFIG_FILES([rtaudio.pc Makefile tests/Makefile doc/Makefile doc/doxygen/Doxyfile])
@@ -18,7 +18,7 @@ AM_INIT_AUTOMAKE([1.14 -Wall -Werror foreign subdir-objects])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-m4_define([lt_current], 5)
+m4_define([lt_current], 6)
 m4_define([lt_revision], 0)
 m4_define([lt_age], 0)
 
@@ -164,7 +164,7 @@ case $host in
     AC_CHECK_LIB(pulse-simple, pa_simple_flush, , AC_MSG_ERROR(PulseAudio support requires the pulse-simple library!))])
 
   # Look for OSS flag
-  AC_ARG_WITH(oss, [  --with-oss = choose OSS API support (linux only)])
+  AC_ARG_WITH(oss, [  --with-oss = choose OSS API support (unixes)])
   AS_IF([test "x$with_oss" == "xyes"], [
     api="$api -D__LINUX_OSS__"
     AC_MSG_RESULT(using OSS)])

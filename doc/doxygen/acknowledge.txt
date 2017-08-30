@@ -2,6 +2,7 @@
 
 Many thanks to the following people for providing bug fixes and improvements:
 <UL>
+<LI>Stephen Sinclair (major code and repository support!)</LI>
 <LI>Stefan Arisona</LI>
 <LI>Vincent B&eacute;nony</LI>
 <LI>Rasmus Ekman</LI>
