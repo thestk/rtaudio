@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT(RtAudio, 5.0.0, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_SRCDIR(RtAudio.cpp)
+AC_CONFIG_SRCDIR(RtAudio.cpp rtaudio_c.cpp)
 AC_CONFIG_FILES([rtaudio.pc Makefile tests/Makefile doc/Makefile doc/doxygen/Doxyfile])
 AM_INIT_AUTOMAKE([1.14 -Wall -Werror foreign subdir-objects])
 
