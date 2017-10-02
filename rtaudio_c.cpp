@@ -94,7 +94,7 @@ rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
     strncpy(result.name, info.name.c_str(), sizeof(result.name) - 1);
     for (unsigned int j = 0; j < info.sampleRates.size(); j++) {
       if (j < sizeof(result.sample_rates) / sizeof(result.sample_rates[0])) {
-	result.sample_rates[j] = info.sampleRates[j];
+        result.sample_rates[j] = info.sampleRates[j];
       }
     }
   } catch (RtAudioError &err) {
@@ -113,19 +113,19 @@ unsigned int rtaudio_get_default_input_device(rtaudio_t audio) {
 }
 
 static int proxy_cb_func(void *out, void *in, unsigned int nframes, double time,
-			 RtAudioStreamStatus status, void *userdata) {
+                         RtAudioStreamStatus status, void *userdata) {
   rtaudio_t audio = (rtaudio_t)userdata;
   return audio->cb(out, in, nframes, time, (rtaudio_stream_status_t)status,
-		   audio->userdata);
+                   audio->userdata);
 }
 
 int rtaudio_open_stream(rtaudio_t audio,
-			rtaudio_stream_parameters_t *output_params,
-			rtaudio_stream_parameters_t *input_params,
-			rtaudio_format_t format, unsigned int sample_rate,
-			unsigned int *buffer_frames, rtaudio_cb_t cb,
-			void *userdata, rtaudio_stream_options_t *options,
-			rtaudio_error_cb_t errcb) {
+                        rtaudio_stream_parameters_t *output_params,
+                        rtaudio_stream_parameters_t *input_params,
+                        rtaudio_format_t format, unsigned int sample_rate,
+                        unsigned int *buffer_frames, rtaudio_cb_t cb,
+                        void *userdata, rtaudio_stream_options_t *options,
+                        rtaudio_error_cb_t errcb) {
   (void)errcb;
   try {
     audio->has_error = 0;
@@ -155,15 +155,15 @@ int rtaudio_open_stream(rtaudio_t audio,
       stream_opts.numberOfBuffers = options->num_buffers;
       stream_opts.priority = options->priority;
       if (strlen(options->name) > 0) {
-	stream_opts.streamName = std::string(options->name);
+        stream_opts.streamName = std::string(options->name);
       }
       opts = &stream_opts;
     }
     audio->cb = cb;
     audio->userdata = userdata;
     audio->audio->openStream(out, in, (RtAudioFormat)format, sample_rate,
-			     buffer_frames, proxy_cb_func, (void *)audio, opts,
-			     NULL);
+                             buffer_frames, proxy_cb_func, (void *)audio, opts,
+                             NULL);
     return 0;
   } catch (RtAudioError &err) {
     audio->has_error = 1;

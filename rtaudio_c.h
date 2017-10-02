@@ -34,8 +34,8 @@ typedef unsigned int rtaudio_stream_status_t;
 #define RTAUDIO_STATUS_OUTPUT_UNDERFLOW 0x2
 
 typedef int (*rtaudio_cb_t)(void *out, void *in, unsigned int nFrames,
-			    double stream_time, rtaudio_stream_status_t status,
-			    void *userdata);
+                            double stream_time, rtaudio_stream_status_t status,
+                            void *userdata);
 
 typedef enum rtaudio_error {
   RTAUDIO_ERROR_WARNING,
@@ -112,17 +112,17 @@ RTAUDIOAPI rtaudio_api_t rtaudio_current_api(rtaudio_t audio);
 
 RTAUDIOAPI int rtaudio_device_count(rtaudio_t audio);
 RTAUDIOAPI rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio,
-							 int i);
+                                                         int i);
 RTAUDIOAPI unsigned int rtaudio_get_default_output_device(rtaudio_t audio);
 RTAUDIOAPI unsigned int rtaudio_get_default_input_device(rtaudio_t audio);
 
 RTAUDIOAPI int
 rtaudio_open_stream(rtaudio_t audio, rtaudio_stream_parameters_t *output_params,
-		    rtaudio_stream_parameters_t *input_params,
-		    rtaudio_format_t format, unsigned int sample_rate,
-		    unsigned int *buffer_frames, rtaudio_cb_t cb,
-		    void *userdata, rtaudio_stream_options_t *options,
-		    rtaudio_error_cb_t errcb);
+                    rtaudio_stream_parameters_t *input_params,
+                    rtaudio_format_t format, unsigned int sample_rate,
+                    unsigned int *buffer_frames, rtaudio_cb_t cb,
+                    void *userdata, rtaudio_stream_options_t *options,
+                    rtaudio_error_cb_t errcb);
 RTAUDIOAPI void rtaudio_close_stream(rtaudio_t audio);
 RTAUDIOAPI int rtaudio_start_stream(rtaudio_t audio);
 RTAUDIOAPI int rtaudio_stop_stream(rtaudio_t audio);
