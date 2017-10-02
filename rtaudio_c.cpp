@@ -126,6 +126,7 @@ int rtaudio_open_stream(rtaudio_t audio,
 			unsigned int *buffer_frames, rtaudio_cb_t cb,
 			void *userdata, rtaudio_stream_options_t *options,
 			rtaudio_error_cb_t errcb) {
+  (void)errcb;
   try {
     audio->has_error = 0;
     RtAudio::StreamParameters *in = NULL;
