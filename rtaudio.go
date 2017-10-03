@@ -134,7 +134,7 @@ type DeviceInfo struct {
 	SampleRates         []int
 }
 
-// StreamParams is the structure for specifying input or ouput stream parameters.
+// StreamParams is the structure for specifying input or output stream parameters.
 type StreamParams struct {
 	DeviceID     uint
 	NumChannels  uint
