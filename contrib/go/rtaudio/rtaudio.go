@@ -22,7 +22,7 @@ package rtaudio
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "rtaudio_c.h"
+#include "rtaudio_stub.h"
 
 extern int goCallback(void *out, void *in, unsigned int nFrames,
 	double stream_time, rtaudio_stream_status_t status, void *userdata);
