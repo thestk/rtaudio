@@ -13,7 +13,7 @@ func ExampleCompiledAPI() {
 	}
 }
 
-func ExampleListDevices() {
+func ExampleRtAudio_Devices() {
 	audio, err := Create(APIUnspecified)
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +28,7 @@ func ExampleListDevices() {
 	}
 }
 
-func ExamplePlaySine() {
+func ExampleRtAudio_Open() {
 	const (
 		sampleRate = 44100
 		bufSz      = 512
