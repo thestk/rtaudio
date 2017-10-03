@@ -20,12 +20,25 @@ package rtaudio
 #cgo darwin CXXFLAGS: -D__MACOSX_CORE__
 #cgo darwin LDFLAGS: -framework CoreAudio -framework CoreFoundation
 
+#include <stdlib.h>
+#include <stdint.h>
 #include "rtaudio_c.h"
 
 extern int goCallback(void *out, void *in, unsigned int nFrames,
-			    double stream_time, rtaudio_stream_status_t status,
-			    void *userdata);
+	double stream_time, rtaudio_stream_status_t status, void *userdata);
 
+static inline void cgoRtAudioOpenStream(rtaudio_t audio,
+	rtaudio_stream_parameters_t *output_params,
+	rtaudio_stream_parameters_t *input_params,
+	rtaudio_format_t format,
+	unsigned int sample_rate,
+	unsigned int *buffer_frames,
+	int cb_id,
+	rtaudio_stream_options_t *options) {
+		rtaudio_open_stream(audio, output_params, input_params,
+			format, sample_rate, buffer_frames,
+			goCallback, (void *)(uintptr_t)cb_id, options, NULL);
+}
 */
 import "C"
 import (
@@ -463,9 +476,8 @@ func (audio *rtaudio) Open(out, in *StreamParams, format Format, sampleRate uint
 	audio.cb = cb
 
 	k := registerAudio(audio)
-	C.rtaudio_open_stream(audio.audio, cOutPtr, cInPtr,
-		C.rtaudio_format_t(format), C.uint(sampleRate), &framesCount,
-		C.rtaudio_cb_t(C.goCallback), unsafe.Pointer(uintptr(k)), cOptsPtr, nil)
+	C.cgoRtAudioOpenStream(audio.audio, cOutPtr, cInPtr,
+		C.rtaudio_format_t(format), C.uint(sampleRate), &framesCount, C.int(k), cOptsPtr)
 	if C.rtaudio_error(audio.audio) != nil {
 		return errors.New(C.GoString(C.rtaudio_error(audio.audio)))
 	}
