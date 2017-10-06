@@ -79,7 +79,8 @@ int rtaudio_device_count(rtaudio_t audio) {
 }
 
 rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
-  rtaudio_device_info_t result = {};
+  rtaudio_device_info_t result;
+  std::memset(&result, 0, sizeof(result));
   try {
     audio->has_error = 0;
     RtAudio::DeviceInfo info = audio->audio->getDeviceInfo(i);
