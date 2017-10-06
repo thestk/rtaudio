@@ -15,7 +15,7 @@ package rtaudio
 #cgo jack LDFLAGS: -ljack
 
 #cgo windows CXXFLAGS: -D__WINDOWS_WASAPI__
-#cgo windows LDFLAGS: -lm -luuid -lksuser -lwinmm -lole32
+#cgo windows LDFLAGS: -lm -luuid -lksuser -lwinmm -lole32 -static
 
 #cgo darwin CXXFLAGS: -D__MACOSX_CORE__
 #cgo darwin LDFLAGS: -framework CoreAudio -framework CoreFoundation
@@ -120,7 +120,7 @@ func Version() string {
 
 // CompiledAPI determines the available compiled audio APIs.
 func CompiledAPI() (apis []API) {
-	capis := (*[1 << 30]C.rtaudio_api_t)(unsafe.Pointer(C.rtaudio_compiled_api()))
+	capis := (*[1 << 27]C.rtaudio_api_t)(unsafe.Pointer(C.rtaudio_compiled_api()))
 	for i := 0; ; i++ {
 		api := capis[i]
 		if api == C.RTAUDIO_API_UNSPECIFIED {
@@ -346,7 +346,7 @@ func (b *buffer) Int16() []int16 {
 	if b.ptr == nil {
 		return nil
 	}
-	return (*[1 << 30]int16)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
+	return (*[1 << 29]int16)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
 }
 
 func (b *buffer) Int24() []Int24 {
@@ -356,7 +356,7 @@ func (b *buffer) Int24() []Int24 {
 	if b.ptr == nil {
 		return nil
 	}
-	return (*[1 << 30]Int24)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
+	return (*[1 << 28]Int24)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
 }
 
 func (b *buffer) Int32() []int32 {
@@ -366,7 +366,7 @@ func (b *buffer) Int32() []int32 {
 	if b.ptr == nil {
 		return nil
 	}
-	return (*[1 << 30]int32)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
+	return (*[1 << 27]int32)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
 }
 
 func (b *buffer) Float32() []float32 {
@@ -376,7 +376,7 @@ func (b *buffer) Float32() []float32 {
 	if b.ptr == nil {
 		return nil
 	}
-	return (*[1 << 30]float32)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
+	return (*[1 << 27]float32)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
 }
 
 func (b *buffer) Float64() []float64 {
@@ -386,7 +386,7 @@ func (b *buffer) Float64() []float64 {
 	if b.ptr == nil {
 		return nil
 	}
-	return (*[1 << 30]float64)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
+	return (*[1 << 23]float64)(b.ptr)[:b.length*b.numChannels : b.length*b.numChannels]
 }
 
 // Callback is a client-defined function that will be invoked when input data
