@@ -3883,7 +3883,10 @@ void convertBufferWasapi( char* outBuffer,
   float sampleStep = 1.0f / sampleRatio;
   float inSampleFraction = 0.0f;
 
-  outSampleCount = ( unsigned int ) std::roundf( inSampleCount * sampleRatio );
+  // for cmath functions
+  using namespace std;
+
+  outSampleCount = ( unsigned int ) roundf( inSampleCount * sampleRatio );
 
   // if inSampleRate is a multiple of outSampleRate (or vice versa) there's no need to interpolate
   if ( floor( sampleRatio ) == sampleRatio || floor( sampleRatioInv ) == sampleRatioInv )
