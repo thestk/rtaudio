@@ -29,6 +29,7 @@ SO_VERSION=lt_version_info
 AC_SUBST(SO_VERSION)
 AC_SUBST(api)
 AC_SUBST(req)
+AC_SUBST(visibility)
 
 api=""
 req=""
