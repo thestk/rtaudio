@@ -34,6 +34,7 @@ api=""
 req=""
 
 # configure flags
+AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],[enable various debug output])])
 AC_ARG_WITH(jack, [AS_HELP_STRING([--with-jack], [choose JACK server support (mac and linux only)])])
 AC_ARG_WITH(alsa, [AS_HELP_STRING([--with-alsa], [choose native ALSA API support (linux only)])])
 AC_ARG_WITH(pulse, [AS_HELP_STRING([--with-pulse], [choose PulseAudio API support (linux only)])])
@@ -56,6 +57,9 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Fill GXX with something before test.
 GXX = "no"
+# if the user did not provide any CXXFLAGS, we can override them
+AS_IF([test "x$CXXFLAGS" = "x" ], [override_cxx=yes], [override_cxx=no])
+AS_IF([test "x$CFLAGS" = "x" ], [override_c=yes], [override_c=no])
 
 dnl Check for pkg-config program, used for configuring some libraries.
 m4_define_default([PKG_PROG_PKG_CONFIG],
@@ -71,12 +75,6 @@ m4_define_default([PKG_CHECK_MODULES],
 AC_MSG_RESULT([no])
 $4])
 
-# Check for debug
-AC_MSG_CHECKING(whether to compile debug version)
-AC_ARG_ENABLE(debug,
-  [AS_HELP_STRING([--enable-debug],[enable various debug output])],
-  [: ${CXXFLAGS="-g -O0"};] [AC_DEFINE([__RTAUDIO_DEBUG__])],
-  [: ${CXXFLAGS="-O3"}])
 
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
@@ -95,20 +93,47 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 
 # Check compiler and use -Wall if gnu
-AS_IF([test "x${GXX} = "xyes" ], [
-  CXXFLAGS="${CXXFLAGS} -Wall -Wextra"
-  # Add -Werror in debug mode
-  if test x"${enable_debug+set}" = xset; then
-    CXXFLAGS="${CXXFLAGS} -Werror"
-  fi
+AS_IF([test "x${GXX}" = "xyes" ], [
+  CXXFLAGS="-Wall -Wextra ${CXXFLAGS}"
+  AS_IF([ test "x${enable_debug}" = "xyes" ], [
+    # Add -Werror in debug mode
+    CXXFLAGS="-Werror ${CXXFLAGS}"
+  ], [
+    # hide private symbols in non-debug mode
+    visibility="-fvisibility=hidden"
+  ])
 ])
+
+# Check for debug
+AC_MSG_CHECKING(whether to compile debug version)
+debugflags=""
+AS_CASE([${enable_debug}],
+  [ yes ], [
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([__RTAUDIO_DEBUG__])
+    debugflags="${debugflags} -g -O0"
+    object_path=Debug
+  ],
+  [ no ], [
+    AC_MSG_RESULT([no!])
+    debugflags="${debugflags} -O3"
+  ], [
+    AC_MSG_RESULT([no])
+  ])
+
+# For debugging and optimization ... overwrite default because it has both -g and -O2
+AS_IF([test "x$debugflags" != x],
+  AS_IF([test "x$override_cxx" = "xyes" ], CXXFLAGS="$CXXFLAGS $debugflags", CXXFLAGS="$debugflags $CXXFLAGS")
+  AS_IF([test "x$override_c" = "xyes" ], CFLAGS="$CFLAGS $debugflags", CFLAGS="$debugflags $CFLAGS")
+  )
+
 
 # Checks for functions
 AC_CHECK_FUNC(gettimeofday, [cppflag="$cppflag -DHAVE_GETTIMEOFDAY"], )
 
 # Checks for doxygen
 AC_CHECK_PROG( DOXYGEN, [doxygen], [doxygen] )
-AM_CONDITIONAL( MAKE_DOC, [test "x${DOXYGEN}" != x] )
+AM_CONDITIONAL( MAKE_DOC, [test "x${DOXYGEN}" != x ] )
 
 # Copy doc files to build dir if necessary
 AC_CONFIG_LINKS( [doc/release.txt:doc/release.txt] )
