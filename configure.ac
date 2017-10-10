@@ -56,7 +56,7 @@ m4_ifdef([AM_MAINTAINER_MODE], [AM_MAINTAINER_MODE])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Fill GXX with something before test.
-GXX = "no"
+GXX="no"
 # if the user did not provide any CXXFLAGS, we can override them
 AS_IF([test "x$CXXFLAGS" = "x" ], [override_cxx=yes], [override_cxx=no])
 AS_IF([test "x$CFLAGS" = "x" ], [override_c=yes], [override_c=no])
