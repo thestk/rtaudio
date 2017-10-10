@@ -47,6 +47,16 @@
 
 #define RTAUDIO_VERSION "5.0.0"
 
+#if defined _WIN32 || defined __CYGWIN__
+  #define RTAUDIO_DLL_PUBLIC
+#else
+  #if __GNUC__ >= 4
+    #define RTAUDIO_DLL_PUBLIC __attribute__( (visibility( "default" )) )
+  #else
+    #define RTAUDIO_DLL_PUBLIC
+  #endif
+#endif
+
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -200,7 +210,7 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
 */
 /************************************************************************/
 
-class RtAudioError : public std::runtime_error
+class RTAUDIO_DLL_PUBLIC RtAudioError : public std::runtime_error
 {
  public:
   //! Defined RtAudioError types.
@@ -260,7 +270,7 @@ typedef void (*RtAudioErrorCallback)( RtAudioError::Type type, const std::string
 
 class RtApi;
 
-class RtAudio
+class RTAUDIO_DLL_PUBLIC RtAudio
 {
  public:
 
@@ -671,7 +681,7 @@ class S24 {
 
 #include <sstream>
 
-class RtApi
+class RTAUDIO_DLL_PUBLIC RtApi
 {
 public:
 
