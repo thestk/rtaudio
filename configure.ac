@@ -33,6 +33,16 @@ AC_SUBST(req)
 api=""
 req=""
 
+# configure flags
+AC_ARG_WITH(jack, [AS_HELP_STRING([--with-jack], [choose JACK server support (mac and linux only)])])
+AC_ARG_WITH(alsa, [AS_HELP_STRING([--with-alsa], [choose native ALSA API support (linux only)])])
+AC_ARG_WITH(pulse, [AS_HELP_STRING([--with-pulse], [choose PulseAudio API support (linux only)])])
+AC_ARG_WITH(oss, [AS_HELP_STRING([--with-oss], [choose OSS API support (unixes)])])
+AC_ARG_WITH(core, [AS_HELP_STRING([--with-core], [choose CoreAudio API support (mac only)])])
+AC_ARG_WITH(asio, [AS_HELP_STRING([--with-asio], [choose ASIO API support (win32 only)])])
+AC_ARG_WITH(ds, [AS_HELP_STRING([--with-ds], [choose DirectSound API support (win32 only)])])
+AC_ARG_WITH(wasapi, [AS_HELP_STRING([--with-wasapi], [choose Windows Audio Session API support (win32 only)])])
+
 # Check version number coherency between RtAudio.h and configure.ac
 AC_MSG_CHECKING([that version numbers are coherent])
 RTAUDIO_VERSION=`sed -n 's/#define RTAUDIO_VERSION "\(.*\)"/\1/p' $srcdir/RtAudio.h`
@@ -124,7 +134,6 @@ AC_CANONICAL_HOST
 
 AC_MSG_CHECKING(for audio API)
 
-AC_ARG_WITH(jack, [  --with-jack = choose JACK server support (mac and linux only)])
 AS_IF([test "x$with_jack" = "xyes"], [
   AC_MSG_RESULT(using JACK)
   AC_CHECK_LIB(jack, jack_client_open, , AC_MSG_ERROR(JACK support requires the jack library!))
@@ -152,7 +161,6 @@ case $host in
 
   *-*-linux*)
   # Look for ALSA flag
-  AC_ARG_WITH(alsa, [  --with-alsa = choose native ALSA API support (linux only)])
   AS_IF([test "x$with_alsa" = "xyes"], [
     AC_MSG_RESULT(using ALSA)
     api="$api -D__LINUX_ALSA__"
@@ -161,7 +169,6 @@ case $host in
   ])
 
   # Look for PULSE flag
-  AC_ARG_WITH(pulse, [  --with-pulse = choose PulseAudio API support (linux only)])
   AS_IF([test "x$with_pulse" = "xyes"], [
     AC_MSG_RESULT(using PulseAudio)
     api="$api -D__LINUX_PULSE__"
@@ -170,7 +177,6 @@ case $host in
   ])
 
   # Look for OSS flag
-  AC_ARG_WITH(oss, [  --with-oss = choose OSS API support (unixes)])
   AS_IF([test "x$with_oss" = "xyes"], [
     AC_MSG_RESULT(using OSS)
     api="$api -D__LINUX_OSS__"
@@ -188,7 +194,6 @@ case $host in
 
   *-apple*)
   # Look for Core flag
-  AC_ARG_WITH(core, [  --with-core = choose CoreAudio API support (mac only)])
   AS_IF([test "x$with_core" = "xyes"], [
     AC_MSG_RESULT(using CoreAudio)
     api="$api -D__MACOSX_CORE__"
@@ -210,7 +215,6 @@ case $host in
   ;;
 
   *-mingw32*)
-  AC_ARG_WITH(asio, [  --with-asio = choose ASIO API support (windoze only)])
   AS_IF([test "x$with_asio" = "xyes" ], [
     AC_MSG_RESULT(using ASIO)
     api="$api -D__WINDOWS_ASIO__"
@@ -218,7 +222,6 @@ case $host in
   ])
 
   # Look for DirectSound flag
-  AC_ARG_WITH(ds, [  --with-ds = choose DirectSound API support (windoze only)])
   AS_IF([test "x$with_ds" = "xyes" ], [
     AC_MSG_RESULT(using DirectSound)
     api="$api -D__WINDOWS_DS__"
@@ -226,7 +229,6 @@ case $host in
   ])
 
   # Look for WASAPI flag
-  AC_ARG_WITH(wasapi, [  --with-wasapi = choose Windows Audio Session API support (windoze only)])
   AS_IF([test "x$with_wasapi" = "xyes"], [
     AC_MSG_RESULT(using WASAPI)
     api="$api -D__WINDOWS_WASAPI__"
