@@ -27,6 +27,11 @@ m4_define([lt_current_minus_age], [m4_eval(lt_current - lt_age)])
 
 SO_VERSION=lt_version_info
 AC_SUBST(SO_VERSION)
+AC_SUBST(api)
+AC_SUBST(req)
+
+api=""
+req=""
 
 # Check version number coherency between RtAudio.h and configure.ac
 AC_MSG_CHECKING([that version numbers are coherent])
@@ -42,7 +47,7 @@ m4_ifdef([AM_MAINTAINER_MODE], [AM_MAINTAINER_MODE])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Fill GXX with something before test.
-AC_SUBST( GXX, ["no"] )
+GXX = "no"
 
 dnl Check for pkg-config program, used for configuring some libraries.
 m4_define_default([PKG_PROG_PKG_CONFIG],
@@ -119,8 +124,6 @@ AC_CONFIG_LINKS( [doc/images/ccrma.gif:doc/images/ccrma.gif] )
 # Checks for package options and external software
 AC_CANONICAL_HOST
 
-AC_SUBST( api, [""] )
-AC_SUBST( req, [""] )
 AC_MSG_CHECKING(for audio API)
 
 AC_ARG_WITH(jack, [  --with-jack = choose JACK server support (mac and linux only)])
@@ -172,8 +175,8 @@ case $host in
   # If no audio api flags specified, use ALSA
   if [test "$api" == "";] then
     AC_MSG_RESULT(using ALSA)
-    AC_SUBST( api, [-D__LINUX_ALSA__] )
-    req="$req alsa"
+    api="${api} -D__LINUX_ALSA__"
+    req="${req} alsa"
     AC_CHECK_LIB(asound, snd_pcm_open, , AC_MSG_ERROR(ALSA support requires the asound library!))
   fi
 
@@ -191,8 +194,8 @@ case $host in
 
   # If no audio api flags specified, use CoreAudio
   if [test "$api" == ""; ] then
-    AC_SUBST( api, [-D__MACOSX_CORE__] )
     AC_MSG_RESULT(using CoreAudio)
+    api="${api} -D__MACOSX_CORE__"
     AC_CHECK_HEADER(CoreAudio/CoreAudio.h,
       [],
       [AC_MSG_ERROR(CoreAudio header files not found!)] )
@@ -225,7 +228,7 @@ case $host in
 
   # If no audio api flags specified, use DS
   if [test "$api" == "";] then
-    AC_SUBST( api, [-D__WINDOWS_DS__] )
+    api="$api -D__WINDOWS_DS__"
     AC_MSG_RESULT(using DirectSound)
     LIBS="-ldsound -lwinmm $LIBS"
   fi
