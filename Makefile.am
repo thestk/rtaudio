@@ -9,6 +9,14 @@ lib_LTLIBRARIES = %D%/librtaudio.la
   %D%/RtAudio.cpp \
   %D%/rtaudio_c.cpp
 
+if ASIO
+%C%_librtaudio_la_SOURCES += \
+	asio.cpp \
+	asiodrivers.cpp \
+	asiolist.cpp \
+	iasiothiscallresolver.cpp
+endif
+
 rtaudio_incdir = $(includedir)/rtaudio
 rtaudio_inc_HEADERS = \
   %D%/RtAudio.h \

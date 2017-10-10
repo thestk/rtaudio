@@ -32,6 +32,8 @@ AC_SUBST(req)
 
 api=""
 req=""
+use_asio=""
+
 
 # configure flags
 AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],[enable various debug output])])
@@ -235,7 +237,7 @@ AS_CASE([$host],
   AS_IF([test "x$with_asio" = "xyes" ], [
     AC_MSG_RESULT(using ASIO)
     api="$api -D__WINDOWS_ASIO__"
-    AC_SUBST( objects, ["asio.o asiodrivers.o asiolist.o iasiothiscallresolver.o"] )
+    use_asio=yes
   ])
   # Look for DirectSound flag
   AS_IF([test "x$with_ds" = "xyes" ], [
@@ -261,6 +263,8 @@ AS_CASE([$host],
   AC_MSG_ERROR(Unknown system type for realtime support!)
   ]
 )
+
+AM_CONDITIONAL( ASIO, [test "x${use_asio}" = "xyes" ])
 
 CPPFLAGS="$CPPFLAGS $api"
 
