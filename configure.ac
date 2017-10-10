@@ -74,9 +74,9 @@ AC_ARG_ENABLE(debug,
 AC_PROG_CXX(g++ CC c++ cxx)
 AM_PROG_AR
 AC_PATH_PROG(AR, ar, no)
-if [[ $AR = "no" ]] ; then
+AS_IF([test "x${AR} = "xno" ], [
     AC_MSG_ERROR("Could not find ar - needed to create a library");
-fi
+])
 
 # Initialize libtool
 LT_INIT([win32-dll])
@@ -87,13 +87,13 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 
 # Check compiler and use -Wall if gnu
-if test x"$GXX" = "xyes"; then
+AS_IF([test "x${GXX} = "xyes" ], [
   CXXFLAGS="${CXXFLAGS} -Wall -Wextra"
   # Add -Werror in debug mode
   if test x"${enable_debug+set}" = xset; then
     CXXFLAGS="${CXXFLAGS} -Werror"
   fi
-fi
+])
 
 # Checks for functions
 AC_CHECK_FUNC(gettimeofday, [cppflag="$cppflag -DHAVE_GETTIMEOFDAY"], )
@@ -173,13 +173,12 @@ case $host in
     AC_MSG_RESULT(using OSS)])
 
   # If no audio api flags specified, use ALSA
-  if [test "$api" == "";] then
+  AS_IF([test "x$api" = "x" ], [
     AC_MSG_RESULT(using ALSA)
     api="${api} -D__LINUX_ALSA__"
     req="${req} alsa"
     AC_CHECK_LIB(asound, snd_pcm_open, , AC_MSG_ERROR(ALSA support requires the asound library!))
-  fi
-
+  ])
   AC_CHECK_LIB(pthread, pthread_create, , AC_MSG_ERROR(RtAudio requires the pthread library!))
   ;;
 
@@ -193,14 +192,14 @@ case $host in
     LIBS="$LIBS -framework CoreAudio -framework CoreFoundation" ])
 
   # If no audio api flags specified, use CoreAudio
-  if [test "$api" == ""; ] then
+  AS_IF([test "x$api" = "x" ], [
     AC_MSG_RESULT(using CoreAudio)
     api="${api} -D__MACOSX_CORE__"
     AC_CHECK_HEADER(CoreAudio/CoreAudio.h,
       [],
       [AC_MSG_ERROR(CoreAudio header files not found!)] )
-    AC_SUBST( LIBS, ["-framework CoreAudio -framework CoreFoundation"] )
-  fi
+    LIBS="LIBS -framework CoreAudio -framework CoreFoundation"
+  ])
 
   AC_CHECK_LIB(pthread, pthread_create, , AC_MSG_ERROR(RtAudio requires the pthread library!))
   ;;
@@ -227,11 +226,11 @@ case $host in
     LIBS="-lwinmm -luuid -lksuser $LIBS" ])
 
   # If no audio api flags specified, use DS
-  if [test "$api" == "";] then
-    api="$api -D__WINDOWS_DS__"
+  AS_IF([test "x$api" = "x" ], [
     AC_MSG_RESULT(using DirectSound)
+    api="$api -D__WINDOWS_DS__"
     LIBS="-ldsound -lwinmm $LIBS"
-  fi
+  ])
 
   LIBS="-lole32 $LIBS"
   ;;
