@@ -63,21 +63,6 @@ GXX="no"
 AS_IF([test "x$CXXFLAGS" = "x" ], [override_cxx=yes], [override_cxx=no])
 AS_IF([test "x$CFLAGS" = "x" ], [override_c=yes], [override_c=no])
 
-dnl Check for pkg-config program, used for configuring some libraries.
-m4_define_default([PKG_PROG_PKG_CONFIG],
-[AC_MSG_CHECKING([pkg-config])
-AC_MSG_RESULT([no])])
-
-PKG_PROG_PKG_CONFIG
-
-dnl If the pkg-config autoconf support isn't installed, define its
-dnl autoconf macro to disable any packages depending on it.
-m4_define_default([PKG_CHECK_MODULES],
-[AC_MSG_CHECKING([$1])
-AC_MSG_RESULT([no])
-$4])
-
-
 # Checks for programs.
 AC_PROG_CXX(g++ CC c++ cxx)
 AM_PROG_AR
