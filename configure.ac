@@ -80,8 +80,8 @@ $4])
 AC_PROG_CXX(g++ CC c++ cxx)
 AM_PROG_AR
 AC_PATH_PROG(AR, ar, no)
-AS_IF([test "x${AR} = "xno" ], [
-    AC_MSG_ERROR("Could not find ar - needed to create a library");
+AS_IF([test "x${AR}" = "xno" ], [
+    AC_MSG_ERROR([Could not find ar - needed to create a library])
 ])
 
 # Initialize libtool
