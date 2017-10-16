@@ -125,6 +125,8 @@ if (BUILD_TESTING)
     add_subdirectory(tests)
 endif (BUILD_TESTING)
 
+configure_file("rtaudio.pc.in" "rtaudio.pc" @ONLY)
+
 install(TARGETS rtaudio
       LIBRARY DESTINATION lib
       ARCHIVE DESTINATION lib
@@ -135,5 +137,5 @@ install(
     DESTINATION include)
 
 install(
-    FILES rtaudio.pc
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/rtaudio.pc
     DESTINATION lib/pkgconfig)
