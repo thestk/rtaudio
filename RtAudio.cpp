@@ -3879,7 +3879,6 @@ void convertBufferWasapi( char* outBuffer,
 {
   // calculate the new outSampleCount and relative sampleStep
   float sampleRatio = ( float ) outSampleRate / inSampleRate;
-  float sampleRatioInv = ( float ) 1 / sampleRatio;
   float sampleStep = 1.0f / sampleRatio;
   float inSampleFraction = 0.0f;
 
@@ -3888,123 +3887,35 @@ void convertBufferWasapi( char* outBuffer,
 
   outSampleCount = ( unsigned int ) roundf( inSampleCount * sampleRatio );
 
-  // if inSampleRate is a multiple of outSampleRate (or vice versa) there's no need to interpolate
-  if ( floor( sampleRatio ) == sampleRatio || floor( sampleRatioInv ) == sampleRatioInv )
+  // frame-by-frame, copy each relative input sample into it's corresponding output sample
+  for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
   {
-    // frame-by-frame, copy each relative input sample into it's corresponding output sample
-    for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
+    unsigned int inSample = ( unsigned int ) inSampleFraction;
+
+    switch ( format )
     {
-      unsigned int inSample = ( unsigned int ) inSampleFraction;
-
-      switch ( format )
-      {
-        case RTAUDIO_SINT8:
-          memcpy( &( ( char* ) outBuffer )[ outSample * channelCount ], &( ( char* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( char ) );
-          break;
-        case RTAUDIO_SINT16:
-          memcpy( &( ( short* ) outBuffer )[ outSample * channelCount ], &( ( short* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( short ) );
-          break;
-        case RTAUDIO_SINT24:
-          memcpy( &( ( S24* ) outBuffer )[ outSample * channelCount ], &( ( S24* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( S24 ) );
-          break;
-        case RTAUDIO_SINT32:
-          memcpy( &( ( int* ) outBuffer )[ outSample * channelCount ], &( ( int* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( int ) );
-          break;
-        case RTAUDIO_FLOAT32:
-          memcpy( &( ( float* ) outBuffer )[ outSample * channelCount ], &( ( float* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( float ) );
-          break;
-        case RTAUDIO_FLOAT64:
-          memcpy( &( ( double* ) outBuffer )[ outSample * channelCount ], &( ( double* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( double ) );
-          break;
-      }
-
-      // jump to next in sample
-      inSampleFraction += sampleStep;
+      case RTAUDIO_SINT8:
+      memcpy( &( ( char* ) outBuffer )[outSample * channelCount], &( ( char* ) inBuffer )[inSample * channelCount], channelCount * sizeof( char ) );
+      break;
+      case RTAUDIO_SINT16:
+      memcpy( &( ( short* ) outBuffer )[outSample * channelCount], &( ( short* ) inBuffer )[inSample * channelCount], channelCount * sizeof( short ) );
+      break;
+      case RTAUDIO_SINT24:
+      memcpy( &( ( S24* ) outBuffer )[outSample * channelCount], &( ( S24* ) inBuffer )[inSample * channelCount], channelCount * sizeof( S24 ) );
+      break;
+      case RTAUDIO_SINT32:
+      memcpy( &( ( int* ) outBuffer )[outSample * channelCount], &( ( int* ) inBuffer )[inSample * channelCount], channelCount * sizeof( int ) );
+      break;
+      case RTAUDIO_FLOAT32:
+      memcpy( &( ( float* ) outBuffer )[outSample * channelCount], &( ( float* ) inBuffer )[inSample * channelCount], channelCount * sizeof( float ) );
+      break;
+      case RTAUDIO_FLOAT64:
+      memcpy( &( ( double* ) outBuffer )[outSample * channelCount], &( ( double* ) inBuffer )[inSample * channelCount], channelCount * sizeof( double ) );
+      break;
     }
-  }
-  else // else interpolate
-  {
-    // frame-by-frame, copy each relative input sample into it's corresponding output sample
-    for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
-    {
-      unsigned int inSample = ( unsigned int ) inSampleFraction;
-      float inSampleDec = inSampleFraction - inSample;
-      unsigned int frameInSample = inSample * channelCount;
-      unsigned int frameOutSample = outSample * channelCount;
 
-      switch ( format )
-      {
-        case RTAUDIO_SINT8:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            char fromSample = ( ( char* ) inBuffer )[ frameInSample + channel ];
-            char toSample = ( ( char* ) inBuffer )[ frameInSample + channelCount + channel ];
-            char sampleDiff = ( char ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( char* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_SINT16:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            short fromSample = ( ( short* ) inBuffer )[ frameInSample + channel ];
-            short toSample = ( ( short* ) inBuffer )[ frameInSample + channelCount + channel ];
-            short sampleDiff = ( short ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( short* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_SINT24:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            int fromSample = ( ( S24* ) inBuffer )[ frameInSample + channel ].asInt();
-            int toSample = ( ( S24* ) inBuffer )[ frameInSample + channelCount + channel ].asInt();
-            int sampleDiff = ( int ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( S24* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_SINT32:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            int fromSample = ( ( int* ) inBuffer )[ frameInSample + channel ];
-            int toSample = ( ( int* ) inBuffer )[ frameInSample + channelCount + channel ];
-            int sampleDiff = ( int ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( int* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_FLOAT32:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            float fromSample = ( ( float* ) inBuffer )[ frameInSample + channel ];
-            float toSample = ( ( float* ) inBuffer )[ frameInSample + channelCount + channel ];
-            float sampleDiff = ( toSample - fromSample ) * inSampleDec;
-            ( ( float* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_FLOAT64:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            double fromSample = ( ( double* ) inBuffer )[ frameInSample + channel ];
-            double toSample = ( ( double* ) inBuffer )[ frameInSample + channelCount + channel ];
-            double sampleDiff = ( toSample - fromSample ) * inSampleDec;
-            ( ( double* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-      }
-
-      // jump to next in sample
-      inSampleFraction += sampleStep;
-    }
+    // jump to next in sample
+    inSampleFraction += sampleStep;
   }
 }
 
@@ -4276,13 +4187,31 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   }
 
   // sample rates
-  info.sampleRates.clear();
-
-  // allow support for all sample rates as we have a built-in sample rate converter
-  for ( unsigned int i = 0; i < MAX_SAMPLE_RATES; i++ ) {
-    info.sampleRates.push_back( SAMPLE_RATES[i] );
-  }
   info.preferredSampleRate = deviceFormat->nSamplesPerSec;
+
+  info.sampleRates.clear();
+  if ( isCaptureDevice )
+  {
+    // allow support for any sample rate equal to and above the device's preferred sample rate
+    for ( int i = 0; i < MAX_SAMPLE_RATES; ++i )
+    {
+      if ( SAMPLE_RATES[i] >= info.preferredSampleRate )
+      {
+        info.sampleRates.push_back( SAMPLE_RATES[i] );
+      }
+    }
+  }
+  else
+  {
+    // allow support for any sample rate equal to and below the device's preferred sample rate
+    for ( int i = 0; i < MAX_SAMPLE_RATES; ++i )
+    {
+      if ( SAMPLE_RATES[i] <= info.preferredSampleRate )
+      {
+        info.sampleRates.push_back( SAMPLE_RATES[i] );
+      }
+    }
+  }
 
   // native format
   info.nativeFormats = 0;
@@ -4559,6 +4488,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   WAVEFORMATEX* deviceFormat = NULL;
   unsigned int bufferBytes;
   stream_.state = STREAM_STOPPED;
+  RtAudio::DeviceInfo deviceInfo;
 
   // create API Handle if not already created
   if ( !stream_.apiHandle )
@@ -4596,6 +4526,25 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( device >= captureDeviceCount + renderDeviceCount ) {
     errorType = RtAudioError::INVALID_USE;
     errorText_ = "RtApiWasapi::probeDeviceOpen: Invalid device index.";
+    goto Exit;
+  }
+
+  deviceInfo = getDeviceInfo( device );
+
+  // validate sample rate
+  bool found = false;
+  for ( int i = 0; i < deviceInfo.sampleRates.size(); ++i )
+  {
+    if ( deviceInfo.sampleRates[i] == sampleRate )
+    {
+      found = true;
+      break;
+    }
+  }
+  if ( !found )
+  {
+    errorType = RtAudioError::INVALID_USE;
+    errorText_ = "RtApiWasapi::probeDeviceOpen: " + std::to_string( sampleRate ) + "Hz sample rate is not supported by this device.";
     goto Exit;
   }
 
@@ -4682,7 +4631,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   stream_.nUserChannels[mode] = channels;
   stream_.channelOffset[mode] = firstChannel;
   stream_.userFormat = format;
-  stream_.deviceFormat[mode] = getDeviceInfo( device ).nativeFormats;
+  stream_.deviceFormat[mode] = deviceInfo.nativeFormats;
 
   if ( options && options->flags & RTAUDIO_NONINTERLEAVED )
     stream_.userInterleaved = false;
