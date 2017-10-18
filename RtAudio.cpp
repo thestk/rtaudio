@@ -4187,13 +4187,16 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   }
 
   // sample rates
-  info.sampleRates.clear();
-
-  // allow support for all sample rates as we have a built-in sample rate converter
-  for ( unsigned int i = 0; i < MAX_SAMPLE_RATES; i++ ) {
-    info.sampleRates.push_back( SAMPLE_RATES[i] );
-  }
   info.preferredSampleRate = deviceFormat->nSamplesPerSec;
+
+  // only allow support for multiples of the device's preferred sample rate
+  info.sampleRates.clear();
+  unsigned int sr = info.preferredSampleRate;
+  while ( sr < SAMPLE_RATES[MAX_SAMPLE_RATES - 1] )
+  {
+    info.sampleRates.push_back( sr );
+    sr *= 2;
+  }
 
   // native format
   info.nativeFormats = 0;
@@ -4470,6 +4473,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   WAVEFORMATEX* deviceFormat = NULL;
   unsigned int bufferBytes;
   stream_.state = STREAM_STOPPED;
+  RtAudio::DeviceInfo deviceInfo;
 
   // create API Handle if not already created
   if ( !stream_.apiHandle )
@@ -4507,6 +4511,25 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( device >= captureDeviceCount + renderDeviceCount ) {
     errorType = RtAudioError::INVALID_USE;
     errorText_ = "RtApiWasapi::probeDeviceOpen: Invalid device index.";
+    goto Exit;
+  }
+
+  deviceInfo = getDeviceInfo( device );
+
+  // validate sample rate
+  bool found = false;
+  for ( int i = 0; i < deviceInfo.sampleRates.size(); ++i )
+  {
+    if ( deviceInfo.sampleRates[i] == sampleRate )
+    {
+      found = true;
+      break;
+    }
+  }
+  if ( !found )
+  {
+    errorType = RtAudioError::INVALID_USE;
+    errorText_ = "RtApiWasapi::probeDeviceOpen: " + std::to_string( sampleRate ) + "Hz sample rate is not supported by this device.";
     goto Exit;
   }
 
@@ -4593,7 +4616,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   stream_.nUserChannels[mode] = channels;
   stream_.channelOffset[mode] = firstChannel;
   stream_.userFormat = format;
-  stream_.deviceFormat[mode] = getDeviceInfo( device ).nativeFormats;
+  stream_.deviceFormat[mode] = deviceInfo.nativeFormats;
 
   if ( options && options->flags & RTAUDIO_NONINTERLEAVED )
     stream_.userInterleaved = false;
