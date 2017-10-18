@@ -4458,7 +4458,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( sampleRate != deviceInfo.preferredSampleRate )
   {
     errorType = RtAudioError::INVALID_USE;
-    std::stringstring ss;
+    std::stringstream ss;
     ss << "RtApiWasapi::probeDeviceOpen: " << sampleRate
        << "Hz sample rate not supported. This device only supports "
        << deviceInfo.preferredSampleRate << "Hz.";

@@ -13,10 +13,10 @@ lib_LTLIBRARIES = %D%/librtaudio.la
 
 if ASIO
 %C%_librtaudio_la_SOURCES += \
-	asio.cpp \
-	asiodrivers.cpp \
-	asiolist.cpp \
-	iasiothiscallresolver.cpp
+	include/asio.cpp \
+	include/asiodrivers.cpp \
+	include/asiolist.cpp \
+	include/iasiothiscallresolver.cpp
 endif
 
 rtaudio_incdir = $(includedir)/rtaudio

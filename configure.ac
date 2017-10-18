@@ -226,6 +226,7 @@ AS_CASE([$host],
     AC_MSG_RESULT([using ASIO])
     api="$api -D__WINDOWS_ASIO__"
     use_asio=yes
+    CPPFLAGS="-I$srcdir/include $CPPFLAGS"
   ])
   # Look for DirectSound flag
   AS_IF([test "x$with_ds" = "xyes" ], [
@@ -238,6 +239,7 @@ AS_CASE([$host],
     AC_MSG_RESULT([using WASAPI])
     api="$api -D__WINDOWS_WASAPI__"
     LIBS="-lwinmm -luuid -lksuser $LIBS"
+    CPPFLAGS="-I$srcdir/include $CPPFLAGS"
   ])
   # If no audio api flags specified, use DS
   AS_IF([test "x$api" = "x" ], [
