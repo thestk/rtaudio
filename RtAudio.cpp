@@ -3691,6 +3691,7 @@ static const char* getAsioErrorString( ASIOError result )
 #include <avrt.h>
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
+#include <sstream>
 
 //=============================================================================
 
@@ -4457,7 +4458,11 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( sampleRate != deviceInfo.preferredSampleRate )
   {
     errorType = RtAudioError::INVALID_USE;
-    errorText_ = "RtApiWasapi::probeDeviceOpen: " + std::to_string( sampleRate ) + "Hz sample rate not supported. This device only supports " + std::to_string( deviceInfo.preferredSampleRate ) + "Hz.";
+    std::stringstring ss;
+    ss << "RtApiWasapi::probeDeviceOpen: " << sampleRate
+       << "Hz sample rate not supported. This device only supports "
+       << deviceInfo.preferredSampleRate << "Hz.";
+    errorText_ = ss.str();
     goto Exit;
   }
 
