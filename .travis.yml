@@ -1,8 +1,5 @@
 language: cpp
 sudo: false  # docker VM
-branches:
-  only:
-    - travis
 matrix:
   include:
   - os: linux
@@ -79,4 +76,8 @@ after_script:
 # JACK: Jack server not running
 # - tests/midiprobe
 notifications:
-  email: false
+  email:
+    recipients:
+      - radarsat1@gmail.com
+    on_success: never
+    on_failure: change
