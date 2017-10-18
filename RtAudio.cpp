@@ -4189,13 +4189,14 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   // sample rates
   info.preferredSampleRate = deviceFormat->nSamplesPerSec;
 
-  // only allow support for multiples of the device's preferred sample rate
+  // allow support for any sample rate equal to and above the device's preferred sample rate
   info.sampleRates.clear();
-  unsigned int sr = info.preferredSampleRate;
-  while ( sr < SAMPLE_RATES[MAX_SAMPLE_RATES - 1] )
+  for ( int i = 0; i < MAX_SAMPLE_RATES; ++i )
   {
-    info.sampleRates.push_back( sr );
-    sr *= 2;
+    if ( SAMPLE_RATES[i] >= info.preferredSampleRate )
+    {
+      info.sampleRates.push_back( SAMPLE_RATES[i] );
+    }
   }
 
   // native format
