@@ -3695,7 +3695,7 @@ static const char* getAsioErrorString( ASIOError result )
 #include <mfapi.h>
 #include <mferror.h>
 #include <mfplay.h>
-#include <Wmcodecdsp.h>
+#include <wmcodecdsp.h>
 
 #pragma comment( lib, "mfplat.lib" )
 #pragma comment( lib, "mfuuid.lib" )
@@ -3905,7 +3905,7 @@ public:
     _transformUnk->QueryInterface( IID_PPV_ARGS( &_resamplerProps ) );
     _resamplerProps->SetHalfFilterLength( 60 ); // best conversion quality
 
-                                                // 3. Specify input / output format
+    // 3. Specify input / output format
 
     MFCreateMediaType( &_mediaType );
     _mediaType->SetGUID( MF_MT_MAJOR_TYPE, MFMediaType_Audio );
