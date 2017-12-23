@@ -4005,7 +4005,7 @@ public:
     DWORD rStatus;
     DWORD rBytes = outputBufferSize; // maximum bytes accepted per ProcessOutput
 
-                                     // 7.1 Create Sample object for output data
+    // 7.1 Create Sample object for output data
 
     memset( &rOutDataBuffer, 0, sizeof rOutDataBuffer );
     MFCreateSample( &( rOutDataBuffer.pSample ) );
