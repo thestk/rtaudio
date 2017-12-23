@@ -3698,6 +3698,7 @@ static const char* getAsioErrorString( ASIOError result )
 #include <Wmcodecdsp.h>
 
 #pragma comment( lib, "mfplat.lib" )
+#pragma comment( lib, "mfuuid.lib" )
 #pragma comment( lib, "wmcodecdspuuid" )
 
 //=============================================================================
@@ -5069,23 +5070,43 @@ void RtApiWasapi::wasapiThread()
       // 2. If 1. was successful: Convert callback buffer to user sample rate and channel count
       //                          Convert callback buffer to user format
 
-      if ( captureAudioClient ) {
-        // Pull callback buffer from inputBuffer
-        callbackPulled = captureBuffer.pullBuffer( convBuffer,
-                                                   ( unsigned int ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT],
-                                                   stream_.deviceFormat[INPUT] );
+      if ( captureAudioClient )
+      {
+        int samplesToPull = ( unsigned int ) floorf( stream_.bufferSize * captureSrRatio );
+        if ( captureSrRatio != 1 )
+        {
+          // account for remainders
+          samplesToPull--;
+        }
 
-        if ( callbackPulled ) {
+        convBufferSize = 0;
+        while ( convBufferSize < stream_.bufferSize )
+        {
+          // Pull callback buffer from inputBuffer
+          callbackPulled = captureBuffer.pullBuffer( convBuffer,
+                                                     samplesToPull * stream_.nDeviceChannels[INPUT],
+                                                     stream_.deviceFormat[INPUT] );
+
+          if ( !callbackPulled )
+          {
+            break;
+          }
+
           // Convert callback buffer to user sample rate
-          convertBufferWasapi( stream_.deviceBuffer,
-                               convBuffer,
-                               stream_.nDeviceChannels[INPUT],
-                               captureFormat->nSamplesPerSec,
-                               stream_.sampleRate,
-                               ( unsigned int ) ( stream_.bufferSize * captureSrRatio ),
-                               convBufferSize,
-                               stream_.deviceFormat[INPUT] );
+          unsigned int deviceBufferOffset = convBufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.userFormat );
+          unsigned int convSamples = 0;
 
+          captureResampler->Convert( stream_.deviceBuffer + deviceBufferOffset,
+                                     convBuffer,
+                                     samplesToPull,
+                                     convSamples );
+
+          convBufferSize += convSamples;
+          samplesToPull = 1; // now pull one sample at a time until we have stream_.bufferSize samples
+        }
+
+        if ( callbackPulled )
+        {
           if ( stream_.doConvertBuffer[INPUT] ) {
             // Convert callback buffer to user format
             convertBuffer( stream_.userBuffer[INPUT],
@@ -5162,24 +5183,26 @@ void RtApiWasapi::wasapiThread()
     // 2. Convert callback buffer to stream sample rate and channel count
     // 3. Push callback buffer into outputBuffer
 
-    if ( renderAudioClient && callbackPulled ) {
-      if ( stream_.doConvertBuffer[OUTPUT] ) {
-        // Convert callback buffer to stream format
-        convertBuffer( stream_.deviceBuffer,
-                       stream_.userBuffer[OUTPUT],
-                       stream_.convertInfo[OUTPUT] );
+    if ( renderAudioClient && callbackPulled )
+    {
+      // if the last call to renderBuffer.PushBuffer() was successful
+      if ( callbackPushed || convBufferSize == 0 )
+      {
+        if ( stream_.doConvertBuffer[OUTPUT] )
+        {
+          // Convert callback buffer to stream format
+          convertBuffer( stream_.deviceBuffer,
+                         stream_.userBuffer[OUTPUT],
+                         stream_.convertInfo[OUTPUT] );
 
+        }
+
+        // Convert callback buffer to stream sample rate
+        renderResampler->Convert( convBuffer,
+                                  stream_.deviceBuffer,
+                                  stream_.bufferSize,
+                                  convBufferSize );
       }
-
-      // Convert callback buffer to stream sample rate
-      convertBufferWasapi( convBuffer,
-                           stream_.deviceBuffer,
-                           stream_.nDeviceChannels[OUTPUT],
-                           stream_.sampleRate,
-                           renderFormat->nSamplesPerSec,
-                           stream_.bufferSize,
-                           convBufferSize,
-                           stream_.deviceFormat[OUTPUT] );
 
       // Push callback buffer into outputBuffer
       callbackPushed = renderBuffer.pushBuffer( convBuffer,
@@ -5317,7 +5340,10 @@ void RtApiWasapi::wasapiThread()
 
     // if the callback buffer was pushed renderBuffer reset callbackPulled flag
     if ( callbackPushed ) {
+      // unsetting the callbackPulled flag lets the stream know that
+      // the audio device is ready for another callback output buffer.
       callbackPulled = false;
+
       // tick stream time
       RtApi::tickStreamTime();
     }
@@ -5330,6 +5356,8 @@ Exit:
   CoTaskMemFree( renderFormat );
 
   free ( convBuffer );
+  delete renderResampler;
+  delete captureResampler;
 
   CoUninitialize();
 
