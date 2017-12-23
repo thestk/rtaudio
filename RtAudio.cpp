@@ -3699,9 +3699,11 @@ static const char* getAsioErrorString( ASIOError result )
 #include <mfplay.h>
 #include <wmcodecdsp.h>
 
-#pragma comment( lib, "mfplat.lib" )
-#pragma comment( lib, "mfuuid.lib" )
-#pragma comment( lib, "wmcodecdspuuid" )
+#ifdef _MSC_VER
+  #pragma comment( lib, "mfplat.lib" )
+  #pragma comment( lib, "mfuuid.lib" )
+  #pragma comment( lib, "wmcodecdspuuid" )
+#endif
 
 //=============================================================================
 
