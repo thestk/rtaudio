@@ -4829,6 +4829,8 @@ void RtApiWasapi::wasapiThread()
   float renderSrRatio = 0.0f;
   WasapiBuffer captureBuffer;
   WasapiBuffer renderBuffer;
+  WasapiResampler* captureResampler = NULL;
+  WasapiResampler* renderResampler = NULL;
 
   // declare local stream variables
   RtAudioCallback callback = ( RtAudioCallback ) stream_.callbackInfo.callback;
@@ -4837,7 +4839,7 @@ void RtApiWasapi::wasapiThread()
   unsigned int bufferFrameCount = 0;
   unsigned int numFramesPadding = 0;
   unsigned int convBufferSize = 0;
-  bool callbackPushed = false;
+  bool callbackPushed = true;
   bool callbackPulled = false;
   bool callbackStopped = false;
   int callbackResult = 0;
@@ -4866,6 +4868,11 @@ void RtApiWasapi::wasapiThread()
       errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve device mix format.";
       goto Exit;
     }
+
+    // init captureResampler
+    captureResampler = new WasapiResampler( stream_.deviceFormat[INPUT] == RTAUDIO_FLOAT32 || stream_.deviceFormat[INPUT] == RTAUDIO_FLOAT64,
+                                            formatBytes( stream_.deviceFormat[INPUT] ) * 8, stream_.nDeviceChannels[INPUT],
+                                            captureFormat->nSamplesPerSec, stream_.sampleRate );
 
     captureSrRatio = ( ( float ) captureFormat->nSamplesPerSec / stream_.sampleRate );
 
@@ -4918,7 +4925,7 @@ void RtApiWasapi::wasapiThread()
     }
 
     // scale outBufferSize according to stream->user sample rate ratio
-    unsigned int outBufferSize = ( unsigned int ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT];
+    unsigned int outBufferSize = ( unsigned int ) ceilf( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT];
     inBufferSize *= stream_.nDeviceChannels[INPUT];
 
     // set captureBuffer size
@@ -4946,6 +4953,11 @@ void RtApiWasapi::wasapiThread()
       errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve device mix format.";
       goto Exit;
     }
+
+    // init renderResampler
+    renderResampler = new WasapiResampler( stream_.deviceFormat[OUTPUT] == RTAUDIO_FLOAT32 || stream_.deviceFormat[OUTPUT] == RTAUDIO_FLOAT64,
+                                           formatBytes( stream_.deviceFormat[OUTPUT] ) * 8, stream_.nDeviceChannels[OUTPUT],
+                                           stream_.sampleRate, renderFormat->nSamplesPerSec );
 
     renderSrRatio = ( ( float ) renderFormat->nSamplesPerSec / stream_.sampleRate );
 
@@ -4998,7 +5010,7 @@ void RtApiWasapi::wasapiThread()
     }
 
     // scale inBufferSize according to user->stream sample rate ratio
-    unsigned int inBufferSize = ( unsigned int ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT];
+    unsigned int inBufferSize = ( unsigned int ) ceilf( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT];
     outBufferSize *= stream_.nDeviceChannels[OUTPUT];
 
     // set renderBuffer size
@@ -5019,22 +5031,27 @@ void RtApiWasapi::wasapiThread()
     }
   }
 
-  if ( stream_.mode == INPUT ) {
-    using namespace std; // for roundf
-    convBuffSize = ( size_t ) roundf( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
+  // malloc buffer memory
+  if ( stream_.mode == INPUT )
+  {
+    using namespace std; // for ceilf
+    convBuffSize = ( size_t ) ( ceilf( stream_.bufferSize * captureSrRatio ) ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
     deviceBuffSize = stream_.bufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
   }
-  else if ( stream_.mode == OUTPUT ) {
-    convBuffSize = ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
+  else if ( stream_.mode == OUTPUT )
+  {
+    convBuffSize = ( size_t ) ( ceilf( stream_.bufferSize * renderSrRatio ) ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
     deviceBuffSize = stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
   }
-  else if ( stream_.mode == DUPLEX ) {
-    convBuffSize = std::max( ( size_t ) ( stream_.bufferSize * captureSrRatio ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
-                             ( size_t ) ( stream_.bufferSize * renderSrRatio ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
+  else if ( stream_.mode == DUPLEX )
+  {
+    convBuffSize = std::max( ( size_t ) ( ceilf( stream_.bufferSize * captureSrRatio ) ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
+                             ( size_t ) ( ceilf( stream_.bufferSize * renderSrRatio ) ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
     deviceBuffSize = std::max( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
                                stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
   }
 
+  convBuffSize *= 2; // allow overflow for *SrRatio remainders
   convBuffer = ( char* ) malloc( convBuffSize );
   stream_.deviceBuffer = ( char* ) malloc( deviceBuffSize );
   if ( !convBuffer || !stream_.deviceBuffer ) {
