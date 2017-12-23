@@ -3692,6 +3692,14 @@ static const char* getAsioErrorString( ASIOError result )
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
 
+#include <mfapi.h>
+#include <mferror.h>
+#include <mfplay.h>
+#include <Wmcodecdsp.h>
+
+#pragma comment( lib, "mfplat.lib" )
+#pragma comment( lib, "wmcodecdspuuid" )
+
 //=============================================================================
 
 #define SAFE_RELEASE( objectPtr )\
@@ -3865,148 +3873,183 @@ private:
 //-----------------------------------------------------------------------------
 
 // In order to satisfy WASAPI's buffer requirements, we need a means of converting sample rate
-// between HW and the user. The convertBufferWasapi function is used to perform this conversion
-// between HwIn->UserIn and UserOut->HwOut during the stream callback loop.
-// This sample rate converter works best with conversions between one rate and its multiple.
-void convertBufferWasapi( char* outBuffer,
-                          const char* inBuffer,
-                          const unsigned int& channelCount,
-                          const unsigned int& inSampleRate,
-                          const unsigned int& outSampleRate,
-                          const unsigned int& inSampleCount,
-                          unsigned int& outSampleCount,
-                          const RtAudioFormat& format )
+// between HW and the user. The WasapiResampler class is used to perform this conversion between
+// HwIn->UserIn and UserOut->HwOut during the stream callback loop.
+class WasapiResampler
 {
-  // calculate the new outSampleCount and relative sampleStep
-  float sampleRatio = ( float ) outSampleRate / inSampleRate;
-  float sampleRatioInv = ( float ) 1 / sampleRatio;
-  float sampleStep = 1.0f / sampleRatio;
-  float inSampleFraction = 0.0f;
-
-  // for cmath functions
-  using namespace std;
-
-  outSampleCount = ( unsigned int ) roundf( inSampleCount * sampleRatio );
-
-  // if inSampleRate is a multiple of outSampleRate (or vice versa) there's no need to interpolate
-  if ( floor( sampleRatio ) == sampleRatio || floor( sampleRatioInv ) == sampleRatioInv )
+public:
+  WasapiResampler( bool isFloat, unsigned int bitsPerSample, unsigned int channelCount,
+                   unsigned int inSampleRate, unsigned int outSampleRate )
+    : _bytesPerSample( bitsPerSample / 8 )
+    , _channelCount( channelCount )
+    , _sampleRatio( ( float ) outSampleRate / inSampleRate )
+    , _transformUnk( NULL )
+    , _transform( NULL )
+    , _resamplerProps( NULL )
+    , _mediaType( NULL )
+    , _inputMediaType( NULL )
+    , _outputMediaType( NULL )
   {
-    // frame-by-frame, copy each relative input sample into it's corresponding output sample
-    for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
-    {
-      unsigned int inSample = ( unsigned int ) inSampleFraction;
+    // 1. Initialization
 
-      switch ( format )
-      {
-        case RTAUDIO_SINT8:
-          memcpy( &( ( char* ) outBuffer )[ outSample * channelCount ], &( ( char* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( char ) );
-          break;
-        case RTAUDIO_SINT16:
-          memcpy( &( ( short* ) outBuffer )[ outSample * channelCount ], &( ( short* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( short ) );
-          break;
-        case RTAUDIO_SINT24:
-          memcpy( &( ( S24* ) outBuffer )[ outSample * channelCount ], &( ( S24* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( S24 ) );
-          break;
-        case RTAUDIO_SINT32:
-          memcpy( &( ( int* ) outBuffer )[ outSample * channelCount ], &( ( int* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( int ) );
-          break;
-        case RTAUDIO_FLOAT32:
-          memcpy( &( ( float* ) outBuffer )[ outSample * channelCount ], &( ( float* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( float ) );
-          break;
-        case RTAUDIO_FLOAT64:
-          memcpy( &( ( double* ) outBuffer )[ outSample * channelCount ], &( ( double* ) inBuffer )[ inSample * channelCount ], channelCount * sizeof( double ) );
-          break;
-      }
+    MFStartup( MF_VERSION, MFSTARTUP_NOSOCKET );
 
-      // jump to next in sample
-      inSampleFraction += sampleStep;
-    }
+    // 2. Create Resampler Transform Object
+
+    CoCreateInstance( CLSID_CResamplerMediaObject, NULL, CLSCTX_INPROC_SERVER,
+                      IID_IUnknown, ( void** ) &_transformUnk );
+
+    _transformUnk->QueryInterface( IID_PPV_ARGS( &_transform ) );
+
+    _transformUnk->QueryInterface( IID_PPV_ARGS( &_resamplerProps ) );
+    _resamplerProps->SetHalfFilterLength( 60 ); // best conversion quality
+
+                                                // 3. Specify input / output format
+
+    MFCreateMediaType( &_mediaType );
+    _mediaType->SetGUID( MF_MT_MAJOR_TYPE, MFMediaType_Audio );
+    _mediaType->SetGUID( MF_MT_SUBTYPE, isFloat ? MFAudioFormat_Float : MFAudioFormat_PCM );
+    _mediaType->SetUINT32( MF_MT_AUDIO_NUM_CHANNELS, channelCount );
+    _mediaType->SetUINT32( MF_MT_AUDIO_SAMPLES_PER_SECOND, inSampleRate );
+    _mediaType->SetUINT32( MF_MT_AUDIO_BLOCK_ALIGNMENT, _bytesPerSample * channelCount );
+    _mediaType->SetUINT32( MF_MT_AUDIO_AVG_BYTES_PER_SECOND, _bytesPerSample * channelCount * inSampleRate );
+    _mediaType->SetUINT32( MF_MT_AUDIO_BITS_PER_SAMPLE, bitsPerSample );
+    _mediaType->SetUINT32( MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE );
+
+    MFCreateMediaType( &_inputMediaType );
+    _mediaType->CopyAllItems( _inputMediaType );
+
+    _transform->SetInputType( 0, _inputMediaType, 0 );
+
+    MFCreateMediaType( &_outputMediaType );
+    _mediaType->CopyAllItems( _outputMediaType );
+
+    _outputMediaType->SetUINT32( MF_MT_AUDIO_SAMPLES_PER_SECOND, outSampleRate );
+    _outputMediaType->SetUINT32( MF_MT_AUDIO_AVG_BYTES_PER_SECOND, _bytesPerSample * channelCount * outSampleRate );
+
+    _transform->SetOutputType( 0, _outputMediaType, 0 );
+
+    // 4. Send stream start messages to Resampler
+
+    _transform->ProcessMessage( MFT_MESSAGE_COMMAND_FLUSH, NULL );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, NULL );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_START_OF_STREAM, NULL );
   }
-  else // else interpolate
+
+  ~WasapiResampler()
   {
-    // frame-by-frame, copy each relative input sample into it's corresponding output sample
-    for ( unsigned int outSample = 0; outSample < outSampleCount; outSample++ )
-    {
-      unsigned int inSample = ( unsigned int ) inSampleFraction;
-      float inSampleDec = inSampleFraction - inSample;
-      unsigned int frameInSample = inSample * channelCount;
-      unsigned int frameOutSample = outSample * channelCount;
+    // 8. Send stream stop messages to Resampler
 
-      switch ( format )
-      {
-        case RTAUDIO_SINT8:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            char fromSample = ( ( char* ) inBuffer )[ frameInSample + channel ];
-            char toSample = ( ( char* ) inBuffer )[ frameInSample + channelCount + channel ];
-            char sampleDiff = ( char ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( char* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_SINT16:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            short fromSample = ( ( short* ) inBuffer )[ frameInSample + channel ];
-            short toSample = ( ( short* ) inBuffer )[ frameInSample + channelCount + channel ];
-            short sampleDiff = ( short ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( short* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_SINT24:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            int fromSample = ( ( S24* ) inBuffer )[ frameInSample + channel ].asInt();
-            int toSample = ( ( S24* ) inBuffer )[ frameInSample + channelCount + channel ].asInt();
-            int sampleDiff = ( int ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( S24* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_SINT32:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            int fromSample = ( ( int* ) inBuffer )[ frameInSample + channel ];
-            int toSample = ( ( int* ) inBuffer )[ frameInSample + channelCount + channel ];
-            int sampleDiff = ( int ) ( ( toSample - fromSample ) * inSampleDec );
-            ( ( int* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_FLOAT32:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            float fromSample = ( ( float* ) inBuffer )[ frameInSample + channel ];
-            float toSample = ( ( float* ) inBuffer )[ frameInSample + channelCount + channel ];
-            float sampleDiff = ( toSample - fromSample ) * inSampleDec;
-            ( ( float* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-        case RTAUDIO_FLOAT64:
-        {
-          for ( unsigned int channel = 0; channel < channelCount; channel++ )
-          {
-            double fromSample = ( ( double* ) inBuffer )[ frameInSample + channel ];
-            double toSample = ( ( double* ) inBuffer )[ frameInSample + channelCount + channel ];
-            double sampleDiff = ( toSample - fromSample ) * inSampleDec;
-            ( ( double* ) outBuffer )[ frameOutSample + channel ] = fromSample + sampleDiff;
-          }
-          break;
-        }
-      }
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_END_OF_STREAM, NULL );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_END_STREAMING, NULL );
 
-      // jump to next in sample
-      inSampleFraction += sampleStep;
-    }
+    // 9. Cleanup
+
+    MFShutdown();
+
+    SAFE_RELEASE( _transformUnk );
+    SAFE_RELEASE( _transform );
+    SAFE_RELEASE( _resamplerProps );
+    SAFE_RELEASE( _mediaType );
+    SAFE_RELEASE( _inputMediaType );
+    SAFE_RELEASE( _outputMediaType );
   }
-}
+
+  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount )
+  {
+    unsigned int inputBufferSize = _bytesPerSample * _channelCount * inSampleCount;
+    if ( _sampleRatio == 1 )
+    {
+      // no sample rate conversion required
+      memcpy( outBuffer, inBuffer, inputBufferSize );
+      outSampleCount = inSampleCount;
+      return;
+    }
+
+    unsigned int outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
+
+    IMFMediaBuffer* rInBuffer;
+    IMFSample* rInSample;
+    BYTE* rInByteBuffer = NULL;
+
+    // 5. Create Sample object from input data
+
+    MFCreateMemoryBuffer( inputBufferSize, &rInBuffer );
+
+    rInBuffer->Lock( &rInByteBuffer, NULL, NULL );
+    memcpy( rInByteBuffer, inBuffer, inputBufferSize );
+    rInBuffer->Unlock();
+    rInByteBuffer = NULL;
+
+    rInBuffer->SetCurrentLength( inputBufferSize );
+
+    MFCreateSample( &rInSample );
+    rInSample->AddBuffer( rInBuffer );
+
+    // 6. Pass input data to Resampler
+
+    _transform->ProcessInput( 0, rInSample, 0 );
+
+    SAFE_RELEASE( rInBuffer );
+    SAFE_RELEASE( rInSample );
+
+    // 7. Perform sample rate conversion
+
+    IMFMediaBuffer* rOutBuffer = NULL;
+    BYTE* rOutByteBuffer = NULL;
+
+    MFT_OUTPUT_DATA_BUFFER rOutDataBuffer;
+    DWORD rStatus;
+    DWORD rBytes = outputBufferSize; // maximum bytes accepted per ProcessOutput
+
+                                     // 7.1 Create Sample object for output data
+
+    memset( &rOutDataBuffer, 0, sizeof rOutDataBuffer );
+    MFCreateSample( &( rOutDataBuffer.pSample ) );
+    MFCreateMemoryBuffer( rBytes, &rOutBuffer );
+    rOutDataBuffer.pSample->AddBuffer( rOutBuffer );
+    rOutDataBuffer.dwStreamID = 0;
+    rOutDataBuffer.dwStatus = 0;
+    rOutDataBuffer.pEvents = NULL;
+
+    // 7.2 Get output data from Resampler
+
+    if ( _transform->ProcessOutput( 0, 1, &rOutDataBuffer, &rStatus ) == MF_E_TRANSFORM_NEED_MORE_INPUT )
+    {
+      outSampleCount = 0;
+      SAFE_RELEASE( rOutBuffer );
+      SAFE_RELEASE( rOutDataBuffer.pSample );
+      return;
+    }
+
+    // 7.3 Write output data to outBuffer
+
+    SAFE_RELEASE( rOutBuffer );
+    rOutDataBuffer.pSample->ConvertToContiguousBuffer( &rOutBuffer );
+    rOutBuffer->GetCurrentLength( &rBytes );
+
+    rOutBuffer->Lock( &rOutByteBuffer, NULL, NULL );
+    memcpy( outBuffer, rOutByteBuffer, rBytes );
+    rOutBuffer->Unlock();
+    rOutByteBuffer = NULL;
+
+    outSampleCount = rBytes / _bytesPerSample / _channelCount;
+    SAFE_RELEASE( rOutBuffer );
+    SAFE_RELEASE( rOutDataBuffer.pSample );
+  }
+
+private:
+  unsigned int _bytesPerSample;
+  unsigned int _channelCount;
+  float _sampleRatio;
+
+  IUnknown* _transformUnk;
+  IMFTransform* _transform;
+  IWMResamplerProps* _resamplerProps;
+  IMFMediaType* _mediaType;
+  IMFMediaType* _inputMediaType;
+  IMFMediaType* _outputMediaType;
+};
 
 //-----------------------------------------------------------------------------
 
