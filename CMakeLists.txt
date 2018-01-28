@@ -116,6 +116,7 @@ if (WIN32)
 endif (WIN32)
 
 cmake_policy(SET CMP0042 OLD)
+set(PACKAGE_VERSION 5.0.0)
 add_library(rtaudio SHARED ${rtaudio_SOURCES})
 add_library(rtaudio_static STATIC ${rtaudio_SOURCES})
 
@@ -128,9 +129,10 @@ endif (BUILD_TESTING)
 configure_file("rtaudio.pc.in" "rtaudio.pc" @ONLY)
 
 install(TARGETS rtaudio
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib
-      RUNTIME DESTINATION bin)
+      LIBRARY DESTINATION lib)
+
+install(TARGETS rtaudio_static
+      ARCHIVE DESTINATION lib)
 
 install(
     FILES RtAudio.h
