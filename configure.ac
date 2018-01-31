@@ -153,6 +153,7 @@ AS_IF([test "x$with_jack" = "xyes"], [
   AC_MSG_RESULT([using JACK])
   AC_CHECK_LIB(jack, jack_client_open, , AC_MSG_ERROR([JACK support requires the jack library!]))
   api="$api -D__UNIX_JACK__"
+  req="$req jack"
 ])
 
 
