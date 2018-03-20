@@ -107,11 +107,11 @@ void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
 #if defined(__UNIX_JACK__)
   apis.push_back( UNIX_JACK );
 #endif
-#if defined(__LINUX_ALSA__)
-  apis.push_back( LINUX_ALSA );
-#endif
 #if defined(__LINUX_PULSE__)
   apis.push_back( LINUX_PULSE );
+#endif
+#if defined(__LINUX_ALSA__)
+  apis.push_back( LINUX_ALSA );
 #endif
 #if defined(__LINUX_OSS__)
   apis.push_back( LINUX_OSS );
