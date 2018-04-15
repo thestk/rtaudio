@@ -5098,7 +5098,7 @@ void RtApiWasapi::wasapiThread()
           }
 
           // Convert callback buffer to user sample rate
-          unsigned int deviceBufferOffset = convBufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.userFormat );
+          unsigned int deviceBufferOffset = convBufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
           unsigned int convSamples = 0;
 
           captureResampler->Convert( stream_.deviceBuffer + deviceBufferOffset,
