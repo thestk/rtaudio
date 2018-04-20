@@ -1,4 +1,4 @@
-﻿/************************************************************************/
+/************************************************************************/
 /*! \class RtAudio
     \brief Realtime audio i/o C++ classes.
 
@@ -5366,13 +5366,11 @@ Exit:
 
   CoUninitialize();
 
+  if ( !errorText_.empty() )
+    error( errorType );
+
   // update stream state
   stream_.state = STREAM_STOPPED;
-
-  if ( errorText_.empty() )
-    return;
-  else
-    error( errorType );
 }
 
 //******************** End of __WINDOWS_WASAPI__ *********************//
