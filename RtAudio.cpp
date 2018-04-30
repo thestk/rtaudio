@@ -7560,30 +7560,41 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-
 #ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
-      // We previously attempted to increase the audio callback priority
-      // to SCHED_RR here via the attributes.  However, while no errors
-      // were reported in doing so, it did not work.  So, now this is
-      // done in the alsaCallbackHandler function.
       stream_.callbackInfo.doRealtime = true;
+      struct sched_param param;
       int priority = options->priority;
       int min = sched_get_priority_min( SCHED_RR );
       int max = sched_get_priority_max( SCHED_RR );
       if ( priority < min ) priority = min;
       else if ( priority > max ) priority = max;
-      stream_.callbackInfo.priority = priority;
+      param.sched_priority = priority;
+
+      // Set the policy BEFORE the priority. Otherwise it fails.
+      pthread_attr_setschedpolicy(&attr, SCHED_RR);
+      pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM);
+      // This is definitely required. Otherwise it fails.
+      pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+      pthread_attr_setschedparam(&attr, &param);
     }
+    else
+      pthread_attr_setschedpolicy( &attr, SCHED_OTHER );
+#else
+    pthread_attr_setschedpolicy( &attr, SCHED_OTHER );
 #endif
 
     stream_.callbackInfo.isRunning = true;
     result = pthread_create( &stream_.callbackInfo.thread, &attr, alsaCallbackHandler, &stream_.callbackInfo );
     pthread_attr_destroy( &attr );
     if ( result ) {
-      stream_.callbackInfo.isRunning = false;
-      errorText_ = "RtApiAlsa::error creating callback thread!";
-      goto error;
+      // Failed. Try instead with default attributes.
+      result = pthread_create( &stream_.callbackInfo.thread, NULL, alsaCallbackHandler, &stream_.callbackInfo );
+      if ( result ) {
+        stream_.callbackInfo.isRunning = false;
+        errorText_ = "RtApiAlsa::error creating callback thread!";
+        goto error;
+      }
     }
   }
 
@@ -8000,9 +8011,9 @@ static void *alsaCallbackHandler( void *ptr )
 
 #ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
   if ( info->doRealtime ) {
-    pthread_t tID = pthread_self();	 // ID of this thread
-    sched_param prio = { info->priority }; // scheduling priority of thread
-    pthread_setschedparam( tID, SCHED_RR, &prio );
+    std::cerr << "RtAudio alsa: " << 
+             (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
+             "running realtime scheduling" << std::endl;
   }
 #endif
 
@@ -8085,7 +8096,15 @@ static void *pulseaudio_callback( void * user )
   CallbackInfo *cbi = static_cast<CallbackInfo *>( user );
   RtApiPulse *context = static_cast<RtApiPulse *>( cbi->object );
   volatile bool *isRunning = &cbi->isRunning;
-
+  
+#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+  if (cbi->doRealtime) {
+    std::cerr << "RtAudio pulse: " << 
+             (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
+             "running realtime scheduling" << std::endl;
+  }
+#endif
+  
   while ( *isRunning ) {
     pthread_testcancel();
     context->callbackEvent();
@@ -8470,15 +8489,56 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
 
   if ( !stream_.callbackInfo.isRunning ) {
     stream_.callbackInfo.object = this;
+    
+    stream_.state = STREAM_STOPPED;
+    // Set the thread attributes for joinable and realtime scheduling
+    // priority (optional).  The higher priority will only take affect
+    // if the program is run as root or suid. Note, under Linux
+    // processes with CAP_SYS_NICE privilege, a user can change
+    // scheduling policy and priority (thus need not be root). See
+    // POSIX "capabilities".
+    pthread_attr_t attr;
+    pthread_attr_init( &attr );
+    pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
+#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+    if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
+      stream_.callbackInfo.doRealtime = true;
+      struct sched_param param;
+      int priority = options->priority;
+      int min = sched_get_priority_min( SCHED_RR );
+      int max = sched_get_priority_max( SCHED_RR );
+      if ( priority < min ) priority = min;
+      else if ( priority > max ) priority = max;
+      param.sched_priority = priority;
+      
+      // Set the policy BEFORE the priority. Otherwise it fails.
+      pthread_attr_setschedpolicy(&attr, SCHED_RR);
+      pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM);
+      // This is definitely required. Otherwise it fails.
+      pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+      pthread_attr_setschedparam(&attr, &param);
+    }
+    else
+      pthread_attr_setschedpolicy( &attr, SCHED_OTHER );
+#else
+    pthread_attr_setschedpolicy( &attr, SCHED_OTHER );
+#endif
+
     stream_.callbackInfo.isRunning = true;
-    if ( pthread_create( &pah->thread, NULL, pulseaudio_callback, (void *)&stream_.callbackInfo) != 0 ) {
-      errorText_ = "RtApiPulse::probeDeviceOpen: error creating thread.";
-      goto error;
+    int result = pthread_create( &pah->thread, &attr, pulseaudio_callback, (void *)&stream_.callbackInfo);
+    pthread_attr_destroy(&attr);
+    if(result != 0) {
+      // Failed. Try instead with default attributes.
+      result = pthread_create( &pah->thread, NULL, pulseaudio_callback, (void *)&stream_.callbackInfo);
+      if(result != 0) {
+        stream_.callbackInfo.isRunning = false;
+        errorText_ = "RtApiPulse::probeDeviceOpen: error creating thread.";
+        goto error;
+      }
     }
   }
 
-  stream_.state = STREAM_STOPPED;
-  return true;
+  return SUCCESS;
  
  error:
   if ( pah && stream_.callbackInfo.isRunning ) {
@@ -8499,6 +8559,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     stream_.deviceBuffer = 0;
   }
 
+  stream_.state = STREAM_CLOSED;
   return FAILURE;
 }
 
@@ -9062,6 +9123,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
 #ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
+      stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
       int priority = options->priority;
       int min = sched_get_priority_min( SCHED_RR );
@@ -9069,8 +9131,13 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
       if ( priority < min ) priority = min;
       else if ( priority > max ) priority = max;
       param.sched_priority = priority;
-      pthread_attr_setschedparam( &attr, &param );
-      pthread_attr_setschedpolicy( &attr, SCHED_RR );
+      
+      // Set the policy BEFORE the priority. Otherwise it fails.
+      pthread_attr_setschedpolicy(&attr, SCHED_RR);
+      pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM);
+      // This is definitely required. Otherwise it fails.
+      pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+      pthread_attr_setschedparam(&attr, &param);
     }
     else
       pthread_attr_setschedpolicy( &attr, SCHED_OTHER );
@@ -9082,9 +9149,13 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     result = pthread_create( &stream_.callbackInfo.thread, &attr, ossCallbackHandler, &stream_.callbackInfo );
     pthread_attr_destroy( &attr );
     if ( result ) {
-      stream_.callbackInfo.isRunning = false;
-      errorText_ = "RtApiOss::error creating callback thread!";
-      goto error;
+      // Failed. Try instead with default attributes.
+      result = pthread_create( &stream_.callbackInfo.thread, NULL, ossCallbackHandler, &stream_.callbackInfo );
+      if ( result ) {
+        stream_.callbackInfo.isRunning = false;
+        errorText_ = "RtApiOss::error creating callback thread!";
+        goto error;
+      }
     }
   }
 
@@ -9111,6 +9182,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     stream_.deviceBuffer = 0;
   }
 
+  stream_.state = STREAM_CLOSED;
   return FAILURE;
 }
 
@@ -9439,6 +9511,14 @@ static void *ossCallbackHandler( void *ptr )
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiOss *object = (RtApiOss *) info->object;
   bool *isRunning = &info->isRunning;
+
+#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+  if (info->doRealtime) {
+    std::cerr << "RtAudio oss: " << 
+             (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
+             "running realtime scheduling" << std::endl;
+  }
+#endif
 
   while ( *isRunning == true ) {
     pthread_testcancel();
