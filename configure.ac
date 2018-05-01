@@ -249,6 +249,11 @@ AS_CASE([$host],
     LIBS="-ldsound -lwinmm $LIBS"
   ])
   LIBS="-lole32 $LIBS"
+  ],
+  [*-*-kfreebsd*-gnu | *-*-gnu*],[
+  AS_IF([test "x$api" = "x" ], [
+    AC_MSG_ERROR(["$host" system has no default backend])
+  ])
   ],[
   AC_MSG_RESULT([none])
   # Default case for unknown realtime systems.
