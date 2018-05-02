@@ -198,13 +198,20 @@ AS_CASE(["$systems"], [*" pulse "*], [
 ])
 
 AS_CASE(["$systems"], [*" oss "*], [
-  AC_CHECK_LIB(ossaudio, main,
+  # libossaudio not required on some platforms (e.g. linux) so we
+  # don't break things if it's not found, but issue a warning when we
+  # are not sure (i.e. not on linux)
+  AS_CASE([$host], [*-*-linux*], [], [*], [need_ossaudio=yes])
+  AC_CHECK_LIB(ossaudio, main, [have_ossaudio=true],
+    AS_CASE(["$required"], [*" oss "*],
+      AS_IF([test "x$need_ossaudio" = xyes],
+        AC_MSG_WARN([RtAudio may require the ossaudio library]))))
+  AC_CHECK_HEADER(sys/soundcard.h,
     [api="$api -D__LINUX_OSS__"
      need_pthread=yes
-     found="$found OSS"
-     LIBS="-lossaudio $LIBS"],
+     found="$found OSS"],
     AS_CASE(["$required"], [*" oss "*],
-      AC_MSG_ERROR([RtAudio requires the ossaudio library])))
+      AC_MSG_ERROR([sys/soundcard.h not found])))
 ])
 
 AS_CASE(["$systems"], [*" jack "*], [
