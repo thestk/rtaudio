@@ -154,7 +154,7 @@ AS_IF([test "x$with_pulse"  = "xyes"], [systems="$systems pulse"])
 AS_IF([test "x$with_oss"    = "xyes"], [systems="$systems oss"])
 AS_IF([test "x$with_core"   = "xyes"], [systems="$systems core"])
 AS_IF([test "x$with_asio"   = "xyes"], [systems="$systems asio"])
-AS_IF([test "x$with_ds"     = "xyes"], [systems="$systems ds"])
+AS_IF([test "x$with_dsound" = "xyes"], [systems="$systems ds"])
 AS_IF([test "x$with_wasapi" = "xyes"], [systems="$systems wasapi"])
 required=" $systems "
 
