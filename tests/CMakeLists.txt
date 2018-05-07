@@ -18,6 +18,9 @@ target_link_libraries(record rtaudio_static ${LINKLIBS})
 add_executable(duplex duplex.cpp)
 target_link_libraries(duplex rtaudio_static ${LINKLIBS})
 
+add_executable(apinames apinames.cpp)
+target_link_libraries(apinames rtaudio_static ${LINKLIBS})
+
 add_executable(testall testall.cpp)
 target_link_libraries(testall rtaudio_static ${LINKLIBS})
 
