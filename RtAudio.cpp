@@ -3899,10 +3899,9 @@ RtApiWasapi::RtApiWasapi()
                          CLSCTX_ALL, __uuidof( IMMDeviceEnumerator ),
                          ( void** ) &deviceEnumerator_ );
 
-  if ( FAILED( hr ) ) {
-    errorText_ = "RtApiWasapi::RtApiWasapi: Unable to instantiate device enumerator";
-    error( RtAudioError::DRIVER_ERROR );
-  }
+  // If this runs on an old Windows, it will fail. Ignore and proceed.
+  if ( FAILED( hr ) )
+    deviceEnumerator_ = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -3928,6 +3927,9 @@ unsigned int RtApiWasapi::getDeviceCount( void )
 
   IMMDeviceCollection* captureDevices = NULL;
   IMMDeviceCollection* renderDevices = NULL;
+
+  if ( !deviceEnumerator_ )
+    return 0;
 
   // Count capture devices
   errorText_.clear();
