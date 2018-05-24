@@ -7162,6 +7162,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       }
       nDevices++;
     }
+    snd_ctl_close( chandle );
 
     if ( nDevices == 0 ) {
       // This should not happen because a check is made before this function is called.
