@@ -129,7 +129,9 @@ endif (BUILD_TESTING)
 configure_file("rtaudio.pc.in" "rtaudio.pc" @ONLY)
 
 install(TARGETS rtaudio
-      LIBRARY DESTINATION lib)
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib
+      RUNTIME DESTINATION bin)
 
 install(TARGETS rtaudio_static
       ARCHIVE DESTINATION lib)
