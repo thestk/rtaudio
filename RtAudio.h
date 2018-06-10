@@ -874,7 +874,6 @@ public:
   void startStream( void );
   void stopStream( void );
   void abortStream( void );
-  long getStreamLatency( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -910,7 +909,6 @@ public:
   void startStream( void );
   void stopStream( void );
   void abortStream( void );
-  long getStreamLatency( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -945,7 +943,6 @@ public:
   void startStream( void );
   void stopStream( void );
   void abortStream( void );
-  long getStreamLatency( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -983,7 +980,6 @@ public:
   void startStream( void );
   void stopStream( void );
   void abortStream( void );
-  long getStreamLatency( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
