@@ -169,11 +169,21 @@ AS_IF([test "x$systems" = "x"],
     [*-mingw32*],    [systems="asio ds wasapi jack"]
   ))
 
+# If any were specifically requested disabled, do it.
+AS_IF([test "x$with_jack"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v jack`])
+AS_IF([test "x$with_alsa"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v alsa`])
+AS_IF([test "x$with_pulse"  = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v pulse`])
+AS_IF([test "x$with_oss"    = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v oss`])
+AS_IF([test "x$with_core"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v core`])
+AS_IF([test "x$with_asio"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v asio`])
+AS_IF([test "x$with_dsound" = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v dsound`])
+AS_IF([test "x$with_wasapi" = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v wasapi`])
+systems=" `echo $systems|tr \\\\n ' '` "
+
 # For each audio system, check if it is selected and found.
 # Note: Order specified above is not necessarily respected. However,
 # *actual* priority is set at run-time, see RtAudio::openRtApi.
 # One AS_CASE per system, since they are not mutually-exclusive.
-systems=" $systems "
 
 AS_CASE(["$systems"], [*" alsa "*], [
   AC_CHECK_LIB(asound, snd_pcm_open,
