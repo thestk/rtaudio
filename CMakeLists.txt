@@ -86,7 +86,7 @@ file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/configure.ac" CONFIGAC
 string(REGEX REPLACE ${R} "\\1" PACKAGE_VERSION ${CONFIGAC})
 
 # Init variables
-set(rtaudio_SOURCES RtAudio.cpp RtAudio.h)
+set(rtaudio_SOURCES RtAudio.cpp RtAudio.h rtaudio_c.cpp rtaudio_c.h)
 set(LINKLIBS)
 set(PKGCONFIG_REQUIRES)
 set(API_DEFS)
