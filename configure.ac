@@ -216,12 +216,17 @@ AS_CASE(["$systems"], [*" oss "*], [
     AS_CASE(["$required"], [*" oss "*],
       AS_IF([test "x$need_ossaudio" = xyes],
         AC_MSG_WARN([RtAudio may require the ossaudio library]))))
-  AC_CHECK_HEADER(sys/soundcard.h,
+
+  # linux systems may have soundcard.h but *not* have OSS4 installed,
+  # we have to actually check if it exports OSS4 symbols
+  AC_CHECK_DECL(SNDCTL_SYSINFO,
     [api="$api -D__LINUX_OSS__"
      need_pthread=yes
      found="$found OSS"],
-    AS_CASE(["$required"], [*" oss "*],
-      AC_MSG_ERROR([sys/soundcard.h not found])))
+     AS_CASE(["$required"], [*" oss "*],
+       AC_MSG_ERROR([sys/soundcard.h not found]))
+    [],
+    [#include <sys/soundcard.h>])
 ])
 
 AS_CASE(["$systems"], [*" jack "*], [
