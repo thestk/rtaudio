@@ -259,18 +259,20 @@ AS_CASE(["$systems"], [*" asio "*], [
 ])
 
 AS_CASE(["$systems"], [*" ds "*], [
-  api="$api -D__WINDOWS_DS__"
-  need_ole32=yes
-  found="$found DirectSound"
-  LIBS="-ldsound -lwinmm $LIBS"
+  AC_CHECK_HEADERS(mmsystem.h mmreg.h dsound.h,
+    [api="$api -D__WINDOWS_DS__"
+     need_ole32=yes
+     found="$found DirectSound"
+     LIBS="-ldsound -lwinmm $LIBS"])
 ])
 
 AS_CASE(["$systems"], [*" wasapi "*], [
-  api="$api -D__WINDOWS_WASAPI__"
-  CPPFLAGS="-I$srcdir/include $CPPFLAGS"
-  need_ole32=yes
-  found="$found WASAPI"
-  LIBS="-lwinmm -luuid -lksuser $LIBS"
+  AC_CHECK_HEADERS(windows.h audioclient.h avrt.h mmdeviceapi.h,
+    [api="$api -D__WINDOWS_WASAPI__"
+     CPPFLAGS="-I$srcdir/include $CPPFLAGS"
+     need_ole32=yes
+     found="$found WASAPI"
+     LIBS="-lwinmm -luuid -lksuser $LIBS"])
 ])
 
 AS_IF([test -n "$need_ole32"], [LIBS="-lole32 $LIBS"])
