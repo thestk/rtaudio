@@ -287,7 +287,7 @@ AC_MSG_CHECKING([for audio API])
 # Error case: no known realtime systems found.
 AS_IF([test x"$api" = "x"], [
   AC_MSG_RESULT([none])
-  AC_MSG_ERROR([Unknown system type for realtime support!])
+  AC_MSG_ERROR([No known system type found for realtime support!])
 ], [
   AC_MSG_RESULT([$found])
 ])
