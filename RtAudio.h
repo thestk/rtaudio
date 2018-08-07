@@ -399,10 +399,20 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 
   //! Return the name of a specified compiled audio API.
   /*!
+    This obtains a short lower-case name used for identification purposes.
+    This value is guaranteed to remain identical across library versions.
     If the API is unknown or not compiled, this function will return
     the empty string.
   */
   static const std::string &getCompiledApiName( RtAudio::Api api );
+
+  //! Return the display name of a specified compiled audio API.
+  /*!
+    This obtains a long name used for display purposes.
+    If the API is unknown or not compiled, this function will return
+    the empty string.
+  */
+  static const std::string &getCompiledApiDisplayName( RtAudio::Api api );
 
   //! Return the compiled audio API having the given name.
   /*!

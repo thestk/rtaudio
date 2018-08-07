@@ -45,7 +45,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <climits>
-#include <cctype>
 #include <cmath>
 #include <algorithm>
 
@@ -138,6 +137,66 @@ const std::string &RtAudio :: getCompiledApiName( RtAudio::Api api )
 {
 #if defined(__UNIX_JACK__)
   if ( api == UNIX_JACK ) {
+    static std::string name( "jack" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_PULSE__)
+  if ( api == LINUX_PULSE ) {
+    static std::string name( "pulse" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_ALSA__)
+  if ( api == LINUX_ALSA ) {
+    static std::string name( "alsa" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_OSS__)
+  if ( api == LINUX_OSS ) {
+    static std::string name( "oss" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_ASIO__)
+  if ( api == WINDOWS_ASIO ) {
+    static std::string name( "asio" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_WASAPI__)
+  if ( api == WINDOWS_WASAPI ) {
+    static std::string name( "wasapi" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_DS__)
+  if ( api == WINDOWS_DS ) {
+    static std::string name( "ds" );
+    return name;
+  }
+#endif
+#if defined(__MACOSX_CORE__)
+  if ( api == MACOSX_CORE ) {
+    static std::string name( "core" );
+    return name;
+  }
+#endif
+#if defined(__RTAUDIO_DUMMY__)
+  if ( api == RTAUDIO_DUMMY ) {
+    static std::string name( "dummy" );
+    return name;
+  }
+#endif
+  static std::string name;
+  return name;
+}
+
+const std::string &RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
+{
+#if defined(__UNIX_JACK__)
+  if ( api == UNIX_JACK ) {
     static std::string name( "JACK" );
     return name;
   }
@@ -180,13 +239,13 @@ const std::string &RtAudio :: getCompiledApiName( RtAudio::Api api )
 #endif
 #if defined(__MACOSX_CORE__)
   if ( api == MACOSX_CORE ) {
-    static std::string name( "CoreAudio" );
+    static std::string name( "Core Audio" );
     return name;
   }
 #endif
 #if defined(__RTAUDIO_DUMMY__)
   if ( api == RTAUDIO_DUMMY ) {
-    static std::string name( "Dummy" );
+    static std::string name( "RtAudio Dummy" );
     return name;
   }
 #endif
@@ -206,18 +265,13 @@ RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
     const std::string &otherName =
       getCompiledApiName((RtAudio::Api)api_number);
 
-    bool equal = nameLength == otherName.size();
-    for ( size_t i = 0; equal && i < nameLength; ++i )
-      equal = tolower((unsigned char)name[i]) ==
-        tolower((unsigned char)otherName[i]);
-
-    if ( equal )
+    if ( name == otherName )
       return (RtAudio::Api)api_number;
 
     ++api_number;
   }
 
-    return RtAudio::UNSPECIFIED;
+  return RtAudio::UNSPECIFIED;
 }
 
 void RtAudio :: openRtApi( RtAudio::Api api )
