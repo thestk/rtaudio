@@ -133,6 +133,147 @@ void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
 #endif
 }
 
+const std::string &RtAudio :: getCompiledApiName( RtAudio::Api api )
+{
+#if defined(__UNIX_JACK__)
+  if ( api == UNIX_JACK ) {
+    static std::string name( "jack" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_PULSE__)
+  if ( api == LINUX_PULSE ) {
+    static std::string name( "pulse" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_ALSA__)
+  if ( api == LINUX_ALSA ) {
+    static std::string name( "alsa" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_OSS__)
+  if ( api == LINUX_OSS ) {
+    static std::string name( "oss" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_ASIO__)
+  if ( api == WINDOWS_ASIO ) {
+    static std::string name( "asio" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_WASAPI__)
+  if ( api == WINDOWS_WASAPI ) {
+    static std::string name( "wasapi" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_DS__)
+  if ( api == WINDOWS_DS ) {
+    static std::string name( "ds" );
+    return name;
+  }
+#endif
+#if defined(__MACOSX_CORE__)
+  if ( api == MACOSX_CORE ) {
+    static std::string name( "core" );
+    return name;
+  }
+#endif
+#if defined(__RTAUDIO_DUMMY__)
+  if ( api == RTAUDIO_DUMMY ) {
+    static std::string name( "dummy" );
+    return name;
+  }
+#endif
+  static std::string name;
+  return name;
+}
+
+const std::string &RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
+{
+#if defined(__UNIX_JACK__)
+  if ( api == UNIX_JACK ) {
+    static std::string name( "JACK" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_PULSE__)
+  if ( api == LINUX_PULSE ) {
+    static std::string name( "PulseAudio" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_ALSA__)
+  if ( api == LINUX_ALSA ) {
+    static std::string name( "ALSA" );
+    return name;
+  }
+#endif
+#if defined(__LINUX_OSS__)
+  if ( api == LINUX_OSS ) {
+    static std::string name( "OSS" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_ASIO__)
+  if ( api == WINDOWS_ASIO ) {
+    static std::string name( "ASIO" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_WASAPI__)
+  if ( api == WINDOWS_WASAPI ) {
+    static std::string name( "WASAPI" );
+    return name;
+  }
+#endif
+#if defined(__WINDOWS_DS__)
+  if ( api == WINDOWS_DS ) {
+    static std::string name( "DirectSound" );
+    return name;
+  }
+#endif
+#if defined(__MACOSX_CORE__)
+  if ( api == MACOSX_CORE ) {
+    static std::string name( "Core Audio" );
+    return name;
+  }
+#endif
+#if defined(__RTAUDIO_DUMMY__)
+  if ( api == RTAUDIO_DUMMY ) {
+    static std::string name( "RtAudio Dummy" );
+    return name;
+  }
+#endif
+  static std::string name;
+  return name;
+}
+
+RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
+{
+  unsigned int api_number = RtAudio::UNSPECIFIED;
+  size_t nameLength = name.size();
+
+  if ( nameLength == 0 )
+    return RtAudio::UNSPECIFIED;
+
+  while ( api_number <= RtAudio::RTAUDIO_DUMMY ) {
+    const std::string &otherName =
+      getCompiledApiName((RtAudio::Api)api_number);
+
+    if ( name == otherName )
+      return (RtAudio::Api)api_number;
+
+    ++api_number;
+  }
+
+  return RtAudio::UNSPECIFIED;
+}
+
 void RtAudio :: openRtApi( RtAudio::Api api )
 {
   if ( rtapi_ )

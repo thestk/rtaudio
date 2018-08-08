@@ -50,6 +50,25 @@ const char *rtaudio_version() { return RTAUDIO_VERSION; }
 
 const rtaudio_api_t *rtaudio_compiled_api() { return compiled_api; }
 
+const char *rtaudio_compiled_api_name(rtaudio_api_t api) {
+    const std::string &name = RtAudio::getCompiledApiName((RtAudio::Api)api);
+    return name.empty() ? NULL : name.c_str();
+}
+
+const char *rtaudio_compiled_api_display_name(rtaudio_api_t api)
+{
+    const std::string &name = RtAudio::getCompiledApiDisplayName((RtAudio::Api)api);
+    return name.empty() ? NULL : name.c_str();
+}
+
+rtaudio_api_t rtaudio_compiled_api_by_name(const char *name) {
+    RtAudio::Api api = RtAudio::UNSPECIFIED;
+    if (name) {
+        api = RtAudio::getCompiledApiByName(name);
+    }
+    return (rtaudio_api_t)api;
+}
+
 const char *rtaudio_error(rtaudio_t audio) {
   if (audio->has_error) {
     return audio->errmsg;
