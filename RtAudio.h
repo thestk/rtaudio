@@ -61,6 +61,7 @@
 #include <vector>
 #include <stdexcept>
 #include <iostream>
+#include <map>
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -288,6 +289,9 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     RTAUDIO_DUMMY   /*!< A compilable but non-functional API. */
   };
 
+  //! Map string identifiers for APIs to enum identifiers and display names
+  typedef std::map< std::string, std::pair<RtAudio::Api, std::string> > ApiNameMap;
+
   //! The public device information structure for returning queried values.
   struct DeviceInfo {
     bool probed;                  /*!< true if the device capabilities were successfully probed. */
@@ -397,6 +401,14 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   */
   static void getCompiledApi( std::vector<RtAudio::Api> &apis );
 
+  //! A static function to determine the available compiled audio APIs.
+  /*!
+    The values returned in the std::vector can be compared against
+    the enumerated list values.  Note that there can be more than one
+    API compiled for certain operating systems.
+  */
+  static const std::vector<RtAudio::Api>& getCompiledApi();
+
   //! Return the name of a specified compiled audio API.
   /*!
     This obtains a short lower-case name used for identification purposes.
@@ -404,7 +416,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     If the API is unknown or not compiled, this function will return
     the empty string.
   */
-  static const std::string &getCompiledApiName( RtAudio::Api api );
+  static const std::string getCompiledApiName( RtAudio::Api api );
 
   //! Return the display name of a specified compiled audio API.
   /*!
@@ -412,7 +424,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     If the API is unknown or not compiled, this function will return
     the empty string.
   */
-  static const std::string &getCompiledApiDisplayName( RtAudio::Api api );
+  static const std::string getCompiledApiDisplayName( RtAudio::Api api );
 
   //! Return the compiled audio API having the given name.
   /*!
@@ -605,6 +617,12 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   void showWarnings( bool value = true );
 
  protected:
+
+  //! Storage for API name map
+  static const ApiNameMap apiNames;
+
+  //! Storage for compiled API list
+  static const std::vector<RtAudio::Api> compiledApis;
 
   void openRtApi( RtAudio::Api api );
   RtApi *rtapi_;

@@ -21,7 +21,7 @@ add_executable(duplex duplex.cpp)
 target_link_libraries(duplex ${LIBRTAUDIO} ${LINKLIBS})
 
 add_executable(apinames apinames.cpp)
-target_link_libraries(apinames rtaudio_static ${LINKLIBS})
+target_link_libraries(apinames ${LIBRTAUDIO} ${LINKLIBS})
 
 add_executable(testall testall.cpp)
 target_link_libraries(testall ${LIBRTAUDIO} ${LINKLIBS})

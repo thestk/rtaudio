@@ -98,180 +98,91 @@ std::string RtAudio :: getVersion( void )
   return RTAUDIO_VERSION;
 }
 
+// Define API names.
+// TODO: replace with initializer list in C++11.
+// The order here will control the order of RtAudio's API search in
+// the constructor.
+// Have to maintain a separate list of API enum identifiers since map
+// doesn't preserve insertion order.
+static std::pair< RtAudio::ApiNameMap, std::vector<RtAudio::Api> > init_ApiNames()
+{
+  RtAudio::ApiNameMap names;
+  std::vector<RtAudio::Api> apis;
+#if defined(__UNIX_JACK__)
+  names["jack"] = std::pair<RtAudio::Api, std::string>(RtAudio::UNIX_JACK, "Jack");
+  apis.push_back(RtAudio::UNIX_JACK);
+#endif
+#if defined(__LINUX_PULSE__)
+  names["pulse"] = std::pair<RtAudio::Api, std::string>(RtAudio::LINUX_PULSE, "Pulse");
+  apis.push_back(RtAudio::LINUX_PULSE);
+#endif
+#if defined(__LINUX_ALSA__)
+  names["alsa"] = std::pair<RtAudio::Api, std::string>(RtAudio::LINUX_ALSA, "ALSA");
+  apis.push_back(RtAudio::LINUX_ALSA);
+#endif
+#if defined(__LINUX_OSS__)
+  names["oss"] = std::pair<RtAudio::Api, std::string>(RtAudio::LINUX_OSS, "OSS");
+  apis.push_back(RtAudio::LINUX_OSS);
+#endif
+#if defined(__WINDOWS_ASIO__)
+  names["asio"] = std::pair<RtAudio::Api, std::string>(RtAudio::WINDOWS_ASIO, "ASIO");
+  apis.push_back(RtAudio::WINDOWS_ASIO);
+#endif
+#if defined(__WINDOWS_WASAPI__)
+  names["wasapi"] = std::pair<RtAudio::Api, std::string>(RtAudio::WINDOWS_WASAPI, "WASAPI");
+  apis.push_back(RtAudio::WINDOWS_WASAPI);
+#endif
+#if defined(__WINDOWS_DS__)
+  names["ds"] = std::pair<RtAudio::Api, std::string>(RtAudio::WINDOWS_DS, "DirectSound");
+  apis.push_back(RtAudio::WINDOWS_DS);
+#endif
+#if defined(__MACOSX_CORE__)
+  names["core"] = std::pair<RtAudio::Api, std::string>(RtAudio::MACOSX_CORE, "CoreAudio");
+  apis.push_back(RtAudio::MACOSX_CORE);
+#endif
+#if defined(__RTAUDIO_DUMMY__)
+  names["dummy"] = std::pair<RtAudio::Api, std::string>(RtAudio::RTAUDIO_DUMMY, "Dummy");
+  apis.push_back(RtAudio::RTAUDIO_DUMMY);
+#endif
+  return std::make_pair(names, apis);
+}
+
+const RtAudio::ApiNameMap RtAudio::apiNames(init_ApiNames().first);
+const std::vector<RtAudio::Api> RtAudio::compiledApis(init_ApiNames().second);
+
 void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
 {
-  apis.clear();
-
-  // The order here will control the order of RtAudio's API search in
-  // the constructor.
-#if defined(__UNIX_JACK__)
-  apis.push_back( UNIX_JACK );
-#endif
-#if defined(__LINUX_PULSE__)
-  apis.push_back( LINUX_PULSE );
-#endif
-#if defined(__LINUX_ALSA__)
-  apis.push_back( LINUX_ALSA );
-#endif
-#if defined(__LINUX_OSS__)
-  apis.push_back( LINUX_OSS );
-#endif
-#if defined(__WINDOWS_ASIO__)
-  apis.push_back( WINDOWS_ASIO );
-#endif
-#if defined(__WINDOWS_WASAPI__)
-  apis.push_back( WINDOWS_WASAPI );
-#endif
-#if defined(__WINDOWS_DS__)
-  apis.push_back( WINDOWS_DS );
-#endif
-#if defined(__MACOSX_CORE__)
-  apis.push_back( MACOSX_CORE );
-#endif
-#if defined(__RTAUDIO_DUMMY__)
-  apis.push_back( RTAUDIO_DUMMY );
-#endif
+  apis = compiledApis;
 }
 
-const std::string &RtAudio :: getCompiledApiName( RtAudio::Api api )
+const std::vector<RtAudio::Api>& RtAudio :: getCompiledApi()
 {
-#if defined(__UNIX_JACK__)
-  if ( api == UNIX_JACK ) {
-    static std::string name( "jack" );
-    return name;
-  }
-#endif
-#if defined(__LINUX_PULSE__)
-  if ( api == LINUX_PULSE ) {
-    static std::string name( "pulse" );
-    return name;
-  }
-#endif
-#if defined(__LINUX_ALSA__)
-  if ( api == LINUX_ALSA ) {
-    static std::string name( "alsa" );
-    return name;
-  }
-#endif
-#if defined(__LINUX_OSS__)
-  if ( api == LINUX_OSS ) {
-    static std::string name( "oss" );
-    return name;
-  }
-#endif
-#if defined(__WINDOWS_ASIO__)
-  if ( api == WINDOWS_ASIO ) {
-    static std::string name( "asio" );
-    return name;
-  }
-#endif
-#if defined(__WINDOWS_WASAPI__)
-  if ( api == WINDOWS_WASAPI ) {
-    static std::string name( "wasapi" );
-    return name;
-  }
-#endif
-#if defined(__WINDOWS_DS__)
-  if ( api == WINDOWS_DS ) {
-    static std::string name( "ds" );
-    return name;
-  }
-#endif
-#if defined(__MACOSX_CORE__)
-  if ( api == MACOSX_CORE ) {
-    static std::string name( "core" );
-    return name;
-  }
-#endif
-#if defined(__RTAUDIO_DUMMY__)
-  if ( api == RTAUDIO_DUMMY ) {
-    static std::string name( "dummy" );
-    return name;
-  }
-#endif
-  static std::string name;
-  return name;
+  return compiledApis;
 }
 
-const std::string &RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
+const std::string RtAudio :: getCompiledApiName( RtAudio::Api api )
 {
-#if defined(__UNIX_JACK__)
-  if ( api == UNIX_JACK ) {
-    static std::string name( "JACK" );
-    return name;
-  }
-#endif
-#if defined(__LINUX_PULSE__)
-  if ( api == LINUX_PULSE ) {
-    static std::string name( "PulseAudio" );
-    return name;
-  }
-#endif
-#if defined(__LINUX_ALSA__)
-  if ( api == LINUX_ALSA ) {
-    static std::string name( "ALSA" );
-    return name;
-  }
-#endif
-#if defined(__LINUX_OSS__)
-  if ( api == LINUX_OSS ) {
-    static std::string name( "OSS" );
-    return name;
-  }
-#endif
-#if defined(__WINDOWS_ASIO__)
-  if ( api == WINDOWS_ASIO ) {
-    static std::string name( "ASIO" );
-    return name;
-  }
-#endif
-#if defined(__WINDOWS_WASAPI__)
-  if ( api == WINDOWS_WASAPI ) {
-    static std::string name( "WASAPI" );
-    return name;
-  }
-#endif
-#if defined(__WINDOWS_DS__)
-  if ( api == WINDOWS_DS ) {
-    static std::string name( "DirectSound" );
-    return name;
-  }
-#endif
-#if defined(__MACOSX_CORE__)
-  if ( api == MACOSX_CORE ) {
-    static std::string name( "Core Audio" );
-    return name;
-  }
-#endif
-#if defined(__RTAUDIO_DUMMY__)
-  if ( api == RTAUDIO_DUMMY ) {
-    static std::string name( "RtAudio Dummy" );
-    return name;
-  }
-#endif
-  static std::string name;
-  return name;
+  ApiNameMap::const_iterator it;
+  for (it = apiNames.begin(); it != apiNames.end(); it++)
+    if (it->second.first == api)
+      return it->first;
+  return "";
+}
+
+const std::string RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
+{
+  ApiNameMap::const_iterator it;
+  for (it = apiNames.begin(); it != apiNames.end(); it++)
+    if (it->second.first == api)
+      return it->second.second;
+  return "Unknown";
 }
 
 RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
 {
-  unsigned int api_number = RtAudio::UNSPECIFIED;
-  size_t nameLength = name.size();
-
-  if ( nameLength == 0 )
+  if (apiNames.find(name) == apiNames.end())
     return RtAudio::UNSPECIFIED;
-
-  while ( api_number <= RtAudio::RTAUDIO_DUMMY ) {
-    const std::string &otherName =
-      getCompiledApiName((RtAudio::Api)api_number);
-
-    if ( name == otherName )
-      return (RtAudio::Api)api_number;
-
-    ++api_number;
-  }
-
-  return RtAudio::UNSPECIFIED;
+  return apiNames.at(name).first;
 }
 
 void RtAudio :: openRtApi( RtAudio::Api api )

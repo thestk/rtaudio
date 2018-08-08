@@ -38,12 +38,12 @@ int main() {
     {
         const std::string &name = RtAudio::getCompiledApiName((RtAudio::Api)-1);
         if (!name.empty()) {
-            std::cerr << "Bad string for invalid API\n";
+            std::cerr << "Bad string for invalid API '" << name << "'\n";
             exit(1);
         }
         const std::string &displayName = RtAudio::getCompiledApiDisplayName((RtAudio::Api)-1);
-        if (!displayName.empty()) {
-            std::cerr << "Bad display string for invalid API\n";
+        if (displayName!="Unknown") {
+            std::cerr << "Bad display string for invalid API '" << displayName << "'\n";
             exit(1);
         }
     }
