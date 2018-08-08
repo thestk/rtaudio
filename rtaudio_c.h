@@ -68,6 +68,7 @@ typedef enum rtaudio_api {
   RTAUDIO_API_WINDOWS_ASIO,
   RTAUDIO_API_WINDOWS_DS,
   RTAUDIO_API_DUMMY,
+  RTAUDIO_API_NUM,
 } rtaudio_api_t;
 
 #define NUM_SAMPLE_RATES 16

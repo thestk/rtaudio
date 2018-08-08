@@ -14,19 +14,19 @@
 #include <cstdlib>
 #include <iostream>
 
-int main() {
+int test_cpp() {
     std::vector<RtAudio::Api> apis;
     RtAudio::getCompiledApi( apis );
 
     // ensure the known APIs return valid names
-    std::cout << "API names by identifier:\n";
+    std::cout << "API names by identifier (C++):\n";
     for ( size_t i = 0; i < apis.size() ; ++i ) {
-        const std::string &name = RtAudio::getCompiledApiName(apis[i]);
+        const std::string name = RtAudio::getCompiledApiName(apis[i]);
         if (name.empty()) {
             std::cerr << "Invalid name for API " << (int)apis[i] << "\n";
             exit(1);
         }
-        const std::string &displayName = RtAudio::getCompiledApiDisplayName(apis[i]);
+        const std::string displayName = RtAudio::getCompiledApiDisplayName(apis[i]);
         if (displayName.empty()) {
             std::cerr << "Invalid display name for API " << (int)apis[i] << "\n";
             exit(1);
@@ -36,12 +36,12 @@ int main() {
 
     // ensure unknown APIs return the empty string
     {
-        const std::string &name = RtAudio::getCompiledApiName((RtAudio::Api)-1);
+        const std::string name = RtAudio::getCompiledApiName((RtAudio::Api)-1);
         if (!name.empty()) {
             std::cerr << "Bad string for invalid API '" << name << "'\n";
             exit(1);
         }
-        const std::string &displayName = RtAudio::getCompiledApiDisplayName((RtAudio::Api)-1);
+        const std::string displayName = RtAudio::getCompiledApiDisplayName((RtAudio::Api)-1);
         if (displayName!="Unknown") {
             std::cerr << "Bad display string for invalid API '" << displayName << "'\n";
             exit(1);
@@ -49,7 +49,7 @@ int main() {
     }
 
     // try getting API identifier by name
-    std::cout << "API identifiers by name:\n";
+    std::cout << "API identifiers by name (C++):\n";
     for ( size_t i = 0; i < apis.size() ; ++i ) {
         std::string name = RtAudio::getCompiledApiName(apis[i]);
         if ( RtAudio::getCompiledApiByName(name) != apis[i] ) {
@@ -78,4 +78,80 @@ int main() {
     }
 
     return 0;
+}
+
+#include "rtaudio_c.h"
+
+int test_c() {
+    const rtaudio_api_t *apis = rtaudio_compiled_api();
+
+    // ensure the known APIs return valid names
+    std::cout << "API names by identifier (C):\n";
+    for ( size_t i = 0; apis[i] != RTAUDIO_API_UNSPECIFIED; ++i) {
+        const std::string name = rtaudio_compiled_api_name(apis[i]);
+        if (name.empty()) {
+            std::cerr << "Invalid name for API " << (int)apis[i] << "\n";
+            exit(1);
+        }
+        const std::string displayName = rtaudio_compiled_api_display_name(apis[i]);
+        if (displayName.empty()) {
+            std::cerr << "Invalid display name for API " << (int)apis[i] << "\n";
+            exit(1);
+        }
+        std::cout << "* " << (int)apis[i] << " '" << name << "': '" << displayName << "'\n";
+    }
+
+    // ensure unknown APIs return the empty string
+    {
+        const char *s = rtaudio_compiled_api_name((rtaudio_api_t)-1);
+        const std::string name(s?s:"");
+        if (!name.empty()) {
+            std::cerr << "Bad string for invalid API '" << name << "'\n";
+            exit(1);
+        }
+        s = rtaudio_compiled_api_display_name((rtaudio_api_t)-1);
+        const std::string displayName(s?s:"");
+        if (displayName!="Unknown") {
+            std::cerr << "Bad display string for invalid API '" << displayName << "'\n";
+            exit(1);
+        }
+    }
+
+    // try getting API identifier by name
+    std::cout << "API identifiers by name (C):\n";
+    for ( size_t i = 0; apis[i] != RTAUDIO_API_UNSPECIFIED ; ++i ) {
+        const char *s = rtaudio_compiled_api_name(apis[i]);
+        std::string name(s?s:"");
+        if ( rtaudio_compiled_api_by_name(name.c_str()) != apis[i] ) {
+            std::cerr << "Bad identifier for API '" << name << "'\n";
+            exit( 1 );
+        }
+        std::cout << "* '" << name << "': " << (int)apis[i] << "\n";
+
+        for ( size_t j = 0; j < name.size(); ++j )
+            name[j] = (j & 1) ? toupper(name[j]) : tolower(name[j]);
+        rtaudio_api_t api = rtaudio_compiled_api_by_name(name.c_str());
+        if ( api != RTAUDIO_API_UNSPECIFIED ) {
+            std::cerr << "Identifier " << (int)api << " for invalid API '" << name << "'\n";
+            exit( 1 );
+        }
+    }
+
+    // try getting an API identifier by unknown name
+    {
+        rtaudio_api_t api;
+        api = rtaudio_compiled_api_by_name("");
+        if ( api != RTAUDIO_API_UNSPECIFIED ) {
+            std::cerr << "Bad identifier for unknown API name\n";
+            exit( 1 );
+        }
+    }
+
+    return 0;
+}
+
+int main()
+{
+    test_cpp();
+    test_c();
 }
