@@ -2,7 +2,11 @@
 #define RTAUDIO_C_H
 
 #if defined(RTAUDIO_EXPORT)
+#ifdef WIN32
 #define RTAUDIOAPI __declspec(dllexport)
+#else
+#define RTAUDIOAPI __attribute__((visibility("default")))
+#endif
 #else
 #define RTAUDIOAPI //__declspec(dllimport)
 #endif
