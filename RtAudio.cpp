@@ -174,7 +174,7 @@ void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
   apis = compiledApis;
 }
 
-const std::vector<RtAudio::Api>& RtAudio :: getCompiledApi()
+const std::vector<RtAudio::Api>& RtAudio :: getCompiledApis()
 {
   return compiledApis;
 }
