@@ -160,22 +160,25 @@ const std::vector<RtAudio::Api>& RtAudio :: getCompiledApi()
   return compiledApis;
 }
 
-const std::string RtAudio :: getCompiledApiName( RtAudio::Api api )
+static const std::string unknown_api_name = "";
+static const std::string unknown_api_display_name = "Unknown";
+
+const std::string& RtAudio :: getCompiledApiName( RtAudio::Api api )
 {
   ApiNameMap::const_iterator it;
   for (it = apiNames.begin(); it != apiNames.end(); it++)
     if (it->second.first == api)
       return it->first;
-  return "";
+  return unknown_api_name;
 }
 
-const std::string RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
+const std::string& RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
 {
   ApiNameMap::const_iterator it;
   for (it = apiNames.begin(); it != apiNames.end(); it++)
     if (it->second.first == api)
       return it->second.second;
-  return "Unknown";
+  return unknown_api_display_name;
 }
 
 RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )

@@ -416,7 +416,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     If the API is unknown or not compiled, this function will return
     the empty string.
   */
-  static const std::string getCompiledApiName( RtAudio::Api api );
+  static const std::string& getCompiledApiName( RtAudio::Api api );
 
   //! Return the display name of a specified compiled audio API.
   /*!
@@ -424,7 +424,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     If the API is unknown or not compiled, this function will return
     the empty string.
   */
-  static const std::string getCompiledApiDisplayName( RtAudio::Api api );
+  static const std::string& getCompiledApiDisplayName( RtAudio::Api api );
 
   //! Return the compiled audio API having the given name.
   /*!
