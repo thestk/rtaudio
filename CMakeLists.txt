@@ -216,6 +216,7 @@ if(BUILD_SHARED_LIBS)
 
   # Set compile-time definitions
   target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
+  target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
 
   target_link_libraries(rtaudio ${LINKLIBS})
 endif()
