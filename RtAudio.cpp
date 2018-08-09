@@ -118,7 +118,7 @@ const unsigned int rtaudio_num_api_names =
 
 // The order here will control the order of RtAudio's API search in
 // the constructor.
-RtAudio::Api rtaudio_compiled_apis[] = {
+extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
 #if defined(__UNIX_JACK__)
   RtAudio::UNIX_JACK,
 #endif
@@ -148,7 +148,7 @@ RtAudio::Api rtaudio_compiled_apis[] = {
 #endif
   RtAudio::UNSPECIFIED,
 };
-const unsigned int rtaudio_num_compiled_apis =
+extern "C" const unsigned int rtaudio_num_compiled_apis =
   sizeof(rtaudio_compiled_apis)/sizeof(rtaudio_compiled_apis[0])-1;
 }
 
