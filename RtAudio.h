@@ -48,7 +48,11 @@
 #define RTAUDIO_VERSION "5.0.0"
 
 #if defined _WIN32 || defined __CYGWIN__
-  #define RTAUDIO_DLL_PUBLIC
+  #if defined(RTAUDIO_EXPORT)
+    #define RTAUDIO_DLL_PUBLIC __declspec(dllexport)
+  #else
+    #define RTAUDIO_DLL_PUBLIC
+  #endif
 #else
   #if __GNUC__ >= 4
     #define RTAUDIO_DLL_PUBLIC __attribute__( (visibility( "default" )) )
