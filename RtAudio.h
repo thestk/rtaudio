@@ -402,14 +402,6 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   */
   static void getCompiledApi( std::vector<RtAudio::Api> &apis );
 
-  //! A static function to determine the available compiled audio APIs.
-  /*!
-    The values returned in the std::vector can be compared against
-    the enumerated list values.  Note that there can be more than one
-    API compiled for certain operating systems.
-  */
-  static const std::vector<RtAudio::Api>& getCompiledApis();
-
   //! Return the name of a specified compiled audio API.
   /*!
     This obtains a short lower-case name used for identification purposes.
@@ -618,9 +610,6 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   void showWarnings( bool value = true );
 
  protected:
-
-  //! Storage for compiled API list
-  static const std::vector<RtAudio::Api> compiledApis;
 
   void openRtApi( RtAudio::Api api );
   RtApi *rtapi_;

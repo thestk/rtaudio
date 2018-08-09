@@ -152,12 +152,6 @@ extern "C" const unsigned int rtaudio_num_compiled_apis =
   sizeof(rtaudio_compiled_apis)/sizeof(rtaudio_compiled_apis[0])-1;
 }
 
-static const std::vector<RtAudio::Api> init_compiledApis() {
-  return std::vector<RtAudio::Api>(
-    rtaudio_compiled_apis, rtaudio_compiled_apis + rtaudio_num_compiled_apis);
-}
-const std::vector<RtAudio::Api> RtAudio::compiledApis(init_compiledApis());
-
 // This is a compile-time check that rtaudio_num_api_names == RtAudio::NUM_APIS.
 // If the build breaks here, check that they match.
 template<bool b> class StaticAssert { private: StaticAssert() {} };
@@ -168,19 +162,16 @@ class StaticAssertions { StaticAssertions() {
 
 void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
 {
-  apis = compiledApis;
-}
-
-const std::vector<RtAudio::Api>& RtAudio :: getCompiledApis()
-{
-  return compiledApis;
+  apis = std::vector<RtAudio::Api>(rtaudio_compiled_apis,
+                                   rtaudio_compiled_apis + rtaudio_num_compiled_apis);
 }
 
 const std::string RtAudio :: getCompiledApiName( RtAudio::Api api )
 {
   if (api < 0 || api > RtAudio::NUM_APIS
-      || (std::find(RtAudio::compiledApis.begin(),
-                    RtAudio::compiledApis.end(), api) == RtAudio::compiledApis.end()))
+      || (std::find(rtaudio_compiled_apis,
+                    rtaudio_compiled_apis+rtaudio_num_compiled_apis,
+                    api) == rtaudio_compiled_apis+rtaudio_num_compiled_apis))
     return "";
   return rtaudio_api_names[api][0];
 }
@@ -188,8 +179,9 @@ const std::string RtAudio :: getCompiledApiName( RtAudio::Api api )
 const std::string RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
 {
   if (api < 0 || api > RtAudio::NUM_APIS
-      || (std::find(RtAudio::compiledApis.begin(),
-                    RtAudio::compiledApis.end(), api) == RtAudio::compiledApis.end())) 
+      || (std::find(rtaudio_compiled_apis,
+                    rtaudio_compiled_apis+rtaudio_num_compiled_apis,
+                    api) == rtaudio_compiled_apis+rtaudio_num_compiled_apis))
     return "Unknown";
   return rtaudio_api_names[api][1];
 }
@@ -197,10 +189,9 @@ const std::string RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
 RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
 {
   unsigned int i=0;
-  std::vector<RtAudio::Api>::const_iterator it;
-  for (it = compiledApis.begin(); it != compiledApis.end(); ++it, ++i)
-    if (name == rtaudio_api_names[*it][0])
-      return *it;
+  for (i = 0; i < rtaudio_num_compiled_apis; ++i)
+    if (name == rtaudio_api_names[rtaudio_compiled_apis[i]][0])
+      return rtaudio_compiled_apis[i];
   return RtAudio::UNSPECIFIED;
 }
 
