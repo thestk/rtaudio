@@ -152,12 +152,9 @@ const unsigned int rtaudio_num_compiled_apis =
   sizeof(rtaudio_compiled_apis)/sizeof(rtaudio_compiled_apis[0])-1;
 }
 
-// TODO: replace this with something nicer (C++11)
 static const std::vector<RtAudio::Api> init_compiledApis() {
-  std::vector<RtAudio::Api> apis;
-  for (unsigned int i=0; i<rtaudio_num_compiled_apis; i++)
-    apis.push_back(rtaudio_compiled_apis[i]);
-  return apis;
+  return std::vector<RtAudio::Api>(
+    rtaudio_compiled_apis, rtaudio_compiled_apis + rtaudio_num_compiled_apis);
 }
 const std::vector<RtAudio::Api> RtAudio::compiledApis(init_compiledApis());
 
