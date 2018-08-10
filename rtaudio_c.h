@@ -107,8 +107,8 @@ typedef struct rtaudio *rtaudio_t;
 
 RTAUDIOAPI const char *rtaudio_version(void);
 RTAUDIOAPI const rtaudio_api_t *rtaudio_compiled_api(void);
-RTAUDIOAPI const char *rtaudio_compiled_api_name(rtaudio_api_t api);
-RTAUDIOAPI const char *rtaudio_compiled_api_display_name(rtaudio_api_t api);
+RTAUDIOAPI const char *rtaudio_api_name(rtaudio_api_t api);
+RTAUDIOAPI const char *rtaudio_api_display_name(rtaudio_api_t api);
 RTAUDIOAPI rtaudio_api_t rtaudio_compiled_api_by_name(const char *name);
 
 RTAUDIOAPI const char *rtaudio_error(rtaudio_t audio);

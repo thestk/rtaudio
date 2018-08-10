@@ -166,22 +166,16 @@ void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
                                    rtaudio_compiled_apis + rtaudio_num_compiled_apis);
 }
 
-const std::string RtAudio :: getCompiledApiName( RtAudio::Api api )
+std::string RtAudio :: getApiName( RtAudio::Api api )
 {
-  if (api < 0 || api > RtAudio::NUM_APIS
-      || (std::find(rtaudio_compiled_apis,
-                    rtaudio_compiled_apis+rtaudio_num_compiled_apis,
-                    api) == rtaudio_compiled_apis+rtaudio_num_compiled_apis))
+  if (api < 0 || api >= RtAudio::NUM_APIS)
     return "";
   return rtaudio_api_names[api][0];
 }
 
-const std::string RtAudio :: getCompiledApiDisplayName( RtAudio::Api api )
+std::string RtAudio :: getApiDisplayName( RtAudio::Api api )
 {
-  if (api < 0 || api > RtAudio::NUM_APIS
-      || (std::find(rtaudio_compiled_apis,
-                    rtaudio_compiled_apis+rtaudio_num_compiled_apis,
-                    api) == rtaudio_compiled_apis+rtaudio_num_compiled_apis))
+  if (api < 0 || api >= RtAudio::NUM_APIS)
     return "Unknown";
   return rtaudio_api_names[api][1];
 }
