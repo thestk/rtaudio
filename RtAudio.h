@@ -1013,7 +1013,7 @@ class RtApiWasapi : public RtApi
 {
 public:
   RtApiWasapi();
-  ~RtApiWasapi();
+  virtual ~RtApiWasapi();
 
   RtAudio::Api getCurrentApi( void ) { return RtAudio::WINDOWS_WASAPI; }
   unsigned int getDeviceCount( void );
