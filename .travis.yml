@@ -27,12 +27,6 @@ matrix:
     env: HOST="" API="oss"
     compiler: clang
   - os: linux
-    env: HOST="--host=i686-w64-mingw32" API="winmm" CPPFLAGS="-Wno-unused-function"
-    compiler: gcc
-  - os: linux
-    env: HOST="--host=x86_64-w64-mingw32" API="winmm" CPPFLAGS="-Wno-unused-function"
-    compiler: gcc
-  - os: linux
     env: HOST="--host=i686-w64-mingw32" API="dsound" CPPFLAGS="-Wno-unused-function"
     compiler: gcc
   - os: linux
