@@ -69,7 +69,7 @@ const (
 	APIWindowsWASAPI = C.RTAUDIO_API_WINDOWS_WASAPI
 	// APIWindowsASIO uses the Steinberg Audio Stream I/O API.
 	APIWindowsASIO = C.RTAUDIO_API_WINDOWS_ASIO
-	// APIWindowsDS uses the Microsoft Direct Sound API.
+	// APIWindowsDS uses the Microsoft DirectSound API.
 	APIWindowsDS = C.RTAUDIO_API_WINDOWS_DS
 	// APIDummy is a compilable but non-functional API.
 	APIDummy = C.RTAUDIO_API_DUMMY

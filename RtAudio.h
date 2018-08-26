@@ -116,7 +116,7 @@ static const RtAudioFormat RTAUDIO_FLOAT64 = 0x20; // Normalized between plus/mi
     Certain audio APIs offer a number of parameters that influence the
     I/O latency of a stream.  By default, RtAudio will attempt to set
     these parameters internally for robust (glitch-free) performance
-    (though some APIs, like Windows Direct Sound, make this difficult).
+    (though some APIs, like Windows DirectSound, make this difficult).
     By passing the RTAUDIO_MINIMIZE_LATENCY flag to the openStream()
     function, internal stream settings will be influenced in an attempt
     to minimize stream latency, though possibly at the expense of stream
@@ -288,7 +288,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
     WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
-    WINDOWS_DS,     /*!< The Microsoft Direct Sound API. */
+    WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
     RTAUDIO_DUMMY,  /*!< A compilable but non-functional API. */
     NUM_APIS        /*!< Number of values in this enum. */
   };
@@ -348,7 +348,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     Certain audio APIs offer a number of parameters that influence the
     I/O latency of a stream.  By default, RtAudio will attempt to set
     these parameters internally for robust (glitch-free) performance
-    (though some APIs, like Windows Direct Sound, make this difficult).
+    (though some APIs, like Windows DirectSound, make this difficult).
     By passing the RTAUDIO_MINIMIZE_LATENCY flag to the openStream()
     function, internal stream settings will be influenced in an attempt
     to minimize stream latency, though possibly at the expense of stream
