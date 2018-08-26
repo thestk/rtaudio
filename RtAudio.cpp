@@ -7564,7 +7564,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
       stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
@@ -8013,7 +8013,7 @@ static void *alsaCallbackHandler( void *ptr )
   RtApiAlsa *object = (RtApiAlsa *) info->object;
   bool *isRunning = &info->isRunning;
 
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
   if ( info->doRealtime ) {
     std::cerr << "RtAudio alsa: " << 
              (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
@@ -8101,7 +8101,7 @@ static void *pulseaudio_callback( void * user )
   RtApiPulse *context = static_cast<RtApiPulse *>( cbi->object );
   volatile bool *isRunning = &cbi->isRunning;
   
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
   if (cbi->doRealtime) {
     std::cerr << "RtAudio pulse: " << 
              (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
@@ -8504,7 +8504,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
       stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
@@ -9125,7 +9125,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
       stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
@@ -9516,7 +9516,7 @@ static void *ossCallbackHandler( void *ptr )
   RtApiOss *object = (RtApiOss *) info->object;
   bool *isRunning = &info->isRunning;
 
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
   if (info->doRealtime) {
     std::cerr << "RtAudio oss: " << 
              (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
