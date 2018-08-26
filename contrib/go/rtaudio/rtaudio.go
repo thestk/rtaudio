@@ -63,7 +63,7 @@ const (
 	APILinuxOSS = C.RTAUDIO_API_LINUX_OSS
 	// APIUnixJack uses the Jack Low-Latency Audio Server API.
 	APIUnixJack = C.RTAUDIO_API_UNIX_JACK
-	// APIMacOSXCore uses Macintosh OS-X Core Audio API.
+	// APIMacOSXCore uses Macintosh OS-X CoreAudio API.
 	APIMacOSXCore = C.RTAUDIO_API_MACOSX_CORE
 	// APIWindowsWASAPI uses the Microsoft WASAPI API.
 	APIWindowsWASAPI = C.RTAUDIO_API_WINDOWS_WASAPI

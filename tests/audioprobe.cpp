@@ -15,7 +15,7 @@ int main()
 {
   // Create an api map.
   std::map<int, std::string> apiMap;
-  apiMap[RtAudio::MACOSX_CORE] = "OS-X Core Audio";
+  apiMap[RtAudio::MACOSX_CORE] = "OS-X CoreAudio";
   apiMap[RtAudio::WINDOWS_ASIO] = "Windows ASIO";
   apiMap[RtAudio::WINDOWS_DS] = "Windows DirectSound";
   apiMap[RtAudio::WINDOWS_WASAPI] = "Windows WASAPI";

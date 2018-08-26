@@ -281,7 +281,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     LINUX_PULSE,    /*!< The Linux PulseAudio API. */
     LINUX_OSS,      /*!< The Linux Open Sound System API. */
     UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
-    MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
+    MACOSX_CORE,    /*!< Macintosh OS-X CoreAudio API. */
     WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
     WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
