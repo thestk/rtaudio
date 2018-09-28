@@ -3701,6 +3701,10 @@ static const char* getAsioErrorString( ASIOError result )
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
 
+#ifndef MF_E_TRANSFORM_NEED_MORE_INPUT
+  #define MF_E_TRANSFORM_NEED_MORE_INPUT _HRESULT_TYPEDEF_(0xc00d6d72)
+#endif
+
 #ifdef _MSC_VER
   #pragma comment( lib, "ksuser" )
   #pragma comment( lib, "mfplat.lib" )
@@ -3903,7 +3907,7 @@ public:
   {
     // 1. Initialization
 
-    MFStartup( MF_VERSION, MFSTARTUP_NOSOCKET );
+    MFStartup( MF_VERSION, MFSTARTUP_LITE );
 
     // 2. Create Resampler Transform Object
 
@@ -3944,17 +3948,17 @@ public:
 
     // 4. Send stream start messages to Resampler
 
-    _transform->ProcessMessage( MFT_MESSAGE_COMMAND_FLUSH, NULL );
-    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, NULL );
-    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_START_OF_STREAM, NULL );
+    _transform->ProcessMessage( MFT_MESSAGE_COMMAND_FLUSH, 0 );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0 );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0 );
   }
 
   ~WasapiResampler()
   {
     // 8. Send stream stop messages to Resampler
 
-    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_END_OF_STREAM, NULL );
-    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_END_STREAMING, NULL );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_END_OF_STREAM, 0 );
+    _transform->ProcessMessage( MFT_MESSAGE_NOTIFY_END_STREAMING, 0 );
 
     // 9. Cleanup
 
