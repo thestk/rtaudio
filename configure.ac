@@ -272,7 +272,7 @@ AS_CASE(["$systems"], [*" wasapi "*], [
      CPPFLAGS="-I$srcdir/include $CPPFLAGS"
      need_ole32=yes
      found="$found WASAPI"
-     LIBS="-lwinmm -luuid -lksuser $LIBS"])
+     LIBS="-lwinmm -lksuser -lmfplat -lmfuuid -lwmcodecdspuuid $LIBS"])
 ])
 
 AS_IF([test -n "$need_ole32"], [LIBS="-lole32 $LIBS"])
