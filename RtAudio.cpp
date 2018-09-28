@@ -3689,17 +3689,20 @@ static const char* getAsioErrorString( ASIOError result )
 #ifndef INITGUID
   #define INITGUID
 #endif
+
+#include <mfapi.h>
+#include <mferror.h>
+#include <mfplay.h>
+#include <mftransform.h>
+#include <wmcodecdsp.h>
+
 #include <audioclient.h>
 #include <avrt.h>
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
 
-#include <mfapi.h>
-#include <mferror.h>
-#include <mfplay.h>
-#include <wmcodecdsp.h>
-
 #ifdef _MSC_VER
+  #pragma comment( lib, "ksuser" )
   #pragma comment( lib, "mfplat.lib" )
   #pragma comment( lib, "mfuuid.lib" )
   #pragma comment( lib, "wmcodecdspuuid" )
@@ -3890,10 +3893,13 @@ public:
     , _sampleRatio( ( float ) outSampleRate / inSampleRate )
     , _transformUnk( NULL )
     , _transform( NULL )
-    , _resamplerProps( NULL )
     , _mediaType( NULL )
     , _inputMediaType( NULL )
     , _outputMediaType( NULL )
+
+    #ifdef __IWMResamplerProps_FWD_DEFINED__
+      , _resamplerProps( NULL )
+    #endif
   {
     // 1. Initialization
 
@@ -3906,8 +3912,10 @@ public:
 
     _transformUnk->QueryInterface( IID_PPV_ARGS( &_transform ) );
 
-    _transformUnk->QueryInterface( IID_PPV_ARGS( &_resamplerProps ) );
-    _resamplerProps->SetHalfFilterLength( 60 ); // best conversion quality
+    #ifdef __IWMResamplerProps_FWD_DEFINED__
+      _transformUnk->QueryInterface( IID_PPV_ARGS( &_resamplerProps ) );
+      _resamplerProps->SetHalfFilterLength( 60 ); // best conversion quality
+    #endif
 
     // 3. Specify input / output format
 
@@ -3954,10 +3962,13 @@ public:
 
     SAFE_RELEASE( _transformUnk );
     SAFE_RELEASE( _transform );
-    SAFE_RELEASE( _resamplerProps );
     SAFE_RELEASE( _mediaType );
     SAFE_RELEASE( _inputMediaType );
     SAFE_RELEASE( _outputMediaType );
+
+    #ifdef __IWMResamplerProps_FWD_DEFINED__
+      SAFE_RELEASE( _resamplerProps );
+    #endif
   }
 
   void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount )
@@ -4050,10 +4061,13 @@ private:
 
   IUnknown* _transformUnk;
   IMFTransform* _transform;
-  IWMResamplerProps* _resamplerProps;
   IMFMediaType* _mediaType;
   IMFMediaType* _inputMediaType;
   IMFMediaType* _outputMediaType;
+
+  #ifdef __IWMResamplerProps_FWD_DEFINED__
+    IWMResamplerProps* _resamplerProps;
+  #endif
 };
 
 //-----------------------------------------------------------------------------

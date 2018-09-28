@@ -178,7 +178,7 @@ endif()
 # WASAPI
 if (RTAUDIO_API_WASAPI)
   set(NEED_WIN32LIBS ON)
-  list(APPEND LINKLIBS uuid ksuser)
+  list(APPEND LINKLIBS ksuser mfplat mfuuid wmcodecdspuuid)
   list(APPEND API_DEFS "-D__WINDOWS_WASAPI__")
   list(APPEND API_LIST "wasapi")
 endif()
