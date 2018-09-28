@@ -3705,6 +3705,10 @@ static const char* getAsioErrorString( ASIOError result )
   #define MF_E_TRANSFORM_NEED_MORE_INPUT _HRESULT_TYPEDEF_(0xc00d6d72)
 #endif
 
+#ifndef MFSTARTUP_NOSOCKET
+  #define MFSTARTUP_NOSOCKET 0x1
+#endif
+
 #ifdef _MSC_VER
   #pragma comment( lib, "ksuser" )
   #pragma comment( lib, "mfplat.lib" )
@@ -3907,7 +3911,7 @@ public:
   {
     // 1. Initialization
 
-    MFStartup( MF_VERSION, MFSTARTUP_LITE );
+    MFStartup( MF_VERSION, MFSTARTUP_NOSOCKET );
 
     // 2. Create Resampler Transform Object
 
