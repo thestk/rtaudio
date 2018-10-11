@@ -82,9 +82,20 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   #define MUTEX_DESTROY(A)    pthread_mutex_destroy(A)
   #define MUTEX_LOCK(A)       pthread_mutex_lock(A)
   #define MUTEX_UNLOCK(A)     pthread_mutex_unlock(A)
+#elif defined(__GENODE_AUDIO__)
+  #define MUTEX_INITIALIZE(A)
+  #define MUTEX_DESTROY(A)
 #else
   #define MUTEX_INITIALIZE(A) abs(*A) // dummy definitions
   #define MUTEX_DESTROY(A)    abs(*A) // dummy definitions
+#endif
+
+#if defined(__GENODE_AUDIO__)
+
+  static Genode::Env *_rtaudio_env;
+
+  void init_rtaudio(Genode::Env &env) { _rtaudio_env = &env; }
+
 #endif
 
 // *************************************************** //
@@ -128,6 +139,9 @@ void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
 #if defined(__MACOSX_CORE__)
   apis.push_back( MACOSX_CORE );
 #endif
+#if defined(__GENODE_AUDIO__)
+  apis.push_back( GENODE_AUDIO );
+#endif
 #if defined(__RTAUDIO_DUMMY__)
   apis.push_back( RTAUDIO_DUMMY );
 #endif
@@ -170,6 +184,15 @@ void RtAudio :: openRtApi( RtAudio::Api api )
 #if defined(__MACOSX_CORE__)
   if ( api == MACOSX_CORE )
     rtapi_ = new RtApiCore();
+#endif
+#if defined(__GENODE_AUDIO__)
+  if ( api == GENODE_AUDIO ) {
+    if ( !_rtaudio_env ) {
+      Genode::error("RtAudio: library not initialized with 'init_rtaudio'");
+      throw( RtAudioError( "library not initialized with 'init_rtaudio'", RtAudioError::UNSPECIFIED ) );
+    }
+    rtapi_ = new RtApiGenode();
+  }
 #endif
 #if defined(__RTAUDIO_DUMMY__)
   if ( api == RTAUDIO_DUMMY )
@@ -9533,6 +9556,346 @@ static void *ossCallbackHandler( void *ptr )
 }
 
 //******************** End of __LINUX_OSS__ *********************//
+#endif
+
+#if defined(__GENODE_AUDIO__)
+
+RtApiGenode :: RtApiGenode()
+: Genode::Thread(THREAD_WHEIGHT, "rtaudio_thread", STACK_SIZE)
+{
+  stream_.callbackInfo.thread = this;
+}
+
+RtApiGenode :: ~RtApiGenode()
+{
+  if ( stream_.state != STREAM_CLOSED )
+    closeStream();
+}
+
+RtAudio::DeviceInfo RtApiGenode :: getDeviceInfo( unsigned int /*device*/)
+{
+  RtAudio::DeviceInfo info;
+  info.probed = true;
+  info.name = "Genode";
+  info.outputChannels = info.inputChannels = info.duplexChannels = 2;
+  info.isDefaultOutput = info.isDefaultInput = true;
+  info.sampleRates.push_back(Audio_out::SAMPLE_RATE);
+  info.preferredSampleRate = Audio_out::SAMPLE_RATE;
+  info.nativeFormats = RTAUDIO_FLOAT32;
+  return info;
+}
+
+void RtApiGenode :: closeStream( void )
+{
+  if ( stream_.state == STREAM_RUNNING )
+    stopStream();
+
+  Genode::Thread::join();
+
+  while ( channelsOut_.first() ) {
+    RtApiGenode::ChannelOut *c = channelsOut_.first();
+    channelsOut_.remove( c );
+    delete c;
+  }
+  while ( channelsIn_.first() ) {
+    RtApiGenode::ChannelIn *c = channelsIn_.first();
+    channelsIn_.remove( c );
+    delete c;
+  }
+
+  if ( stream_.userBuffer[OUTPUT] ) {
+    free( stream_.userBuffer[OUTPUT] );
+    stream_.userBuffer[OUTPUT] = nullptr;
+  }
+  if ( stream_.userBuffer[INPUT] ) {
+    free( stream_.userBuffer[INPUT] );
+    stream_.userBuffer[INPUT] = nullptr;
+  }
+
+  stream_.state = STREAM_CLOSED;
+  stream_.mode = UNINITIALIZED;
+}
+
+void RtApiGenode :: startStream( void )
+{
+  if ( stream_.state == STREAM_CLOSED ) {
+    errorText_ = "RtApiGenode::startStream(): the stream is not open!";
+    error( RtAudioError::INVALID_USE );
+    return;
+  }
+  if ( stream_.state == STREAM_RUNNING ) {
+    errorText_ = "RtApiGenode::startStream(): the stream is already running!";
+    error( RtAudioError::WARNING );
+    return;
+  }
+
+  stream_.callbackInfo.isRunning = true;
+  stream_.state = STREAM_RUNNING;
+
+  Genode::Thread::start();
+}
+
+void RtApiGenode :: stopStream( void )
+{
+  Genode::Lock::Guard guard( stream_.mutex );
+
+  if ( stream_.state == STREAM_CLOSED ) {
+    errorText_ = "RtApiGenode::stopStream(): the stream is not open!";
+    error( RtAudioError::INVALID_USE );
+    return;
+  }
+  if ( stream_.state == STREAM_STOPPED ) {
+    errorText_ = "RtApiGenode::stopStream(): the stream is already stopped!";
+    error( RtAudioError::WARNING );
+    return;
+  }
+
+  stream_.callbackInfo.isRunning = false;
+
+  forEachChannelOut( [] ( ChannelOut &c ) { c.stop(); } );
+  forEachChannelIn(  [] ( ChannelIn  &c ) { c.stop(); } );
+  stream_.state = STREAM_STOPPED;
+}
+
+void RtApiGenode :: abortStream( void )
+{
+  Genode::Lock::Guard guard( stream_.mutex );
+
+  if ( stream_.state == STREAM_CLOSED ) {
+    errorText_ = "RtApiGenode::stopStream(): the stream is not open!";
+    error( RtAudioError::INVALID_USE );
+    return;
+  }
+  if ( stream_.state == STREAM_STOPPED ) {
+    errorText_ = "RtApiGenode::stopStream(): the stream is already stopped!";
+    error( RtAudioError::WARNING );
+    return;
+  }
+
+  forEachChannelOut( [] ( ChannelOut &c ) {
+    c.stop();
+    c.stream()->invalidate_all();
+  } );
+  forEachChannelIn( [] ( ChannelIn  &c ) { c.stop(); } );
+  stream_.callbackInfo.isRunning = false;
+  stream_.state = STREAM_STOPPED;
+}
+
+bool RtApiGenode :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+                                     unsigned int firstChannel, unsigned int sampleRate,
+                                     RtAudioFormat format, unsigned int *bufferSize,
+                                     RtAudio::StreamOptions *options )
+{
+  if ( device != 0 ) {
+    errorText_ = "RtApiGenode::probeDeviceOpen: only one device supported.";
+    return FAILURE;
+  }
+
+  stream_.userInterleaved = options ? !(options->flags & RTAUDIO_NONINTERLEAVED) : true;
+
+  // force the buffer size the size of an audio packet
+  stream_.bufferSize = *bufferSize = Audio_out::PERIOD;
+  stream_.nBuffers = 1;
+
+  bool const doConvertBuffer = (
+    ( format != RTAUDIO_FLOAT32 ) ||
+    ( channels > 2 ) ||
+    ( stream_.userInterleaved ) );
+  unsigned const bufferBytes = channels * *bufferSize * formatBytes( format );
+
+  stream_.mode = mode;
+  stream_.userFormat = format;
+
+  auto configureStreamMode = [&] (StreamMode const mode)
+  {
+    stream_.device[mode] = device;
+
+    // Allocate user buffer.
+    stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
+
+    stream_.doConvertBuffer[mode] = doConvertBuffer;
+    stream_.deviceInterleaved[mode] = false;
+    stream_.doByteSwap[mode] = false;
+    stream_.nUserChannels[mode] = channels;
+    stream_.nDeviceChannels[mode] = channels > 2 ? 2 : channels;
+    stream_.channelOffset[mode] = firstChannel;
+    stream_.deviceFormat[mode] = RTAUDIO_FLOAT32;
+    setConvertInfo( mode, firstChannel );
+  };
+
+  if ( mode == OUTPUT || mode == DUPLEX ) {
+    if ( sampleRate != Audio_out::SAMPLE_RATE ) {
+      errorStream_ << "RtApiGenode::probeDeviceOpen: the only supported sample rate is " << Audio_out::SAMPLE_RATE << ".";
+      errorText_ = errorStream_.str();
+      closeStream();
+      return FAILURE;
+    }
+    configureStreamMode(OUTPUT);
+    if ( stream_.userBuffer[OUTPUT] == NULL ) {
+      errorText_ = "RtApiGenode::probeDeviceOpen: error allocating user buffer memory.";
+     closeStream();
+      return FAILURE;
+    }
+  }
+
+  if ( mode == INPUT || mode == DUPLEX ) {
+    if ( sampleRate != Audio_in::SAMPLE_RATE ) {
+      errorStream_ << "RtApiGenode::probeDeviceOpen: the only supported sample rate is " << Audio_in::SAMPLE_RATE << ".";
+      errorText_ = errorStream_.str();
+      closeStream();
+      return FAILURE;
+    }
+    configureStreamMode(INPUT);
+    if ( stream_.userBuffer[INPUT] == NULL ) {
+      errorText_ = "RtApiGenode::probeDeviceOpen: error allocating user buffer memory.";
+      closeStream();
+      return FAILURE;
+    }
+  }
+
+  // Allocate device buffer
+  if ( doConvertBuffer ) {
+    unsigned long bytesOut = *bufferSize * channels * sizeof(float);
+
+    if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
+    stream_.deviceBuffer = (char *) calloc( bytesOut, 1 );
+    if ( stream_.deviceBuffer == NULL ) {
+      errorText_ = "RtApiGenode::probeDeviceOpen: error allocating device buffer memory.";
+      closeStream();
+      return FAILURE;
+    }
+
+  } else
+    stream_.deviceBuffer = nullptr;
+
+  try {
+
+    for ( unsigned i = firstChannel; i < firstChannel+channels; ++i ) {
+      if ( mode == OUTPUT || mode == DUPLEX ) {
+        ChannelOut *c = new ChannelOut(*_rtaudio_env, i == 0 ? "left" : "right" );
+        channelsOut_.insert( c );
+      }
+
+      if ( mode == INPUT || mode == DUPLEX ) {
+        ChannelIn *c = new ChannelIn(*_rtaudio_env, i == 0 ? "left" : "right" );
+        channelsIn_.insert( c );
+      }
+    }
+
+  } catch ( ... ) {
+    errorText_ = "RtApiGenode::probeDeviceOpen: failed to open audio session.";
+    closeStream();
+    return FAILURE;
+  }
+
+  stream_.state = STREAM_STOPPED;
+  return true;
+}
+
+void RtApiGenode :: entry()
+{
+  volatile bool *isRunning = &stream_.callbackInfo.isRunning;
+
+  forEachChannelOut( [] ( ChannelOut &c ) {
+    c.stream()->reset();
+    c.start();
+  } );
+
+  forEachChannelIn(  [] ( ChannelIn  &c ) { c.start(); } );
+
+  while ( *isRunning ) {
+
+    if ( stream_.state == STREAM_CLOSED ) {
+      errorText_ = "RtApiGenode::callbackEvent(): the stream is closed ... "
+        "this shouldn't happen!";
+      error( RtAudioError::WARNING );
+      break;
+    }
+
+    RtAudioCallback callback = (RtAudioCallback) stream_.callbackInfo.callback;
+    double streamTime = getStreamTime();
+
+    RtAudioStreamStatus status = 0;
+    int doStopStream = callback( stream_.userBuffer[OUTPUT], stream_.userBuffer[INPUT],
+                                 stream_.bufferSize, streamTime, status,
+                                 stream_.callbackInfo.userData );
+
+    if ( doStopStream == 2 ) {
+      abortStream();
+      return;
+    }
+
+    Genode::Lock::Guard guard( stream_.mutex );
+
+    if ( stream_.state != STREAM_RUNNING )
+      break;
+
+    if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
+
+      // treat the buffer as a float array for offset math
+      float const *src_buf;
+      if ( stream_.doConvertBuffer[OUTPUT] ) {
+          convertBuffer( stream_.deviceBuffer,
+                         stream_.userBuffer[OUTPUT],
+                         stream_.convertInfo[OUTPUT] );
+        src_buf = (float*)stream_.deviceBuffer;
+      } else {
+        src_buf = (float*)stream_.userBuffer[OUTPUT];
+      }
+
+      channelsOut_.first()->wait_for_progress();
+      Audio_out::Packet *pkt = channelsOut_.first()->stream()->next();
+
+      unsigned int const ref_pos = channelsOut_.first()->stream()->packet_position( pkt );
+      Genode::off_t offset = 0;
+
+      forEachChannelOut( [&] ( ChannelOut &out ) {
+        if ( offset )
+          pkt = out.stream()->get( ref_pos );
+        Genode::memcpy( pkt->content(), &src_buf[offset],
+                        Audio_out::PERIOD * sizeof(float) );
+        out.submit( pkt );
+        offset += stream_.bufferSize;
+      } );
+    }
+
+    if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
+
+
+      // treat the buffer as a float array for offset math
+      float *dst_buf;
+      if ( stream_.doConvertBuffer[INPUT] )
+        dst_buf = (float*)stream_.deviceBuffer;
+      else
+        dst_buf = (float*)stream_.userBuffer[INPUT];
+
+      unsigned int const ref_pos = channelsIn_.first()->stream()->pos();
+      Genode::off_t offset = 0;
+
+      forEachChannelIn( [&] ( ChannelIn &in ) {
+        Audio_in::Packet *pkt = in.stream()->get( ref_pos );
+        Genode::memcpy( &dst_buf[offset], pkt->content(),
+                        Audio_in::PERIOD * sizeof(float) );
+        offset += stream_.bufferSize;
+      } );
+
+      if ( stream_.doConvertBuffer[INPUT] ) {
+        convertBuffer( stream_.userBuffer[INPUT],
+                       stream_.deviceBuffer,
+                       stream_.convertInfo[INPUT] );
+      }
+    }
+
+    RtApi::tickStreamTime();
+
+    if ( doStopStream == 1 )
+      break;
+
+  }
+  stopStream();
+}
+
+//******************** End of __GENODE_AUDIO__ *********************//
 #endif
 
 

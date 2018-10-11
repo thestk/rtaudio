@@ -285,6 +285,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
     WINDOWS_DS,     /*!< The Microsoft Direct Sound API. */
+    GENODE_AUDIO,   /*!< Genode Audio_out and Audio_in API. */
     RTAUDIO_DUMMY   /*!< A compilable but non-functional API. */
   };
 
@@ -604,6 +605,16 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   typedef pthread_t ThreadHandle;
   typedef pthread_mutex_t StreamMutex;
 
+#elif defined(__GENODE_AUDIO__)
+
+#include <base/thread.h>
+#include <base/lock.h>
+
+  typedef Genode::Thread* ThreadHandle;
+  typedef Genode::Lock StreamMutex;
+
+  void init_rtaudio(Genode::Env &env);
+
 #else // Setup for "dummy" behavior
 
   #define __RTAUDIO_DUMMY__
@@ -641,7 +652,7 @@ struct CallbackInfo {
 // Note that RtApi is an abstract base class and cannot be
 // explicitly instantiated.  The class RtAudio will create an
 // instance of an RtApi subclass (RtApiOss, RtApiAlsa,
-// RtApiJack, RtApiCore, RtApiDs, or RtApiAsio).
+// RtApiJack, RtApiCore, RtApiDs, RtApiAsio, or RtApiGenode).
 //
 // **************************************************************** //
 
@@ -1136,6 +1147,77 @@ public:
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options );
+};
+
+#endif
+
+#if defined(__GENODE_AUDIO__)
+
+#include <audio_out_session/connection.h>
+#include <audio_in_session/connection.h>
+#include <util/list.h>
+
+class RtApiGenode: public RtApi, Genode::Thread
+{
+public:
+
+  RtApiGenode();
+  ~RtApiGenode();
+  RtAudio::Api getCurrentApi( void ) { return RtAudio::GENODE_AUDIO; }
+  unsigned int getDeviceCount( void ) { return 1; }
+  RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
+  void closeStream( void );
+  void startStream( void );
+  void stopStream( void );
+  void abortStream( void );
+
+  private:
+
+  struct ChannelOut;
+  struct ChannelIn;
+  typedef Genode::List<ChannelOut> ChannelsOut;
+  typedef Genode::List<ChannelIn>  ChannelsIn;
+  struct ChannelOut final : Audio_out::Connection, ChannelsOut::Element
+  {
+    ChannelOut(Genode::Env &env, char const *chan)
+    : Audio_out::Connection(env, chan, false, true) { }
+  };
+
+  struct ChannelIn final : Audio_in::Connection, ChannelsIn::Element
+  {
+    ChannelIn(Genode::Env &env, char const *chan)
+    : Audio_in::Connection(env, chan, true) { }
+  };
+
+  ChannelsOut channelsOut_;
+  ChannelsIn  channelsIn_;
+
+  template <typename FUNC>
+  void forEachChannelOut( FUNC const &func )
+  {
+    for ( ChannelOut *c = channelsOut_.first(); c; c = c->next() )
+      func( *c );
+  }
+
+  template <typename FUNC>
+  void forEachChannelIn( FUNC const &func )
+  {
+    for ( ChannelIn *c = channelsIn_.first(); c; c = c->next() )
+      func( *c );
+  }
+
+  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options );
+
+  enum {
+    THREAD_WHEIGHT = 4,
+    STACK_SIZE = 1024 * 16 * sizeof(Genode::addr_t)
+  };
+
+  // Thread entry function
+  void entry() override;
 };
 
 #endif
