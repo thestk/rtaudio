@@ -46,6 +46,7 @@ int main()
     info = audio.getDeviceInfo(i);
 
     std::cout << "\nDevice Name = " << info.name << '\n';
+    std::cout << "Device ID = " << i << '\n';
     if ( info.probed == false )
       std::cout << "Probe Status = UNsuccessful\n";
     else {
