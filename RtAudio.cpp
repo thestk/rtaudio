@@ -98,39 +98,95 @@ std::string RtAudio :: getVersion( void )
   return RTAUDIO_VERSION;
 }
 
-void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
-{
-  apis.clear();
+// Define API names and display names.
+// Must be in same order as API enum.
+extern "C" {
+const char* rtaudio_api_names[][2] = {
+  { "unspecified" , "Unknown" },
+  { "alsa"        , "ALSA" },
+  { "pulse"       , "Pulse" },
+  { "oss"         , "OpenSoundSystem" },
+  { "jack"        , "Jack" },
+  { "core"        , "CoreAudio" },
+  { "wasapi"      , "WASAPI" },
+  { "asio"        , "ASIO" },
+  { "ds"          , "DirectSound" },
+  { "dummy"       , "Dummy" },
+};
+const unsigned int rtaudio_num_api_names = 
+  sizeof(rtaudio_api_names)/sizeof(rtaudio_api_names[0]);
 
-  // The order here will control the order of RtAudio's API search in
-  // the constructor.
+// The order here will control the order of RtAudio's API search in
+// the constructor.
+extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
 #if defined(__UNIX_JACK__)
-  apis.push_back( UNIX_JACK );
+  RtAudio::UNIX_JACK,
 #endif
 #if defined(__LINUX_PULSE__)
-  apis.push_back( LINUX_PULSE );
+  RtAudio::LINUX_PULSE,
 #endif
 #if defined(__LINUX_ALSA__)
-  apis.push_back( LINUX_ALSA );
+  RtAudio::LINUX_ALSA,
 #endif
 #if defined(__LINUX_OSS__)
-  apis.push_back( LINUX_OSS );
+  RtAudio::LINUX_OSS,
 #endif
 #if defined(__WINDOWS_ASIO__)
-  apis.push_back( WINDOWS_ASIO );
+  RtAudio::WINDOWS_ASIO,
 #endif
 #if defined(__WINDOWS_WASAPI__)
-  apis.push_back( WINDOWS_WASAPI );
+  RtAudio::WINDOWS_WASAPI,
 #endif
 #if defined(__WINDOWS_DS__)
-  apis.push_back( WINDOWS_DS );
+  RtAudio::WINDOWS_DS,
 #endif
 #if defined(__MACOSX_CORE__)
-  apis.push_back( MACOSX_CORE );
+  RtAudio::MACOSX_CORE,
 #endif
 #if defined(__RTAUDIO_DUMMY__)
-  apis.push_back( RTAUDIO_DUMMY );
+  RtAudio::RTAUDIO_DUMMY,
 #endif
+  RtAudio::UNSPECIFIED,
+};
+extern "C" const unsigned int rtaudio_num_compiled_apis =
+  sizeof(rtaudio_compiled_apis)/sizeof(rtaudio_compiled_apis[0])-1;
+}
+
+// This is a compile-time check that rtaudio_num_api_names == RtAudio::NUM_APIS.
+// If the build breaks here, check that they match.
+template<bool b> class StaticAssert { private: StaticAssert() {} };
+template<> class StaticAssert<true>{ public: StaticAssert() {} };
+class StaticAssertions { StaticAssertions() {
+  StaticAssert<rtaudio_num_api_names == RtAudio::NUM_APIS>();
+}};
+
+void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
+{
+  apis = std::vector<RtAudio::Api>(rtaudio_compiled_apis,
+                                   rtaudio_compiled_apis + rtaudio_num_compiled_apis);
+}
+
+std::string RtAudio :: getApiName( RtAudio::Api api )
+{
+  if (api < 0 || api >= RtAudio::NUM_APIS)
+    return "";
+  return rtaudio_api_names[api][0];
+}
+
+std::string RtAudio :: getApiDisplayName( RtAudio::Api api )
+{
+  if (api < 0 || api >= RtAudio::NUM_APIS)
+    return "Unknown";
+  return rtaudio_api_names[api][1];
+}
+
+RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
+{
+  unsigned int i=0;
+  for (i = 0; i < rtaudio_num_compiled_apis; ++i)
+    if (name == rtaudio_api_names[rtaudio_compiled_apis[i]][0])
+      return rtaudio_compiled_apis[i];
+  return RtAudio::UNSPECIFIED;
 }
 
 void RtAudio :: openRtApi( RtAudio::Api api )

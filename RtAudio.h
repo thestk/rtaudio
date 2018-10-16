@@ -48,7 +48,11 @@
 #define RTAUDIO_VERSION "5.0.0"
 
 #if defined _WIN32 || defined __CYGWIN__
-  #define RTAUDIO_DLL_PUBLIC
+  #if defined(RTAUDIO_EXPORT)
+    #define RTAUDIO_DLL_PUBLIC __declspec(dllexport)
+  #else
+    #define RTAUDIO_DLL_PUBLIC
+  #endif
 #else
   #if __GNUC__ >= 4
     #define RTAUDIO_DLL_PUBLIC __attribute__( (visibility( "default" )) )
@@ -285,7 +289,8 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
     WINDOWS_DS,     /*!< The Microsoft Direct Sound API. */
-    RTAUDIO_DUMMY   /*!< A compilable but non-functional API. */
+    RTAUDIO_DUMMY,  /*!< A compilable but non-functional API. */
+    NUM_APIS        /*!< Number of values in this enum. */
   };
 
   //! The public device information structure for returning queried values.
@@ -396,6 +401,29 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     API compiled for certain operating systems.
   */
   static void getCompiledApi( std::vector<RtAudio::Api> &apis );
+
+  //! Return the name of a specified compiled audio API.
+  /*!
+    This obtains a short lower-case name used for identification purposes.
+    This value is guaranteed to remain identical across library versions.
+    If the API is unknown, this function will return the empty string.
+  */
+  static std::string getApiName( RtAudio::Api api );
+
+  //! Return the display name of a specified compiled audio API.
+  /*!
+    This obtains a long name used for display purposes.
+    If the API is unknown, this function will return the empty string.
+  */
+  static std::string getApiDisplayName( RtAudio::Api api );
+
+  //! Return the compiled audio API having the given name.
+  /*!
+    A case insensitive comparison will check the specified name
+    against the list of compiled APIs, and return the one which
+    matches. On failure, the function returns UNSPECIFIED.
+  */
+  static RtAudio::Api getCompiledApiByName( const std::string &name );
 
   //! The class constructor.
   /*!

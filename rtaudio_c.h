@@ -2,7 +2,11 @@
 #define RTAUDIO_C_H
 
 #if defined(RTAUDIO_EXPORT)
+#if defined _WIN32 || defined __CYGWIN__
 #define RTAUDIOAPI __declspec(dllexport)
+#else
+#define RTAUDIOAPI __attribute__((visibility("default")))
+#endif
 #else
 #define RTAUDIOAPI //__declspec(dllimport)
 #endif
@@ -64,6 +68,7 @@ typedef enum rtaudio_api {
   RTAUDIO_API_WINDOWS_ASIO,
   RTAUDIO_API_WINDOWS_DS,
   RTAUDIO_API_DUMMY,
+  RTAUDIO_API_NUM,
 } rtaudio_api_t;
 
 #define NUM_SAMPLE_RATES 16
@@ -102,6 +107,9 @@ typedef struct rtaudio *rtaudio_t;
 
 RTAUDIOAPI const char *rtaudio_version(void);
 RTAUDIOAPI const rtaudio_api_t *rtaudio_compiled_api(void);
+RTAUDIOAPI const char *rtaudio_api_name(rtaudio_api_t api);
+RTAUDIOAPI const char *rtaudio_api_display_name(rtaudio_api_t api);
+RTAUDIOAPI rtaudio_api_t rtaudio_compiled_api_by_name(const char *name);
 
 RTAUDIOAPI const char *rtaudio_error(rtaudio_t audio);
 
