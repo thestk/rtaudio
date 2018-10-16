@@ -279,10 +279,10 @@ else()
 endif()
 
 # Create CMake configuration export file.
-file(WRITE ${CMAKE_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
 
 # Install CMake configuration export file.
-install(FILES ${CMAKE_BINARY_DIR}/RtAudioConfig.cmake
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
         DESTINATION ${RTAUDIO_CMAKE_DESTINATION})
 
 # Export library target (build-tree).
@@ -296,12 +296,12 @@ install(EXPORT RtAudioTargets
 
 # Configure uninstall target.
 configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/RtAudioConfigUninstall.cmake.in"
-    "${CMAKE_BINARY_DIR}/RtAudioConfigUninstall.cmake" @ONLY)
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RtAudioConfigUninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfigUninstall.cmake" @ONLY)
 
 # Create uninstall target.
 add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/RtAudioConfigUninstall.cmake)
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfigUninstall.cmake)
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/rtaudio.pc
