@@ -45,7 +45,7 @@ The RtAudio::DeviceInfo structure is defined in RtAudio.h and provides a variety
     bool isDefaultOutput;                  // true if this is the default output device.
     bool isDefaultInput;                   // true if this is the default input device.
     std::vector<unsigned int> sampleRates; // Supported sample rates.
-    unsigned int preferredSampleRate;      // Preferred sample rate, eg. for WASAPI the system sample rate.
+    unsigned int preferredSampleRate;      // Preferred sample rate, e.g. for WASAPI the system sample rate.
     RtAudioFormat nativeFormats;           // Bit mask of supported data formats.
   };
 \endcode

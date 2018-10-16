@@ -28,7 +28,7 @@ A few options can be passed to configure (or the autogen.sh script), including:
 
 Typing "./configure --help" will display all the available options.  Note that you can provide more than one "--with-" flag to the configure script to enable multiple API support.
 
-If you wish to use a different compiler than that selected by configure, specify that compiler in the command line (ex. to use CC):
+If you wish to use a different compiler than that selected by configure, specify that compiler in the command line (e.g. to use CC):
 
   ./configure CXX=CC
 
