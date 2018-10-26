@@ -4727,7 +4727,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     goto Exit;
   }
 
-  // determine whether index falls within capture or render devices
+  // if device index falls within capture devices
   if ( device >= renderDeviceCount ) {
     if ( mode != INPUT ) {
       errorType = RtAudioError::INVALID_USE;
@@ -4747,26 +4747,52 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
                               NULL, ( void** ) &captureAudioClient );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve device audio client.";
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device audio client.";
       goto Exit;
     }
 
     hr = captureAudioClient->GetMixFormat( &deviceFormat );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve device mix format.";
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device mix format.";
       goto Exit;
     }
 
     stream_.nDeviceChannels[mode] = deviceFormat->nChannels;
     captureAudioClient->GetStreamLatency( ( long long* ) &stream_.latency[mode] );
   }
-  else {
-    if ( mode != OUTPUT ) {
-      errorType = RtAudioError::INVALID_USE;
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Render device selected as input device.";
+
+  // if device index falls within render devices and is configured for loopback
+  if ( device < renderDeviceCount && mode == INPUT )
+  {
+    // retrieve captureAudioClient from devicePtr
+    IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
+
+    hr = renderDevices->Item( device, &devicePtr );
+    if ( FAILED( hr ) ) {
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device handle.";
       goto Exit;
     }
 
+    hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
+                              NULL, ( void** ) &captureAudioClient );
+    if ( FAILED( hr ) ) {
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device audio client.";
+      goto Exit;
+    }
+
+    hr = captureAudioClient->GetMixFormat( &deviceFormat );
+    if ( FAILED( hr ) ) {
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device mix format.";
+      goto Exit;
+    }
+
+    stream_.nDeviceChannels[mode] = deviceFormat->nChannels;
+    captureAudioClient->GetStreamLatency( ( long long* ) &stream_.latency[mode] );
+  }
+
+  // if device index falls within render devices and is configured for output
+  if ( device < renderDeviceCount && mode == OUTPUT )
+  {
     // retrieve renderAudioClient from devicePtr
     IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
 
@@ -4779,13 +4805,13 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
                               NULL, ( void** ) &renderAudioClient );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve device audio client.";
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device audio client.";
       goto Exit;
     }
 
     hr = renderAudioClient->GetMixFormat( &deviceFormat );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve device mix format.";
+      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device mix format.";
       goto Exit;
     }
 
@@ -4925,6 +4951,7 @@ void RtApiWasapi::wasapiThread()
   unsigned int bufferFrameCount = 0;
   unsigned int numFramesPadding = 0;
   unsigned int convBufferSize = 0;
+  bool loopbackEnabled = stream_.device[INPUT] == stream_.device[OUTPUT];
   bool callbackPushed = true;
   bool callbackPulled = false;
   bool callbackStopped = false;
@@ -4962,15 +4989,11 @@ void RtApiWasapi::wasapiThread()
 
     captureSrRatio = ( ( float ) captureFormat->nSamplesPerSec / stream_.sampleRate );
 
-    // initialize capture stream according to desire buffer size
-    float desiredBufferSize = stream_.bufferSize * captureSrRatio;
-    REFERENCE_TIME desiredBufferPeriod = ( REFERENCE_TIME ) ( ( float ) desiredBufferSize * 10000000 / captureFormat->nSamplesPerSec );
-
     if ( !captureClient ) {
       hr = captureAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
-                                           AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                           desiredBufferPeriod,
-                                           desiredBufferPeriod,
+                                           loopbackEnabled ? AUDCLNT_STREAMFLAGS_LOOPBACK : AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                           0,
+                                           0,
                                            captureFormat,
                                            NULL );
       if ( FAILED( hr ) ) {
@@ -4985,22 +5008,27 @@ void RtApiWasapi::wasapiThread()
         goto Exit;
       }
 
-      // configure captureEvent to trigger on every available capture buffer
-      captureEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
-      if ( !captureEvent ) {
-        errorType = RtAudioError::SYSTEM_ERROR;
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to create capture event.";
-        goto Exit;
-      }
+      // don't configure captureEvent if in loopback mode
+      if ( !loopbackEnabled )
+      {
+        // configure captureEvent to trigger on every available capture buffer
+        captureEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
+        if ( !captureEvent ) {
+          errorType = RtAudioError::SYSTEM_ERROR;
+          errorText_ = "RtApiWasapi::wasapiThread: Unable to create capture event.";
+          goto Exit;
+        }
 
-      hr = captureAudioClient->SetEventHandle( captureEvent );
-      if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to set capture event handle.";
-        goto Exit;
+        hr = captureAudioClient->SetEventHandle( captureEvent );
+        if ( FAILED( hr ) ) {
+          errorText_ = "RtApiWasapi::wasapiThread: Unable to set capture event handle.";
+          goto Exit;
+        }
+
+        ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent = captureEvent;
       }
 
       ( ( WasapiHandle* ) stream_.apiHandle )->captureClient = captureClient;
-      ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent = captureEvent;
     }
 
     unsigned int inBufferSize = 0;
@@ -5047,15 +5075,11 @@ void RtApiWasapi::wasapiThread()
 
     renderSrRatio = ( ( float ) renderFormat->nSamplesPerSec / stream_.sampleRate );
 
-    // initialize render stream according to desire buffer size
-    float desiredBufferSize = stream_.bufferSize * renderSrRatio;
-    REFERENCE_TIME desiredBufferPeriod = ( REFERENCE_TIME ) ( ( float ) desiredBufferSize * 10000000 / renderFormat->nSamplesPerSec );
-
     if ( !renderClient ) {
       hr = renderAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
                                           AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                          desiredBufferPeriod,
-                                          desiredBufferPeriod,
+                                          0,
+                                          0,
                                           renderFormat,
                                           NULL );
       if ( FAILED( hr ) ) {
@@ -5308,7 +5332,7 @@ void RtApiWasapi::wasapiThread()
     if ( captureAudioClient ) {
       // if the callback input buffer was not pulled from captureBuffer, wait for next capture event
       if ( !callbackPulled ) {
-        WaitForSingleObject( captureEvent, INFINITE );
+        WaitForSingleObject( loopbackEnabled ? renderEvent : captureEvent, INFINITE );
       }
 
       // Get capture buffer from stream
