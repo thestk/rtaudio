@@ -17,9 +17,13 @@ struct rtaudio {
 
 const char *rtaudio_version() { return RTAUDIO_VERSION; }
 
-extern "C" const rtaudio_api_t rtaudio_compiled_apis[]; // casting from RtAudio::Api[]
-extern "C" const unsigned int rtaudio_num_compiled_apis;
-const rtaudio_api_t *rtaudio_compiled_api() { return rtaudio_compiled_apis; }
+static rtaudio_api_t rtaudio_compiled_apis_c[rtaudio_num_compiled_apis];
+const rtaudio_api_t *rtaudio_compiled_api() {
+  for (int i = 0; i < rtaudio_num_compiled_apis; i++) {
+    rtaudio_compiled_apis_c[i] = (rtaudio_api_t) rtaudio_compiled_apis[i];
+  }
+  return rtaudio_compiled_apis_c;
+}
 
 extern "C" const char* rtaudio_api_names[][2];
 const char *rtaudio_api_name(rtaudio_api_t api) {
