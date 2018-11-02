@@ -4804,7 +4804,8 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
     if ( renderAudioClient )
     {
-      return SUCCESS;
+      methodResult = SUCCESS;
+      goto Exit;
     }
 
     hr = renderDevices->Item( device, &devicePtr );
