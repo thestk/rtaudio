@@ -4764,6 +4764,13 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // if device index falls within render devices and is configured for loopback
   if ( device < renderDeviceCount && mode == INPUT )
   {
+    // if renderAudioClient is not initialised, initialise it now
+    IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+    if ( !renderAudioClient )
+    {
+      probeDeviceOpen( device, OUTPUT, channels, firstChannel, sampleRate, format, bufferSize, options );
+    }
+
     // retrieve captureAudioClient from devicePtr
     IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
@@ -4793,8 +4800,13 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // if device index falls within render devices and is configured for output
   if ( device < renderDeviceCount && mode == OUTPUT )
   {
-    // retrieve renderAudioClient from devicePtr
+    // if renderAudioClient is already initialised, don't initialise it again
     IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+    if ( renderAudioClient )
+    {
+      methodResult = SUCCESS;
+      goto Exit;
+    }
 
     hr = renderDevices->Item( device, &devicePtr );
     if ( FAILED( hr ) ) {
