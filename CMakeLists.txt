@@ -93,7 +93,7 @@ set(API_DEFS)
 set(API_LIST)
 
 # Tweak API-specific configuration.
-include_directories(include)
+
 # Jack
 if (RTAUDIO_API_JACK AND jack_FOUND)
   set(NEED_PTHREAD ON)
@@ -177,6 +177,7 @@ endif()
 
 # WASAPI
 if (RTAUDIO_API_WASAPI)
+  include_directories(include)
   set(NEED_WIN32LIBS ON)
   list(APPEND LINKLIBS ksuser mfplat mfuuid wmcodecdspuuid)
   list(APPEND API_DEFS "-D__WINDOWS_WASAPI__")
