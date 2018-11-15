@@ -93,7 +93,7 @@ set(API_DEFS)
 set(API_LIST)
 
 # Tweak API-specific configuration.
-
+include_directories(include)
 # Jack
 if (RTAUDIO_API_JACK AND jack_FOUND)
   set(NEED_PTHREAD ON)
