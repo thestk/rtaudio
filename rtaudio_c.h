@@ -106,6 +106,7 @@ typedef struct rtaudio_stream_options {
 typedef struct rtaudio *rtaudio_t;
 
 RTAUDIOAPI const char *rtaudio_version(void);
+RTAUDIOAPI const unsigned int rtaudio_num_compiled_api(void);
 RTAUDIOAPI const rtaudio_api_t *rtaudio_compiled_api(void);
 RTAUDIOAPI const char *rtaudio_api_name(rtaudio_api_t api);
 RTAUDIOAPI const char *rtaudio_api_display_name(rtaudio_api_t api);
