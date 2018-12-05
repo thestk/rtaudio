@@ -23,7 +23,7 @@ const rtaudio_api_t *rtaudio_compiled_api() {
 }
 
 extern "C" const unsigned int rtaudio_num_compiled_apis;
-const unsigned int rtaudio_num_compiled_api(void) {
+unsigned int rtaudio_num_compiled_api(void) {
   return rtaudio_num_compiled_apis;
 }
 
