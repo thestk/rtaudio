@@ -4974,7 +4974,7 @@ void RtApiWasapi::wasapiThread()
   unsigned int convBuffSize = 0;
   unsigned int deviceBuffSize = 0;
 
-  errorText_.clear();
+  std::string errorText;
   RtAudioError::Type errorType = RtAudioError::DRIVER_ERROR;
 
   // Attempt to assign "Pro Audio" characteristic to thread
@@ -4990,7 +4990,7 @@ void RtApiWasapi::wasapiThread()
   if ( captureAudioClient ) {
     hr = captureAudioClient->GetMixFormat( &captureFormat );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve device mix format.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to retrieve device mix format.";
       goto Exit;
     }
 
@@ -5009,14 +5009,14 @@ void RtApiWasapi::wasapiThread()
                                            captureFormat,
                                            NULL );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to initialize capture audio client.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to initialize capture audio client.";
         goto Exit;
       }
 
       hr = captureAudioClient->GetService( __uuidof( IAudioCaptureClient ),
                                            ( void** ) &captureClient );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve capture client handle.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to retrieve capture client handle.";
         goto Exit;
       }
 
@@ -5027,13 +5027,13 @@ void RtApiWasapi::wasapiThread()
         captureEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
         if ( !captureEvent ) {
           errorType = RtAudioError::SYSTEM_ERROR;
-          errorText_ = "RtApiWasapi::wasapiThread: Unable to create capture event.";
+          errorText = "RtApiWasapi::wasapiThread: Unable to create capture event.";
           goto Exit;
         }
 
         hr = captureAudioClient->SetEventHandle( captureEvent );
         if ( FAILED( hr ) ) {
-          errorText_ = "RtApiWasapi::wasapiThread: Unable to set capture event handle.";
+          errorText = "RtApiWasapi::wasapiThread: Unable to set capture event handle.";
           goto Exit;
         }
 
@@ -5046,7 +5046,7 @@ void RtApiWasapi::wasapiThread()
     unsigned int inBufferSize = 0;
     hr = captureAudioClient->GetBufferSize( &inBufferSize );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to get capture buffer size.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to get capture buffer size.";
       goto Exit;
     }
 
@@ -5060,14 +5060,14 @@ void RtApiWasapi::wasapiThread()
     // reset the capture stream
     hr = captureAudioClient->Reset();
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to reset capture stream.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to reset capture stream.";
       goto Exit;
     }
 
     // start the capture stream
     hr = captureAudioClient->Start();
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to start capture stream.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to start capture stream.";
       goto Exit;
     }
   }
@@ -5076,7 +5076,7 @@ void RtApiWasapi::wasapiThread()
   if ( renderAudioClient ) {
     hr = renderAudioClient->GetMixFormat( &renderFormat );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve device mix format.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to retrieve device mix format.";
       goto Exit;
     }
 
@@ -5095,14 +5095,14 @@ void RtApiWasapi::wasapiThread()
                                           renderFormat,
                                           NULL );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to initialize render audio client.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to initialize render audio client.";
         goto Exit;
       }
 
       hr = renderAudioClient->GetService( __uuidof( IAudioRenderClient ),
                                           ( void** ) &renderClient );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve render client handle.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to retrieve render client handle.";
         goto Exit;
       }
 
@@ -5110,13 +5110,13 @@ void RtApiWasapi::wasapiThread()
       renderEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
       if ( !renderEvent ) {
         errorType = RtAudioError::SYSTEM_ERROR;
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to create render event.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to create render event.";
         goto Exit;
       }
 
       hr = renderAudioClient->SetEventHandle( renderEvent );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to set render event handle.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to set render event handle.";
         goto Exit;
       }
 
@@ -5127,7 +5127,7 @@ void RtApiWasapi::wasapiThread()
     unsigned int outBufferSize = 0;
     hr = renderAudioClient->GetBufferSize( &outBufferSize );
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to get render buffer size.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to get render buffer size.";
       goto Exit;
     }
 
@@ -5141,14 +5141,14 @@ void RtApiWasapi::wasapiThread()
     // reset the render stream
     hr = renderAudioClient->Reset();
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to reset render stream.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to reset render stream.";
       goto Exit;
     }
 
     // start the render stream
     hr = renderAudioClient->Start();
     if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::wasapiThread: Unable to start render stream.";
+      errorText = "RtApiWasapi::wasapiThread: Unable to start render stream.";
       goto Exit;
     }
   }
@@ -5178,7 +5178,7 @@ void RtApiWasapi::wasapiThread()
   stream_.deviceBuffer = ( char* ) malloc( deviceBuffSize );
   if ( !convBuffer || !stream_.deviceBuffer ) {
     errorType = RtAudioError::MEMORY_ERROR;
-    errorText_ = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
+    errorText = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
     goto Exit;
   }
 
@@ -5268,12 +5268,12 @@ void RtApiWasapi::wasapiThread()
           HANDLE threadHandle = CreateThread( NULL, 0, stopWasapiThread, this, 0, NULL );
           if ( !threadHandle ) {
             errorType = RtAudioError::THREAD_ERROR;
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to instantiate stream stop thread.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream stop thread.";
             goto Exit;
           }
           else if ( !CloseHandle( threadHandle ) ) {
             errorType = RtAudioError::THREAD_ERROR;
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to close stream stop thread handle.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to close stream stop thread handle.";
             goto Exit;
           }
 
@@ -5284,12 +5284,12 @@ void RtApiWasapi::wasapiThread()
           HANDLE threadHandle = CreateThread( NULL, 0, abortWasapiThread, this, 0, NULL );
           if ( !threadHandle ) {
             errorType = RtAudioError::THREAD_ERROR;
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to instantiate stream abort thread.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream abort thread.";
             goto Exit;
           }
           else if ( !CloseHandle( threadHandle ) ) {
             errorType = RtAudioError::THREAD_ERROR;
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to close stream abort thread handle.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to close stream abort thread handle.";
             goto Exit;
           }
 
@@ -5352,7 +5352,7 @@ void RtApiWasapi::wasapiThread()
                                      &bufferFrameCount,
                                      &captureFlags, NULL, NULL );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve capture buffer.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to retrieve capture buffer.";
         goto Exit;
       }
 
@@ -5365,7 +5365,7 @@ void RtApiWasapi::wasapiThread()
           // Release capture buffer
           hr = captureClient->ReleaseBuffer( bufferFrameCount );
           if ( FAILED( hr ) ) {
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to release capture buffer.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to release capture buffer.";
             goto Exit;
           }
         }
@@ -5374,7 +5374,7 @@ void RtApiWasapi::wasapiThread()
           // Inform WASAPI that capture was unsuccessful
           hr = captureClient->ReleaseBuffer( 0 );
           if ( FAILED( hr ) ) {
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to release capture buffer.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to release capture buffer.";
             goto Exit;
           }
         }
@@ -5384,7 +5384,7 @@ void RtApiWasapi::wasapiThread()
         // Inform WASAPI that capture was unsuccessful
         hr = captureClient->ReleaseBuffer( 0 );
         if ( FAILED( hr ) ) {
-          errorText_ = "RtApiWasapi::wasapiThread: Unable to release capture buffer.";
+          errorText = "RtApiWasapi::wasapiThread: Unable to release capture buffer.";
           goto Exit;
         }
       }
@@ -5406,13 +5406,13 @@ void RtApiWasapi::wasapiThread()
       // Get render buffer from stream
       hr = renderAudioClient->GetBufferSize( &bufferFrameCount );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve render buffer size.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to retrieve render buffer size.";
         goto Exit;
       }
 
       hr = renderAudioClient->GetCurrentPadding( &numFramesPadding );
       if ( FAILED( hr ) ) {
-        errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve render buffer padding.";
+        errorText = "RtApiWasapi::wasapiThread: Unable to retrieve render buffer padding.";
         goto Exit;
       }
 
@@ -5421,7 +5421,7 @@ void RtApiWasapi::wasapiThread()
       if ( bufferFrameCount != 0 ) {
         hr = renderClient->GetBuffer( bufferFrameCount, &streamBuffer );
         if ( FAILED( hr ) ) {
-          errorText_ = "RtApiWasapi::wasapiThread: Unable to retrieve render buffer.";
+          errorText = "RtApiWasapi::wasapiThread: Unable to retrieve render buffer.";
           goto Exit;
         }
 
@@ -5434,7 +5434,7 @@ void RtApiWasapi::wasapiThread()
           // Release render buffer
           hr = renderClient->ReleaseBuffer( bufferFrameCount, 0 );
           if ( FAILED( hr ) ) {
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to release render buffer.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to release render buffer.";
             goto Exit;
           }
         }
@@ -5443,7 +5443,7 @@ void RtApiWasapi::wasapiThread()
           // Inform WASAPI that render was unsuccessful
           hr = renderClient->ReleaseBuffer( 0, 0 );
           if ( FAILED( hr ) ) {
-            errorText_ = "RtApiWasapi::wasapiThread: Unable to release render buffer.";
+            errorText = "RtApiWasapi::wasapiThread: Unable to release render buffer.";
             goto Exit;
           }
         }
@@ -5453,7 +5453,7 @@ void RtApiWasapi::wasapiThread()
         // Inform WASAPI that render was unsuccessful
         hr = renderClient->ReleaseBuffer( 0, 0 );
         if ( FAILED( hr ) ) {
-          errorText_ = "RtApiWasapi::wasapiThread: Unable to release render buffer.";
+          errorText = "RtApiWasapi::wasapiThread: Unable to release render buffer.";
           goto Exit;
         }
       }
@@ -5482,11 +5482,14 @@ Exit:
 
   CoUninitialize();
 
-  if ( !errorText_.empty() )
-    error( errorType );
-
   // update stream state
   stream_.state = STREAM_STOPPED;
+
+  if ( !errorText.empty() )
+  {
+    errorText_ = errorText;
+    error( errorType );
+  }
 }
 
 //******************** End of __WINDOWS_WASAPI__ *********************//
