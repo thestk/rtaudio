@@ -4860,7 +4860,8 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   stream_.doConvertBuffer[mode] = false;
   if ( stream_.userFormat != stream_.deviceFormat[mode] ||
        stream_.nUserChannels[0] != stream_.nDeviceChannels[0] ||
-       stream_.nUserChannels[1] != stream_.nDeviceChannels[1] )
+       stream_.nUserChannels[1] != stream_.nDeviceChannels[1] ||
+       stream_.userInterleaved )
     stream_.doConvertBuffer[mode] = true;
   else if ( stream_.userInterleaved != stream_.deviceInterleaved[mode] &&
             stream_.nUserChannels[mode] > 1 )
