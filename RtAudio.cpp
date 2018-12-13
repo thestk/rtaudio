@@ -4860,8 +4860,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   stream_.doConvertBuffer[mode] = false;
   if ( stream_.userFormat != stream_.deviceFormat[mode] ||
        stream_.nUserChannels[0] != stream_.nDeviceChannels[0] ||
-       stream_.nUserChannels[1] != stream_.nDeviceChannels[1] ||
-       stream_.userInterleaved )
+       stream_.nUserChannels[1] != stream_.nDeviceChannels[1] )
     stream_.doConvertBuffer[mode] = true;
   else if ( stream_.userInterleaved != stream_.deviceInterleaved[mode] &&
             stream_.nUserChannels[mode] > 1 )
@@ -5317,6 +5316,12 @@ void RtApiWasapi::wasapiThread()
                          stream_.userBuffer[OUTPUT],
                          stream_.convertInfo[OUTPUT] );
 
+        }
+        else {
+          // no further conversion, simple copy userBuffer to deviceBuffer
+          memcpy( stream_.deviceBuffer,
+                  stream_.userBuffer[OUTPUT],
+                  stream_.bufferSize * stream_.nUserChannels[OUTPUT] * formatBytes( stream_.userFormat ) );
         }
 
         // Convert callback buffer to stream sample rate
