@@ -622,7 +622,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   #include <windows.h>
   #include <process.h>
 
-  typedef uintptr_t ThreadHandle;
+  typedef HANDLE ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
 
 #elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
