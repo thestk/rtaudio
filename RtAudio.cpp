@@ -1541,6 +1541,10 @@ void RtApiCore :: startStream( void )
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   OSStatus result = noErr;
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
@@ -2499,6 +2503,10 @@ void RtApiJack :: startStream( void )
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
   int result = jack_activate( handle->client );
   if ( result ) {
@@ -3377,6 +3385,10 @@ void RtApiAsio :: startStream()
     error( RtAudioError::WARNING );
     return;
   }
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   ASIOError result = ASIOStart();
@@ -4550,6 +4562,10 @@ void RtApiWasapi::startStream( void )
     error( RtAudioError::WARNING );
     return;
   }
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   // update stream state
   stream_.state = STREAM_RUNNING;
@@ -6392,6 +6408,10 @@ void RtApiDs :: startStream()
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
 
   // Increase scheduler frequency on lesser windows (a side-effect of
@@ -8084,6 +8104,10 @@ void RtApiAlsa :: startStream()
 
   MUTEX_LOCK( &stream_.mutex );
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   int result = 0;
   snd_pcm_state_t state;
   AlsaHandle *apiInfo = (AlsaHandle *) stream_.apiHandle;
@@ -8654,6 +8678,10 @@ void RtApiPulse::startStream( void )
   }
 
   MUTEX_LOCK( &stream_.mutex );
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   stream_.state = STREAM_RUNNING;
 
@@ -9638,6 +9666,10 @@ void RtApiOss :: startStream()
   }
 
   MUTEX_LOCK( &stream_.mutex );
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   stream_.state = STREAM_RUNNING;
 
