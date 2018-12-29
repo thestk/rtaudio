@@ -621,6 +621,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   #endif
   #include <windows.h>
   #include <process.h>
+  #include <stdint.h>
 
   typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
