@@ -4997,7 +4997,8 @@ void RtApiWasapi::wasapiThread()
   HMODULE AvrtDll = LoadLibrary( (LPCTSTR) "AVRT.dll" );
   if ( AvrtDll ) {
     DWORD taskIndex = 0;
-    TAvSetMmThreadCharacteristicsPtr AvSetMmThreadCharacteristicsPtr = ( TAvSetMmThreadCharacteristicsPtr ) GetProcAddress( AvrtDll, "AvSetMmThreadCharacteristicsW" );
+    TAvSetMmThreadCharacteristicsPtr AvSetMmThreadCharacteristicsPtr =
+      ( TAvSetMmThreadCharacteristicsPtr ) (void(*)()) GetProcAddress( AvrtDll, "AvSetMmThreadCharacteristicsW" );
     AvSetMmThreadCharacteristicsPtr( L"Pro Audio", &taskIndex );
     FreeLibrary( AvrtDll );
   }
