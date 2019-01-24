@@ -154,7 +154,7 @@ AS_IF([test "x$with_pulse"  = "xyes"], [systems="$systems pulse"])
 AS_IF([test "x$with_oss"    = "xyes"], [systems="$systems oss"])
 AS_IF([test "x$with_core"   = "xyes"], [systems="$systems core"])
 AS_IF([test "x$with_asio"   = "xyes"], [systems="$systems asio"])
-AS_IF([test "x$with_dsound" = "xyes"], [systems="$systems ds"])
+AS_IF([test "x$with_dsound" = "xyes"], [systems="$systems dsound"])
 AS_IF([test "x$with_wasapi" = "xyes"], [systems="$systems wasapi"])
 required=" $systems "
 
@@ -166,9 +166,9 @@ AS_IF([test "x$systems" = "x"],
     [*-*-freebsd*],  [systems="oss"],
     [*-*-linux*],    [systems="alsa pulse jack oss"],
     [*-apple*],      [systems="core jack"],
-    [*-mingw32*],    [systems="asio ds wasapi jack"],
-    [*-mingw64*],    [systems="asio ds wasapi jack"],
-    [*-msys*],       [systems="asio ds wasapi jack"],
+    [*-mingw32*],    [systems="asio dsound wasapi jack"],
+    [*-mingw64*],    [systems="asio dsound wasapi jack"],
+    [*-msys*],       [systems="asio dsound wasapi jack"],
   ))
 
 # If any were specifically requested disabled, do it.
@@ -260,7 +260,7 @@ AS_CASE(["$systems"], [*" asio "*], [
   found="$found ASIO"
 ])
 
-AS_CASE(["$systems"], [*" ds "*], [
+AS_CASE(["$systems"], [*" dsound "*], [
   AC_CHECK_HEADERS(windows.h)
   AC_CHECK_HEADERS(mmsystem.h mmreg.h dsound.h, [], [],
 [#ifdef HAVE_WINDOWS_H
