@@ -259,7 +259,15 @@ AS_CASE(["$systems"], [*" asio "*], [
 ])
 
 AS_CASE(["$systems"], [*" ds "*], [
-  AC_CHECK_HEADERS(mmsystem.h mmreg.h dsound.h,
+  AC_CHECK_HEADERS(windows.h)
+  AC_CHECK_HEADERS(mmsystem.h mmreg.h dsound.h, [], [],
+[#ifdef HAVE_WINDOWS_H
+# include <windows.h>
+#endif])
+  AS_IF([test "x$ac_cv_header_windows_h" = xyes \
+      && test "x$ac_cv_header_mmsystem_h" = xyes \
+      && test "x$ac_cv_header_mmreg_h" = xyes \
+      && test "x$ac_cv_header_dsound_h" = xyes],
     [api="$api -D__WINDOWS_DS__"
      need_ole32=yes
      found="$found DirectSound"
@@ -267,7 +275,15 @@ AS_CASE(["$systems"], [*" ds "*], [
 ])
 
 AS_CASE(["$systems"], [*" wasapi "*], [
-  AC_CHECK_HEADERS(windows.h audioclient.h avrt.h mmdeviceapi.h,
+  AC_CHECK_HEADERS(windows.h)
+  AC_CHECK_HEADERS(audioclient.h avrt.h mmdeviceapi.h, [], [],
+[#ifdef HAVE_WINDOWS_H
+# include <windows.h>
+#endif])
+  AS_IF([test "x$ac_cv_header_windows_h" = xyes \
+      && test "x$ac_cv_header_audioclient_h" = xyes \
+      && test "x$ac_cv_header_avrt_h" = xyes \
+      && test "x$ac_cv_header_mmdeviceapi_h" = xyes],
     [api="$api -D__WINDOWS_WASAPI__"
      CPPFLAGS="-I$srcdir/include $CPPFLAGS"
      need_ole32=yes
