@@ -18,6 +18,9 @@ if ASIO
 	include/asiodrivers.cpp \
 	include/asiolist.cpp \
 	include/iasiothiscallresolver.cpp
+
+# due to warning in asiolist.cpp
+%C%_librtaudio_la_CXXFLAGS += -Wno-error=unused-but-set-variable
 endif
 
 rtaudio_incdir = $(includedir)/rtaudio
