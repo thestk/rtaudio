@@ -166,7 +166,9 @@ AS_IF([test "x$systems" = "x"],
     [*-*-freebsd*],  [systems="oss"],
     [*-*-linux*],    [systems="alsa pulse jack oss"],
     [*-apple*],      [systems="core jack"],
-    [*-mingw32*],    [systems="asio ds wasapi jack"]
+    [*-mingw32*],    [systems="asio ds wasapi jack"],
+    [*-mingw64*],    [systems="asio ds wasapi jack"],
+    [*-msys*],       [systems="asio ds wasapi jack"],
   ))
 
 # If any were specifically requested disabled, do it.
