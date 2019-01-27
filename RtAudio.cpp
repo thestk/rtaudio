@@ -3842,7 +3842,7 @@ public:
     }
 
     // "in" index can end on the "out" index but cannot begin at it
-    if ( inIndex_ <= relOutIndex && inIndexEnd > relOutIndex ) {
+    if ( inIndex_ < relOutIndex && inIndexEnd > relOutIndex ) {
       return false; // not enough space between "in" index and "out" index
     }
 
@@ -3903,7 +3903,7 @@ public:
     }
 
     // "out" index can begin at and end on the "in" index
-    if ( outIndex_ < relInIndex && outIndexEnd > relInIndex ) {
+    if ( outIndex_ <= relInIndex && outIndexEnd > relInIndex ) {
       return false; // not enough space between "out" index and "in" index
     }
 
