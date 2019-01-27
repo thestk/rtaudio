@@ -5191,8 +5191,8 @@ void RtApiWasapi::wasapiThread()
   }
 
   convBuffSize *= 2; // allow overflow for *SrRatio remainders
-  convBuffer = ( char* ) malloc( convBuffSize );
-  stream_.deviceBuffer = ( char* ) malloc( deviceBuffSize );
+  convBuffer = ( char* ) calloc( convBuffSize, 1 );
+  stream_.deviceBuffer = ( char* ) calloc( deviceBuffSize, 1 );
   if ( !convBuffer || !stream_.deviceBuffer ) {
     errorType = RtAudioError::MEMORY_ERROR;
     errorText = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
