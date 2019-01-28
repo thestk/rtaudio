@@ -3842,7 +3842,7 @@ public:
     }
 
     // "in" index can end on the "out" index but cannot begin at it
-    if ( inIndex_ <= relOutIndex && inIndexEnd > relOutIndex ) {
+    if ( inIndex_ < relOutIndex && inIndexEnd > relOutIndex ) {
       return false; // not enough space between "in" index and "out" index
     }
 
@@ -3903,7 +3903,7 @@ public:
     }
 
     // "out" index can begin at and end on the "in" index
-    if ( outIndex_ < relInIndex && outIndexEnd > relInIndex ) {
+    if ( outIndex_ <= relInIndex && outIndexEnd > relInIndex ) {
       return false; // not enough space between "out" index and "in" index
     }
 
@@ -4606,26 +4606,6 @@ void RtApiWasapi::stopStream( void )
   // Wait for the last buffer to play before stopping.
   Sleep( 1000 * stream_.bufferSize / stream_.sampleRate );
 
-  // stop capture client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::stopStream: Unable to stop capture stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
-  }
-
-  // stop render client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::stopStream: Unable to stop render stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
-  }
-
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
     errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
@@ -4654,26 +4634,6 @@ void RtApiWasapi::abortStream( void )
   // wait until stream thread is stopped
   while ( stream_.state != STREAM_STOPPED ) {
     Sleep( 1 );
-  }
-
-  // stop capture client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::abortStream: Unable to stop capture stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
-  }
-
-  // stop render client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::abortStream: Unable to stop render stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
   }
 
   // close thread handle
@@ -5058,6 +5018,20 @@ void RtApiWasapi::wasapiThread()
       }
 
       ( ( WasapiHandle* ) stream_.apiHandle )->captureClient = captureClient;
+
+      // reset the capture stream
+      hr = captureAudioClient->Reset();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to reset capture stream.";
+        goto Exit;
+      }
+
+      // start the capture stream
+      hr = captureAudioClient->Start();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to start capture stream.";
+        goto Exit;
+      }
     }
 
     unsigned int inBufferSize = 0;
@@ -5073,20 +5047,6 @@ void RtApiWasapi::wasapiThread()
 
     // set captureBuffer size
     captureBuffer.setBufferSize( inBufferSize + outBufferSize, formatBytes( stream_.deviceFormat[INPUT] ) );
-
-    // reset the capture stream
-    hr = captureAudioClient->Reset();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to reset capture stream.";
-      goto Exit;
-    }
-
-    // start the capture stream
-    hr = captureAudioClient->Start();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to start capture stream.";
-      goto Exit;
-    }
   }
 
   // start render stream if applicable
@@ -5139,6 +5099,20 @@ void RtApiWasapi::wasapiThread()
 
       ( ( WasapiHandle* ) stream_.apiHandle )->renderClient = renderClient;
       ( ( WasapiHandle* ) stream_.apiHandle )->renderEvent = renderEvent;
+
+      // reset the render stream
+      hr = renderAudioClient->Reset();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to reset render stream.";
+        goto Exit;
+      }
+
+      // start the render stream
+      hr = renderAudioClient->Start();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to start render stream.";
+        goto Exit;
+      }
     }
 
     unsigned int outBufferSize = 0;
@@ -5154,20 +5128,6 @@ void RtApiWasapi::wasapiThread()
 
     // set renderBuffer size
     renderBuffer.setBufferSize( inBufferSize + outBufferSize, formatBytes( stream_.deviceFormat[OUTPUT] ) );
-
-    // reset the render stream
-    hr = renderAudioClient->Reset();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to reset render stream.";
-      goto Exit;
-    }
-
-    // start the render stream
-    hr = renderAudioClient->Start();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to start render stream.";
-      goto Exit;
-    }
   }
 
   // malloc buffer memory
@@ -5191,8 +5151,8 @@ void RtApiWasapi::wasapiThread()
   }
 
   convBuffSize *= 2; // allow overflow for *SrRatio remainders
-  convBuffer = ( char* ) malloc( convBuffSize );
-  stream_.deviceBuffer = ( char* ) malloc( deviceBuffSize );
+  convBuffer = ( char* ) calloc( convBuffSize, 1 );
+  stream_.deviceBuffer = ( char* ) calloc( deviceBuffSize, 1 );
   if ( !convBuffer || !stream_.deviceBuffer ) {
     errorType = RtAudioError::MEMORY_ERROR;
     errorText = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
