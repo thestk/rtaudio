@@ -7140,7 +7140,7 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
   unsigned nDevices = 0;
   int result, subdevice, card;
   char name[64];
-  snd_ctl_t *handle;
+  snd_ctl_t *handle = 0;
 
   // Count cards and devices
   card = -1;
@@ -7149,6 +7149,7 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
     sprintf( name, "hw:%d", card );
     result = snd_ctl_open( &handle, name, 0 );
     if ( result < 0 ) {
+      handle = 0;
       errorStream_ << "RtApiAlsa::getDeviceCount: control open, card = " << card << ", " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
       error( RtAudioError::WARNING );
@@ -7168,7 +7169,8 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
       nDevices++;
     }
   nextcard:
-    snd_ctl_close( handle );
+    if ( handle )
+        snd_ctl_close( handle );
     snd_card_next( &card );
   }
 
@@ -7189,7 +7191,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   unsigned nDevices = 0;
   int result, subdevice, card;
   char name[64];
-  snd_ctl_t *chandle;
+  snd_ctl_t *chandle = 0;
 
   // Count cards and devices
   card = -1;
@@ -7199,6 +7201,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     sprintf( name, "hw:%d", card );
     result = snd_ctl_open( &chandle, name, SND_CTL_NONBLOCK );
     if ( result < 0 ) {
+      chandle = 0;
       errorStream_ << "RtApiAlsa::getDeviceInfo: control open, card = " << card << ", " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
       error( RtAudioError::WARNING );
@@ -7221,7 +7224,8 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       nDevices++;
     }
   nextcard:
-    snd_ctl_close( chandle );
+    if ( chandle )
+        snd_ctl_close( chandle );
     snd_card_next( &card );
   }
 
