@@ -302,7 +302,7 @@ configure_file(
     "${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfigUninstall.cmake" @ONLY)
 
 # Create uninstall target.
-add_custom_target(uninstall
+add_custom_target(uninstall_rtaudio
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfigUninstall.cmake)
 
 install(
