@@ -5239,6 +5239,9 @@ void RtApiWasapi::wasapiThread()
                                    captureFlags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY ? RTAUDIO_INPUT_OVERFLOW : 0,
                                    stream_.callbackInfo.userData );
 
+        // tick stream time
+        RtApi::tickStreamTime();
+
         // Handle return value from callback
         if ( callbackResult == 1 ) {
           // instantiate a thread to stop this thread
@@ -5447,9 +5450,6 @@ void RtApiWasapi::wasapiThread()
       // unsetting the callbackPulled flag lets the stream know that
       // the audio device is ready for another callback output buffer.
       callbackPulled = false;
-
-      // tick stream time
-      RtApi::tickStreamTime();
     }
 
   }
