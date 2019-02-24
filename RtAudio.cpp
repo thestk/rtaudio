@@ -3841,8 +3841,9 @@ public:
       relOutIndex += bufferSize_;
     }
 
-    // "in" index can end on the "out" index but cannot begin at it
-    if ( inIndex_ < relOutIndex && inIndexEnd > relOutIndex ) {
+    // the "IN" index CAN BEGIN at the "OUT" index
+    // the "IN" index CANNOT END at the "OUT" index
+    if ( inIndex_ < relOutIndex && inIndexEnd >= relOutIndex ) {
       return false; // not enough space between "in" index and "out" index
     }
 
@@ -3902,7 +3903,8 @@ public:
       relInIndex += bufferSize_;
     }
 
-    // "out" index can begin at and end on the "in" index
+    // the "OUT" index CANNOT BEGIN at the "IN" index
+    // the "OUT" index CAN END at the "IN" index
     if ( outIndex_ <= relInIndex && outIndexEnd > relInIndex ) {
       return false; // not enough space between "out" index and "in" index
     }
