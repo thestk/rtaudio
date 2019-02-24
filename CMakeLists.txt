@@ -28,6 +28,10 @@ if(WIN32)
   set(CMAKE_DEBUG_POSTFIX "d")
 endif()
 
+if(MINGW)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 # Build Options
 option(BUILD_SHARED_LIBS "Compile library shared lib." TRUE)
 option(BUILD_STATIC_LIBS "Compile library static lib." TRUE)
@@ -196,9 +200,6 @@ if (NEED_PTHREAD)
   list(APPEND LINKLIBS Threads::Threads)
 endif()
 
-# Set compile-time definitions
-add_definitions(${API_DEFS})
-
 # Create library targets.
 cmake_policy(SET CMP0042 OLD)
 set(LIB_TARGETS)
@@ -218,6 +219,7 @@ if(BUILD_SHARED_LIBS)
     ${INCDIRS})
 
   # Set compile-time definitions
+  target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
   target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
 
   target_link_libraries(rtaudio ${LINKLIBS})
@@ -237,6 +239,9 @@ if(BUILD_STATIC_LIBS)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     ${INCDIRS})
+
+  # Set compile-time definitions
+  target_compile_definitions(rtaudio_static PRIVATE ${API_DEFS})
 
   target_link_libraries(rtaudio_static ${LINKLIBS})
 endif()
