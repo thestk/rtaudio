@@ -33,11 +33,12 @@ if(MINGW)
 endif()
 
 # Build Options
-option(BUILD_SHARED_LIBS "Compile library shared lib." TRUE)
-option(BUILD_STATIC_LIBS "Compile library static lib." TRUE)
-option(BUILD_TESTING "Compile test programs." TRUE)
-option(BUILD_PYTHON "Build PyRtAudio python bindings" OFF)
+option(RTAUDIO_BUILD_SHARED_LIBS "Compile library shared lib." TRUE)
+option(RTAUDIO_BUILD_STATIC_LIBS "Compile library static lib." TRUE)
+option(RTAUDIO_BUILD_TESTING "Compile test programs." TRUE)
+option(RTAUDIO_BUILD_PYTHON "Build PyRtAudio python bindings" OFF)
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (Release,Debug)")
+set(RTAUDIO_TARGETNAME_UNINSTALL "uninstall" CACHE STRING "Name of 'uninstall' build target")
 
 # API Options
 option(RTAUDIO_API_DS "Build DirectSound API" OFF)
@@ -203,7 +204,7 @@ endif()
 # Create library targets.
 cmake_policy(SET CMP0042 OLD)
 set(LIB_TARGETS)
-if(BUILD_SHARED_LIBS)
+if(RTAUDIO_BUILD_SHARED_LIBS)
   add_library(rtaudio SHARED ${rtaudio_SOURCES})
   list(APPEND LIB_TARGETS rtaudio)
 
@@ -225,7 +226,7 @@ if(BUILD_SHARED_LIBS)
   target_link_libraries(rtaudio ${LINKLIBS})
 endif()
 
-if(BUILD_STATIC_LIBS)
+if(RTAUDIO_BUILD_STATIC_LIBS)
   add_library(rtaudio_static STATIC ${rtaudio_SOURCES})
   list(APPEND LIB_TARGETS rtaudio_static)
 
@@ -250,10 +251,10 @@ endif()
 include(GNUInstallDirs)
 
 # Subdirs
-if (BUILD_TESTING)
+if (RTAUDIO_BUILD_TESTING)
   include(CTest)
   add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif (RTAUDIO_BUILD_TESTING)
 
 # Message
 string(REPLACE ";" " " apilist "${API_LIST}")
@@ -263,7 +264,7 @@ message(STATUS "Compiling with support for: ${apilist}")
 string(REPLACE ";" " " req "${PKGCONFIG_REQUIRES}")
 string(REPLACE ";" " " api "${API_DEFS}")
 set(prefix ${CMAKE_INSTALL_PREFIX})
-configure_file("rtaudio.pc.in" "rtaudio.pc" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/rtaudio.pc.in" "rtaudio.pc" @ONLY)
 
 # Add install rule.
 install(TARGETS ${LIB_TARGETS}
@@ -305,7 +306,7 @@ configure_file(
     "${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfigUninstall.cmake" @ONLY)
 
 # Create uninstall target.
-add_custom_target(uninstall
+add_custom_target(${RTAUDIO_TARGETNAME_UNINSTALL}
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfigUninstall.cmake)
 
 install(
