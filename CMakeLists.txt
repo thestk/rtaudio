@@ -53,7 +53,7 @@ option(RTAUDIO_API_CORE "Build CoreAudio API" ${APPLE})
 # Check for functions
 include(CheckFunctionExists)
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
-if (HAVE_GETTIMEOFDAY)
+if (HAVE_GETTIMEOFDAY AND NOT SKIP_HAVE_GETTIMEOFDAY)
     add_definitions(-DHAVE_GETTIMEOFDAY)
 endif ()
 
