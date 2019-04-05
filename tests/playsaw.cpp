@@ -68,11 +68,7 @@ void errorCallback( RtAudioError::Type /*type*/, const std::string &errorText )
 {
   // This example error handling function does exactly the same thing
   // as the embedded RtAudio::error() function.
-  std::cout << "in errorCallback" << std::endl;
-  //if ( type == RtAudioError::WARNING )
-    std::cerr << '\n' << errorText << "\n\n";
-    //else if ( type != RtAudioError::WARNING )
-    //throw( RtAudioError( errorText, type ) );
+  std::cerr << "\nerrorCallback: " << errorText << "\n\n";
 }
 
 unsigned int channels;
@@ -80,15 +76,15 @@ RtAudio::StreamOptions options;
 unsigned int frameCounter = 0;
 bool checkCount = false;
 unsigned int nFrames = 0;
-const unsigned int callbackReturnValue = 2;
+const unsigned int callbackReturnValue = 1; // 1 = stop and drain, 2 = abort
 double streamTimePrintIncrement = 1.0; // seconds
 double streamTimePrintTime = 1.0; // seconds
 
-//#define USE_INTERLEAVED
+#define USE_INTERLEAVED
 #if defined( USE_INTERLEAVED )
 
 // Interleaved buffers
-int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
+int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
          double streamTime, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
@@ -194,15 +190,12 @@ int main( int argc, char *argv[] )
 #if !defined( USE_INTERLEAVED )
   options.flags |= RTAUDIO_NONINTERLEAVED;
 #endif
-  //  try {
-    dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options, &errorCallback );
-    if ( dac.isStreamOpen() == false ) goto cleanup;
-    dac.startStream();
-    //  }
-    //  catch ( RtAudioError& e ) {
-    //    e.printMessage();
-    //goto cleanup;
-    //  }
+
+  dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options, &errorCallback );
+  if ( dac.isStreamOpen() == false ) goto cleanup;
+
+  // Stream is open ... now start it.
+  dac.startStream();
 
   if ( checkCount ) {
     while ( dac.isStreamRunning() == true ) SLEEP( 100 );
@@ -213,17 +206,9 @@ int main( int argc, char *argv[] )
     std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << bufferFrames << ").\n";
     std::cin.get( input );
 
-    //try {
-      // Stop the stream
-      dac.stopStream();
-      //dac.abortStream();
+    // Block released ... stop the stream
+    dac.stopStream();  // or could call dac.abortStream();
   }
-      /*
-    catch ( RtAudioError& e ) {
-      e.printMessage();
-    }
-  }
-      */
 
  cleanup:
   if ( dac.isStreamOpen() ) dac.closeStream();

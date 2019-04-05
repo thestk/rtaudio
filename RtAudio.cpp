@@ -1439,9 +1439,9 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   // Setup a listener to detect a possible device disconnect.
   property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-  property.mScope = kAudioObjectPropertyScopeGlobal;
   result = AudioObjectAddPropertyListener( id , &property, disconnectListener, (void *) &stream_.callbackInfo );
   if ( result != noErr ) {
+    AudioObjectRemovePropertyListener( id, &property, xrunListener, (void *) handle );
     errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << device << ").";
     errorText_ = errorStream_.str();
     goto error;
@@ -1489,9 +1489,13 @@ void RtApiCore :: closeStream( void )
         kAudioObjectPropertyElementMaster };
 
       property.mSelector = kAudioDeviceProcessorOverload;
-      property.mScope = kAudioObjectPropertyScopeGlobal;
       if (AudioObjectRemovePropertyListener( handle->id[0], &property, xrunListener, (void *) handle ) != noErr) {
-        errorText_ = "RtApiCore::closeStream(): error removing property listener!";
+        errorText_ = "RtApiCore::closeStream(): error removing xrun property listener!";
+        error( RtAudioError::WARNING );
+      }
+      property.mSelector = kAudioDevicePropertyDeviceIsAlive;
+      if (AudioObjectRemovePropertyListener( handle->id[0], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+        errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
         error( RtAudioError::WARNING );
       }
     }
@@ -1512,9 +1516,13 @@ void RtApiCore :: closeStream( void )
         kAudioObjectPropertyElementMaster };
 
       property.mSelector = kAudioDeviceProcessorOverload;
-      property.mScope = kAudioObjectPropertyScopeGlobal;
       if (AudioObjectRemovePropertyListener( handle->id[1], &property, xrunListener, (void *) handle ) != noErr) {
-        errorText_ = "RtApiCore::closeStream(): error removing property listener!";
+        errorText_ = "RtApiCore::closeStream(): error removing xrun property listener!";
+        error( RtAudioError::WARNING );
+      }
+      property.mSelector = kAudioDevicePropertyDeviceIsAlive;
+      if (AudioObjectRemovePropertyListener( handle->id[1], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+        errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
         error( RtAudioError::WARNING );
       }
     }

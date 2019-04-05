@@ -133,10 +133,11 @@ int main( int argc, char *argv[] )
 
   RtAudio::StreamOptions options;
   options.flags = RTAUDIO_HOG_DEVICE;
-  try {
+  //try {
     dac.openStream( &oParams, NULL, RTAUDIO_FLOAT64, fs, &bufferFrames, &sawi, (void *)data, &options );
     std::cout << "\nStream latency = " << dac.getStreamLatency() << std::endl;
 
+    if ( !dac.isStreamOpen() ) goto cleanup;
     // Start the stream
     dac.startStream();
     std::cout << "\nPlaying ... press <enter> to stop.\n";
@@ -162,11 +163,13 @@ int main( int argc, char *argv[] )
 
     std::cout << "Playing again ... press <enter> to close the stream.\n";
     std::cin.get( input );
+    /*
   }
   catch ( RtAudioError& e ) {
     e.printMessage();
     goto cleanup;
   }
+    */
 
   if ( dac.isStreamOpen() ) dac.closeStream();
 
@@ -175,6 +178,8 @@ int main( int argc, char *argv[] )
   try {
     dac.openStream( &oParams, NULL, RTAUDIO_FLOAT64, fs, &bufferFrames, &sawni, (void *)data, &options );
 
+    if ( !dac.isStreamOpen() ) goto cleanup;
+    
     std::cout << "Press <enter> to start non-interleaved playback.\n";
     std::cin.get( input );
 
@@ -200,7 +205,8 @@ int main( int argc, char *argv[] )
   options.flags = RTAUDIO_NONINTERLEAVED;
   try {
     dac.openStream( &oParams, &iParams, RTAUDIO_SINT32, fs, &bufferFrames, &inout, (void *)&bufferBytes, &options );
-
+    if ( !dac.isStreamOpen() ) goto cleanup;
+    
     bufferBytes = bufferFrames * channels * 4;
 
     std::cout << "Press <enter> to start duplex operation.\n";
