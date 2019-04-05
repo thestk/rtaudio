@@ -733,8 +733,8 @@ public:
   virtual void stopStream( void ) = 0;
   virtual void abortStream( void ) = 0;
   long getStreamLatency( void );
-  unsigned int getStreamSampleRate( void );
-  virtual double getStreamTime( void );
+  unsigned int getStreamSampleRate( void ) const { return stream_.sampleRate; }
+  virtual double getStreamTime( void ) const { return stream_.streamTime; }
   virtual void setStreamTime( double time );
   bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; }
   bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }

@@ -114,6 +114,7 @@ const char* rtaudio_api_names[][2] = {
   { "ds"          , "DirectSound" },
   { "dummy"       , "Dummy" },
 };
+
 const unsigned int rtaudio_num_api_names = 
   sizeof(rtaudio_api_names)/sizeof(rtaudio_api_names[0]);
 
@@ -237,7 +238,7 @@ void RtAudio :: openRtApi( RtAudio::Api api )
 RtAudio :: RtAudio( RtAudio::Api api )
 {
   rtapi_ = 0;
-
+  
   if ( api != UNSPECIFIED ) {
     // Attempt to open the specified API.
     openRtApi( api );
@@ -295,11 +296,7 @@ void RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
 
 RtApi :: RtApi()
 {
-  stream_.state = STREAM_CLOSED;
-  stream_.mode = UNINITIALIZED;
-  stream_.apiHandle = 0;
-  stream_.userBuffer[0] = 0;
-  stream_.userBuffer[1] = 0;
+  clearStreamInfo();
   MUTEX_INITIALIZE( &stream_.mutex );
   showWarnings_ = true;
   firstErrorOccurred_ = false;
@@ -438,15 +435,15 @@ void RtApi :: tickStreamTime( void )
 
   stream_.streamTime += ( stream_.bufferSize * 1.0 / stream_.sampleRate );
 
+  /*
 #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
 #endif
+  */
 }
 
 long RtApi :: getStreamLatency( void )
 {
-  verifyStream();
-
   long totalLatency = 0;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX )
     totalLatency = stream_.latency[0];
@@ -456,10 +453,9 @@ long RtApi :: getStreamLatency( void )
   return totalLatency;
 }
 
+/*
 double RtApi :: getStreamTime( void )
 {
-  verifyStream();
-
 #if defined( HAVE_GETTIMEOFDAY )
   // Return a very accurate estimate of the stream time by
   // adding in the elapsed time since the last tick.
@@ -476,26 +472,31 @@ double RtApi :: getStreamTime( void )
      (then.tv_sec + 0.000001 * then.tv_usec));     
 #else
   return stream_.streamTime;
-#endif
+  #endif
 }
+*/
 
 void RtApi :: setStreamTime( double time )
 {
-  verifyStream();
+  //  verifyStream();
 
   if ( time >= 0.0 )
     stream_.streamTime = time;
+  /*
 #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
 #endif
+  */
 }
 
+/*
 unsigned int RtApi :: getStreamSampleRate( void )
 {
- verifyStream();
+  verifyStream();
 
  return stream_.sampleRate;
 }
+*/
 
 
 // *************************************************** //
@@ -1529,8 +1530,9 @@ void RtApiCore :: closeStream( void )
   delete handle;
   stream_.apiHandle = 0;
 
-  stream_.mode = UNINITIALIZED;
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.mode = UNINITIALIZED;
+  //stream_.state = STREAM_CLOSED;
 }
 
 void RtApiCore :: startStream( void )
