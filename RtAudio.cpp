@@ -876,6 +876,13 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
     return info;
   }
 
+  // Probe the currently configured sample rate
+  Float64 nominalRate;
+  dataSize = sizeof( Float64 );
+  property.mSelector = kAudioDevicePropertyNominalSampleRate;
+  result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &nominalRate );
+  if ( result == noErr ) info.currentSampleRate = (unsigned int) nominalRate;
+    
   // CoreAudio always uses 32-bit floating point data for PCM streams.
   // Thus, any other "physical" formats supported by the device are of
   // no interest to the client.
@@ -942,22 +949,6 @@ static OSStatus xrunListener( AudioObjectID /*inDevice*/,
 
   return kAudioHardwareNoError;
 }
-
-//static OSStatus rateListener( AudioObjectID inDevice,
-//                              UInt32 /*nAddresses*/,
-//                              const AudioObjectPropertyAddress /*properties*/[],
-//                              void* ratePointer )
-/*
-{
-  Float64 *rate = (Float64 *) ratePointer;
-  UInt32 dataSize = sizeof( Float64 );
-  AudioObjectPropertyAddress property = { kAudioDevicePropertyNominalSampleRate,
-                                          kAudioObjectPropertyScopeGlobal,
-                                          kAudioObjectPropertyElementMaster };
-  AudioObjectGetPropertyData( inDevice, &property, 0, NULL, &dataSize, rate );
-  return kAudioHardwareNoError;
-}
-*/
 
 bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
@@ -1168,25 +1159,12 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     return FAILURE;
   }
 
-  // Only change the sample rate if off by more than 1 Hz.
+  // Only try to change the sample rate if off by more than 1 Hz.
   if ( fabs( nominalRate - (double)sampleRate ) > 1.0 ) {
-
-    // Set a property listener for the sample rate change
-    Float64 reportedRate = 0.0;
-    /*
-    AudioObjectPropertyAddress tmp = { kAudioDevicePropertyNominalSampleRate, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-    result = AudioObjectAddPropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
-    if ( result != noErr ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate property listener for device (" << device << ").";
-      errorText_ = errorStream_.str();
-      return FAILURE;
-    }
-    */
 
     nominalRate = (Float64) sampleRate;
     result = AudioObjectSetPropertyData( id, &property, 0, NULL, dataSize, &nominalRate );
     if ( result != noErr ) {
-      //AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
       errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate for device (" << device << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -1194,18 +1172,15 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     // Now wait until the reported nominal rate is what we just set.
     UInt32 microCounter = 0;
+    Float64 reportedRate = 0.0;
     while ( reportedRate != nominalRate ) {
       microCounter += 5000;
-      if ( microCounter > 5000000 ) break;
+      if ( microCounter > 2000000 ) break;
       usleep( 5000 );
       result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &reportedRate );
     }
-    std::cout << "microCounter = " << microCounter << std::endl;
 
-    // Remove the property listener.
-    //AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
-
-    if ( microCounter > 5000000 ) {
+    if ( microCounter > 2000000 ) {
       errorStream_ << "RtApiCore::probeDeviceOpen: timeout waiting for sample rate update for device (" << device << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
