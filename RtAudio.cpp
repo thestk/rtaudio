@@ -261,9 +261,9 @@ RtAudio :: RtAudio( RtAudio::Api api )
   if ( rtapi_ ) return;
 
   // It should not be possible to get here because the preprocessor
-  // definition __RTAUDIO_DUMMY__ is automatically defined if no
-  // API-specific definitions are passed to the compiler. But just in
-  // case something weird happens, we'll thow an error.
+  // definition __RTAUDIO_DUMMY__ is automatically defined in RtAudio.h
+  // if no API-specific definitions are passed to the compiler. But just
+  // in case something weird happens, we'll thow an error.
   std::string errorText = "\nRtAudio: no compiled API support found ... critical error!!\n\n";
   throw( RtAudioError( errorText, RtAudioError::UNSPECIFIED ) );
 }
@@ -9978,32 +9978,16 @@ void RtApi :: error( RtAudioError::Type type )
 
   RtAudioErrorCallback errorCallback = (RtAudioErrorCallback) stream_.callbackInfo.errorCallback;
   if ( errorCallback ) {
-    // abortStream() can generate new error messages. Ignore them. Just keep original one.
-
-    //if ( firstErrorOccurred_ ) return;
-
-    //firstErrorOccurred_ = true;
     const std::string errorMessage = errorText_;
-
-    /*
-    if ( type != RtAudioError::WARNING && stream_.state != STREAM_STOPPED) {
-      stream_.callbackInfo.isRunning = false; // exit from the thread
-      abortStream();
-    }
-    */
-
     errorCallback( type, errorMessage );
-    //firstErrorOccurred_ = false;
-    return;
   }
-
-  //if ( type == RtAudioError::WARNING && showWarnings_ == true )
-  if ( showWarnings_ == true )
-    std::cerr << '\n' << errorText_ << "\n\n";
-  //else if ( type != RtAudioError::WARNING )
-  //  throw( RtAudioError( errorText_, type ) );
+  else {
+    if ( showWarnings_ == true )
+      std::cerr << '\n' << errorText_ << "\n\n";
+  }
 }
 
+/*
 void RtApi :: verifyStream()
 {
   if ( stream_.state == STREAM_CLOSED ) {
@@ -10011,6 +9995,7 @@ void RtApi :: verifyStream()
     error( RtAudioError::INVALID_USE );
   }
 }
+*/
 
 void RtApi :: clearStreamInfo()
 {
