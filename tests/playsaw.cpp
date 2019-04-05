@@ -64,15 +64,15 @@ void usage( void ) {
   exit( 0 );
 }
 
-void errorCallback( RtAudioError::Type type, const std::string &errorText )
+void errorCallback( RtAudioError::Type /*type*/, const std::string &errorText )
 {
   // This example error handling function does exactly the same thing
   // as the embedded RtAudio::error() function.
   std::cout << "in errorCallback" << std::endl;
-  if ( type == RtAudioError::WARNING )
+  //if ( type == RtAudioError::WARNING )
     std::cerr << '\n' << errorText << "\n\n";
-  else if ( type != RtAudioError::WARNING )
-    throw( RtAudioError( errorText, type ) );
+    //else if ( type != RtAudioError::WARNING )
+    //throw( RtAudioError( errorText, type ) );
 }
 
 unsigned int channels;
@@ -80,7 +80,9 @@ RtAudio::StreamOptions options;
 unsigned int frameCounter = 0;
 bool checkCount = false;
 unsigned int nFrames = 0;
-const unsigned int callbackReturnValue = 1;
+const unsigned int callbackReturnValue = 2;
+double streamTimePrintIncrement = 1.0; // seconds
+double streamTimePrintTime = 1.0; // seconds
 
 //#define USE_INTERLEAVED
 #if defined( USE_INTERLEAVED )
@@ -96,6 +98,11 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
   if ( status )
     std::cout << "Stream underflow detected!" << std::endl;
+
+  if ( streamTime >= streamTimePrintTime ) {
+    std::cout << "streamTime = " << streamTime << std::endl;
+    streamTimePrintTime += streamTimePrintIncrement;
+  }
 
   for ( i=0; i<nBufferFrames; i++ ) {
     for ( j=0; j<channels; j++ ) {
@@ -113,7 +120,7 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 #else // Use non-interleaved buffers
 
 int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
-         double /*streamTime*/, RtAudioStreamStatus status, void *data )
+         double streamTime, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
   extern unsigned int channels;
@@ -123,6 +130,11 @@ int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
   if ( status )
     std::cout << "Stream underflow detected!" << std::endl;
 
+  if ( streamTime >= streamTimePrintTime ) {
+    std::cout << "streamTime = " << streamTime << std::endl;
+    streamTimePrintTime += streamTimePrintIncrement;
+  }
+  
   double increment;
   for ( j=0; j<channels; j++ ) {
     increment = BASE_RATE * (j+1+(j*0.1));
@@ -182,14 +194,15 @@ int main( int argc, char *argv[] )
 #if !defined( USE_INTERLEAVED )
   options.flags |= RTAUDIO_NONINTERLEAVED;
 #endif
-  try {
+  //  try {
     dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options, &errorCallback );
+    if ( dac.isStreamOpen() == false ) goto cleanup;
     dac.startStream();
-  }
-  catch ( RtAudioError& e ) {
-    e.printMessage();
-    goto cleanup;
-  }
+    //  }
+    //  catch ( RtAudioError& e ) {
+    //    e.printMessage();
+    //goto cleanup;
+    //  }
 
   if ( checkCount ) {
     while ( dac.isStreamRunning() == true ) SLEEP( 100 );
@@ -200,14 +213,17 @@ int main( int argc, char *argv[] )
     std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << bufferFrames << ").\n";
     std::cin.get( input );
 
-    try {
+    //try {
       // Stop the stream
       dac.stopStream();
-    }
+      //dac.abortStream();
+  }
+      /*
     catch ( RtAudioError& e ) {
       e.printMessage();
     }
   }
+      */
 
  cleanup:
   if ( dac.isStreamOpen() ) dac.closeStream();

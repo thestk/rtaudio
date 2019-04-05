@@ -943,10 +943,11 @@ static OSStatus xrunListener( AudioObjectID /*inDevice*/,
   return kAudioHardwareNoError;
 }
 
-static OSStatus rateListener( AudioObjectID inDevice,
-                              UInt32 /*nAddresses*/,
-                              const AudioObjectPropertyAddress /*properties*/[],
-                              void* ratePointer )
+//static OSStatus rateListener( AudioObjectID inDevice,
+//                              UInt32 /*nAddresses*/,
+//                              const AudioObjectPropertyAddress /*properties*/[],
+//                              void* ratePointer )
+/*
 {
   Float64 *rate = (Float64 *) ratePointer;
   UInt32 dataSize = sizeof( Float64 );
@@ -956,6 +957,7 @@ static OSStatus rateListener( AudioObjectID inDevice,
   AudioObjectGetPropertyData( inDevice, &property, 0, NULL, &dataSize, rate );
   return kAudioHardwareNoError;
 }
+*/
 
 bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
@@ -1171,6 +1173,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     // Set a property listener for the sample rate change
     Float64 reportedRate = 0.0;
+    /*
     AudioObjectPropertyAddress tmp = { kAudioDevicePropertyNominalSampleRate, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
     result = AudioObjectAddPropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
     if ( result != noErr ) {
@@ -1178,11 +1181,12 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       errorText_ = errorStream_.str();
       return FAILURE;
     }
+    */
 
     nominalRate = (Float64) sampleRate;
     result = AudioObjectSetPropertyData( id, &property, 0, NULL, dataSize, &nominalRate );
     if ( result != noErr ) {
-      AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
+      //AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
       errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate for device (" << device << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -1194,10 +1198,12 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       microCounter += 5000;
       if ( microCounter > 5000000 ) break;
       usleep( 5000 );
+      result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &reportedRate );
     }
+    std::cout << "microCounter = " << microCounter << std::endl;
 
     // Remove the property listener.
-    AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
+    //AudioObjectRemovePropertyListener( id, &tmp, rateListener, (void *) &reportedRate );
 
     if ( microCounter > 5000000 ) {
       errorStream_ << "RtApiCore::probeDeviceOpen: timeout waiting for sample rate update for device (" << device << ").";
@@ -1450,6 +1456,21 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   property.mSelector = kAudioDeviceProcessorOverload;
   property.mScope = kAudioObjectPropertyScopeGlobal;
   result = AudioObjectAddPropertyListener( id, &property, xrunListener, (void *) handle );
+    if ( result != noErr ) {
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error setting xrun listener for device (" << device << ").";
+    errorText_ = errorStream_.str();
+    goto error;
+  }
+
+  // Setup a listener to detect a possible device disconnect.
+  property.mSelector = kAudioDevicePropertyDeviceIsAlive;
+  property.mScope = kAudioObjectPropertyScopeGlobal;
+  result = AudioObjectAddPropertyListener( id , &property, disconnectListener, (void *) &stream_.callbackInfo );
+  if ( result != noErr ) {
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << device << ").";
+    errorText_ = errorStream_.str();
+    goto error;
+  }
 
   return SUCCESS;
 
@@ -1472,7 +1493,8 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.deviceBuffer = 0;
   }
 
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.state = STREAM_CLOSED;
   return FAILURE;
 }
 
@@ -1544,10 +1566,17 @@ void RtApiCore :: closeStream( void )
   }
 
   // Destroy pthread condition variable.
+  pthread_cond_signal( &handle->condition ); // signal condition variable in case stopStream is blocked
   pthread_cond_destroy( &handle->condition );
   delete handle;
   stream_.apiHandle = 0;
 
+  CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+  if ( info->deviceDisconnected ) {
+    errorText_ = "RtApiCore: the stream device was disconnected (and closed)!";
+    error( RtAudioError::DEVICE_DISCONNECT );
+  }
+  
   clearStreamInfo();
   //stream_.mode = UNINITIALIZED;
   //stream_.state = STREAM_CLOSED;
@@ -1555,16 +1584,21 @@ void RtApiCore :: closeStream( void )
 
 void RtApiCore :: startStream( void )
 {
-  verifyStream();
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiCore::startStream(): the stream is already running!";
+  //verifyStream();
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiCore::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiCore::startStream(): the stream is stopping or closed!";
     error( RtAudioError::WARNING );
     return;
   }
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
+  */
 
   OSStatus result = noErr;
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
@@ -1600,9 +1634,12 @@ void RtApiCore :: startStream( void )
 
 void RtApiCore :: stopStream( void )
 {
-  verifyStream();
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiCore::stopStream(): the stream is already stopped!";
+  //verifyStream();
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiCore::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiCore::stopStream(): the stream is closed!";
     error( RtAudioError::WARNING );
     return;
   }
@@ -1635,6 +1672,7 @@ void RtApiCore :: stopStream( void )
   }
 
   stream_.state = STREAM_STOPPED;
+  // set stream time to zero?
 
  unlock:
   if ( result == noErr ) return;
@@ -1643,9 +1681,12 @@ void RtApiCore :: stopStream( void )
 
 void RtApiCore :: abortStream( void )
 {
-  verifyStream();
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiCore::abortStream(): the stream is already stopped!";
+  //verifyStream();
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiCore::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiCore::abortStream(): the stream is stopping or closed!";
     error( RtAudioError::WARNING );
     return;
   }
@@ -1653,6 +1694,7 @@ void RtApiCore :: abortStream( void )
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   handle->drainCounter = 2;
 
+  stream_.state = STREAM_STOPPING;
   stopStream();
 }
 
@@ -1717,8 +1759,6 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
     int cbReturnValue = callback( stream_.userBuffer[0], stream_.userBuffer[1],
                                   stream_.bufferSize, streamTime, status, info->userData );
     if ( cbReturnValue == 2 ) {
-      stream_.state = STREAM_STOPPING;
-      handle->drainCounter = 2;
       abortStream();
       return SUCCESS;
     }
@@ -9965,26 +10005,28 @@ void RtApi :: error( RtAudioError::Type type )
   if ( errorCallback ) {
     // abortStream() can generate new error messages. Ignore them. Just keep original one.
 
-    if ( firstErrorOccurred_ )
-      return;
+    //if ( firstErrorOccurred_ ) return;
 
-    firstErrorOccurred_ = true;
+    //firstErrorOccurred_ = true;
     const std::string errorMessage = errorText_;
 
+    /*
     if ( type != RtAudioError::WARNING && stream_.state != STREAM_STOPPED) {
       stream_.callbackInfo.isRunning = false; // exit from the thread
       abortStream();
     }
+    */
 
     errorCallback( type, errorMessage );
-    firstErrorOccurred_ = false;
+    //firstErrorOccurred_ = false;
     return;
   }
 
-  if ( type == RtAudioError::WARNING && showWarnings_ == true )
+  //if ( type == RtAudioError::WARNING && showWarnings_ == true )
+  if ( showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
-  else if ( type != RtAudioError::WARNING )
-    throw( RtAudioError( errorText_, type ) );
+  //else if ( type != RtAudioError::WARNING )
+  //  throw( RtAudioError( errorText_, type ) );
 }
 
 void RtApi :: verifyStream()

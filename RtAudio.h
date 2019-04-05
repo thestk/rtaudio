@@ -226,6 +226,7 @@ class RTAUDIO_DLL_PUBLIC RtAudioError : public std::runtime_error
     UNSPECIFIED,       /*!< The default, unspecified error type. */
     NO_DEVICES_FOUND,  /*!< No devices found on system. */
     INVALID_DEVICE,    /*!< An invalid device ID was specified. */
+    DEVICE_DISCONNECT, /*!< A device in use was disconnected. */
     MEMORY_ERROR,      /*!< An error occured during memory allocation. */
     INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
     INVALID_USE,       /*!< The function was called incorrectly. */
@@ -656,10 +657,11 @@ struct CallbackInfo {
   bool isRunning;
   bool doRealtime;
   int priority;
+  bool deviceDisconnected;
 
   // Default constructor.
   CallbackInfo()
-  :object(0), callback(0), userData(0), errorCallback(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0) {}
+  :object(0), callback(0), userData(0), errorCallback(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
 };
 
 // **************************************************************** //
