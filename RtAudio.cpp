@@ -907,6 +907,24 @@ static OSStatus callbackHandler( AudioDeviceID inDevice,
     return kAudioHardwareNoError;
 }
 
+static OSStatus disconnectListener( AudioObjectID /*inDevice*/,
+                                    UInt32 nAddresses,
+                                    const AudioObjectPropertyAddress properties[],
+                                    void* infoPointer )
+{
+  for ( UInt32 i=0; i<nAddresses; i++ ) {
+    if ( properties[i].mSelector == kAudioDevicePropertyDeviceIsAlive ) {
+      CallbackInfo *info = (CallbackInfo *) infoPointer;
+      RtApiCore *object = (RtApiCore *) info->object;
+      info->deviceDisconnected = true;
+      object->closeStream();
+      return kAudioHardwareUnspecifiedError;
+    }
+  }
+  
+  return kAudioHardwareNoError;
+}
+
 static OSStatus xrunListener( AudioObjectID /*inDevice*/,
                               UInt32 nAddresses,
                               const AudioObjectPropertyAddress properties[],
