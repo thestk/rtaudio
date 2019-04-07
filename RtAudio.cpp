@@ -1656,6 +1656,7 @@ void RtApiCore :: stopStream( void )
 
   stream_.state = STREAM_STOPPED;
   // set stream time to zero?
+  // and perhaps clear input user or device buffers?
 
  unlock:
   if ( result == noErr ) return;
