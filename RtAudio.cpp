@@ -1947,7 +1947,6 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
   }
 
  unlock:
-  //MUTEX_UNLOCK( &stream_.mutex );
 
   // Make sure to only tick duplex stream time once if using two devices
   if ( stream_.mode != DUPLEX || (stream_.mode == DUPLEX && handle->id[0] != handle->id[1] && deviceId == handle->id[0] ) )

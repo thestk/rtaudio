@@ -48,12 +48,20 @@ void usage( void ) {
   exit( 0 );
 }
 
+double streamTimePrintIncrement = 1.0; // seconds
+double streamTimePrintTime = 1.0; // seconds
+
 int inout( void *outputBuffer, void *inputBuffer, unsigned int /*nBufferFrames*/,
-           double /*streamTime*/, RtAudioStreamStatus status, void *data )
+           double streamTime, RtAudioStreamStatus status, void *data )
 {
   // Since the number of input and output channels is equal, we can do
   // a simple buffer copy operation here.
   if ( status ) std::cout << "Stream over/underflow detected." << std::endl;
+
+  if ( streamTime >= streamTimePrintTime ) {
+    std::cout << "streamTime = " << streamTime << std::endl;
+    streamTimePrintTime += streamTimePrintIncrement;
+  }
 
   unsigned int *bytes = (unsigned int *) data;
   memcpy( outputBuffer, inputBuffer, *bytes );
