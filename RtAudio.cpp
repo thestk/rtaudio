@@ -1362,9 +1362,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // Allocate necessary internal buffers.
   unsigned long bufferBytes;
   bufferBytes = stream_.nUserChannels[mode] * *bufferSize * formatBytes( stream_.userFormat );
-  //  stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
   stream_.userBuffer[mode] = (char *) malloc( bufferBytes * sizeof(char) );
-  memset( stream_.userBuffer[mode], 0, bufferBytes * sizeof(char) );
   if ( stream_.userBuffer[mode] == NULL ) {
     errorText_ = "RtApiCore::probeDeviceOpen: error allocating user buffer memory.";
     goto error;
@@ -1387,7 +1385,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     if ( makeBuffer ) {
       bufferBytes *= *bufferSize;
       if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
-      stream_.deviceBuffer = (char *) calloc( bufferBytes, 1 );
+      stream_.deviceBuffer = (char *) calloc( bufferBytes, sizeof(char) );
       if ( stream_.deviceBuffer == NULL ) {
         errorText_ = "RtApiCore::probeDeviceOpen: error allocating device buffer memory.";
         goto error;
@@ -1598,6 +1596,11 @@ void RtApiCore :: startStream( void )
   if ( stream_.mode == INPUT ||
        ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
 
+    // Clear user input buffer
+    unsigned long bufferBytes;
+    bufferBytes = stream_.nUserChannels[1] * stream_.bufferSize * formatBytes( stream_.userFormat );
+    memset( stream_.userBuffer[1], 0, bufferBytes * sizeof(char) );
+
     result = AudioDeviceStart( handle->id[1], callbackHandler );
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::startStream: system error starting input callback procedure on device (" << stream_.device[1] << ").";
@@ -1606,6 +1609,7 @@ void RtApiCore :: startStream( void )
     }
   }
 
+  // set stream time to zero?
   handle->drainCounter = 0;
   handle->internalDrain = false;
   stream_.state = STREAM_RUNNING;
@@ -1655,13 +1659,6 @@ void RtApiCore :: stopStream( void )
   }
 
   stream_.state = STREAM_STOPPED;
-  // set stream time to zero?
-  // Clear user input buffer in case the stream is restarted
-  if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
-    unsigned long bufferBytes;
-    bufferBytes = stream_.nUserChannels[1] * stream_.bufferSize * formatBytes( stream_.userFormat );
-    memset( stream_.userBuffer[1], 0, bufferBytes * sizeof(char) );
-  }
 
  unlock:
   if ( result == noErr ) return;
