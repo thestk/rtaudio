@@ -1656,7 +1656,12 @@ void RtApiCore :: stopStream( void )
 
   stream_.state = STREAM_STOPPED;
   // set stream time to zero?
-  // and perhaps clear input user or device buffers?
+  // Clear user input buffer in case the stream is restarted
+  if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
+    unsigned long bufferBytes;
+    bufferBytes = stream_.nUserChannels[1] * stream_.bufferSize * formatBytes( stream_.userFormat );
+    memset( stream_.userBuffer[1], 0, bufferBytes * sizeof(char) );
+  }
 
  unlock:
   if ( result == noErr ) return;
