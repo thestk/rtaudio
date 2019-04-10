@@ -510,7 +510,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
            0 and getDeviceCount() - 1.
     \param format An RtAudioFormat specifying the desired sample data format.
     \param sampleRate The desired sample rate (sample frames per second).
-    \param *bufferFrames A pointer to a value indicating the desired
+    \param bufferFrames A pointer to a value indicating the desired
            internal buffer size in sample frames.  The actual value
            used by the device is returned via the same pointer.  A
            value of zero can be specified, in which case the lowest
