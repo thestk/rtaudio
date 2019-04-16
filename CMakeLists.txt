@@ -1,5 +1,5 @@
 # Set minimum CMake required version for this project.
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 # Define a C++ project.
 project(RtAudio LANGUAGES CXX)
@@ -24,20 +24,22 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 # Necessary for Windows
-if(WIN32)
-  set(CMAKE_DEBUG_POSTFIX "d")
-endif()
-
 if(MINGW)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+# Standard CMake options
+option(BUILD_SHARED_LIBS "Build as shared library" ON)
+
+if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel")
+endif()
+if(WINDOWS)
+  set(CMAKE_DEBUG_POSTFIX d CACHE STRING "Postfix for debug version of library")
+endif()
+
 # Build Options
-option(RTAUDIO_BUILD_SHARED_LIBS "Compile library shared lib." TRUE)
-option(RTAUDIO_BUILD_STATIC_LIBS "Compile library static lib." TRUE)
-option(RTAUDIO_BUILD_TESTING "Compile test programs." TRUE)
 option(RTAUDIO_BUILD_PYTHON "Build PyRtAudio python bindings" OFF)
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (Release,Debug)")
 set(RTAUDIO_TARGETNAME_UNINSTALL "uninstall" CACHE STRING "Name of 'uninstall' build target")
 
 # API Options
@@ -204,57 +206,33 @@ endif()
 # Create library targets.
 cmake_policy(SET CMP0042 OLD)
 set(LIB_TARGETS)
-if(RTAUDIO_BUILD_SHARED_LIBS)
-  add_library(rtaudio SHARED ${rtaudio_SOURCES})
-  list(APPEND LIB_TARGETS rtaudio)
 
-  # Add headers destination for install rule.
-  set_target_properties(rtaudio PROPERTIES PUBLIC_HEADER RtAudio.h
-    SOVERSION ${SO_VER}
-    VERSION ${FULL_VER})
+add_library(rtaudio ${rtaudio_SOURCES})
+list(APPEND LIB_TARGETS rtaudio)
+# Add headers destination for install rule.
+set_target_properties(rtaudio PROPERTIES PUBLIC_HEADER RtAudio.h
+  SOVERSION ${SO_VER}
+  VERSION ${FULL_VER})
+# Set include paths, populate target interface.
+target_include_directories(rtaudio PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  ${INCDIRS})
+# Set compile-time definitions
+target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
+target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
+target_link_libraries(rtaudio ${LINKLIBS})
 
-  # Set include paths, populate target interface.
-  target_include_directories(rtaudio PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    ${INCDIRS})
-
-  # Set compile-time definitions
-  target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
-  target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
-
-  target_link_libraries(rtaudio ${LINKLIBS})
-endif()
-
-if(RTAUDIO_BUILD_STATIC_LIBS)
-  add_library(rtaudio_static STATIC ${rtaudio_SOURCES})
-  list(APPEND LIB_TARGETS rtaudio_static)
-
-  # Add headers destination for install rule.
-  set_target_properties(rtaudio_static PROPERTIES PUBLIC_HEADER RtAudio.h
-    SOVERSION ${SO_VER}
-    VERSION ${FULL_VER})
-
-  # Set include paths, populate target interface.
-  target_include_directories(rtaudio_static PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    ${INCDIRS})
-
-  # Set compile-time definitions
-  target_compile_definitions(rtaudio_static PRIVATE ${API_DEFS})
-
-  target_link_libraries(rtaudio_static ${LINKLIBS})
-endif()
 
 # Set standard installation directories.
 include(GNUInstallDirs)
 
 # Subdirs
-if (RTAUDIO_BUILD_TESTING)
-  include(CTest)
+include(CTest)
+
+if (BUILD_TESTING)
   add_subdirectory(tests)
-endif (RTAUDIO_BUILD_TESTING)
+endif()
 
 # Message
 string(REPLACE ";" " " apilist "${API_LIST}")
@@ -278,14 +256,14 @@ install(TARGETS ${LIB_TARGETS}
 export(PACKAGE RtAudio)
 
 # Set installation path for CMake files.
-if(WIN32)
-    set(RTAUDIO_CMAKE_DESTINATION cmake)
-else()
-    set(RTAUDIO_CMAKE_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RtAudio)
-endif()
+set(RTAUDIO_CMAKE_DESTINATION share/rtaudio)
 
 # Create CMake configuration export file.
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
+if(NEED_PTHREAD)
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "find_package(Threads REQUIRED)\n")
+endif()
+
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
 
 # Install CMake configuration export file.
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
