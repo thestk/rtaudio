@@ -207,17 +207,36 @@ endif()
 cmake_policy(SET CMP0042 OLD)
 set(LIB_TARGETS)
 
-add_library(rtaudio ${rtaudio_SOURCES})
+# Use RTAUDIO_BUILD_SHARED_LIBS / RTAUDIO_BUILD_STATIC_LIBS if they
+# are defined, otherwise default to standard BUILD_SHARED_LIBS.
+if (DEFINED RTAUDIO_BUILD_SHARED_LIBS)
+  if (RTAUDIO_BUILD_SHARED_LIBS)
+    add_library(rtaudio SHARED ${rtaudio_SOURCES})
+  else()
+    add_library(rtaudio STATIC ${rtaudio_SOURCES})
+  endif()
+elseif (DEFINED RTAUDIO_BUILD_STATIC_LIBS)
+  if (RTAUDIO_BUILD_STATIC_LIBS)
+    add_library(rtaudio STATIC ${rtaudio_SOURCES})
+  else()
+    add_library(rtaudio SHARED ${rtaudio_SOURCES})
+  endif()
+else()
+  add_library(rtaudio ${rtaudio_SOURCES})
+endif()
 list(APPEND LIB_TARGETS rtaudio)
+
 # Add headers destination for install rule.
 set_target_properties(rtaudio PROPERTIES PUBLIC_HEADER RtAudio.h
   SOVERSION ${SO_VER}
   VERSION ${FULL_VER})
+
 # Set include paths, populate target interface.
 target_include_directories(rtaudio PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   ${INCDIRS})
+
 # Set compile-time definitions
 target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
 target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
@@ -230,7 +249,10 @@ include(GNUInstallDirs)
 # Subdirs
 include(CTest)
 
-if (BUILD_TESTING)
+if (NOT DEFINED RTAUDIO_BUILD_TESTING OR RTAUDIO_BUILD_TESTING STREQUAL "")
+  set(RTAUDIO_BUILD_TESTING ${BUILD_TESTING})
+endif()
+if (RTAUDIO_BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
