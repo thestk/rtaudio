@@ -31,4 +31,4 @@ rtaudio_inc_HEADERS = \
 pkgconfigdatadir = $(libdir)/pkgconfig
 pkgconfigdata_DATA = rtaudio.pc
 
-EXTRA_DIST = autogen.sh readme install.txt contrib include
+EXTRA_DIST = autogen.sh README.md install.txt contrib include cmake
