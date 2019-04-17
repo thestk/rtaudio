@@ -28,3 +28,5 @@ teststops_SOURCES = teststops.cpp
 teststops_LDADD = $(top_builddir)/librtaudio.la
 
 EXTRA_DIST = Windows CMakeLists.txt
+
+TESTS = apinames

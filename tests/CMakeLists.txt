@@ -28,3 +28,5 @@ target_link_libraries(testall ${LIBRTAUDIO} ${LINKLIBS})
 
 add_executable(teststops teststops.cpp)
 target_link_libraries(teststops ${LIBRTAUDIO} ${LINKLIBS})
+
+add_test(NAME apinames COMMAND apinames)
