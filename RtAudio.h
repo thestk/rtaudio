@@ -7,6 +7,7 @@
     and OSS), Macintosh OS X (CoreAudio and Jack), and Windows
     (DirectSound, ASIO and WASAPI) operating systems.
 
+    RtAudio GitHub site: https://github.com/thestk/rtaudio
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
