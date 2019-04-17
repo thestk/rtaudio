@@ -193,6 +193,7 @@ static const RtAudioStreamStatus RTAUDIO_OUTPUT_UNDERFLOW = 0x2;  // The output 
    \param userData A pointer to optional data provided by the client
           when opening the stream (default = NULL).
 
+   \return
    To continue normal stream operation, the RtAudioCallback function
    should return a value of zero.  To stop the stream and drain the
    output buffer, the function should return a value of one.  To abort
