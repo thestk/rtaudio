@@ -66,6 +66,8 @@ The \c nativeFormats member of the RtAudio::DeviceInfo structure is a bit mask o
 
 Some audio devices may require a minimum channel value greater than one.  RtAudio will provide automatic channel number compensation when the number of channels set by the user is less than that required by the device.  Channel compensation is <I>NOT</I> possible when the number of channels set by the user is greater than that supported by the device.
 
-It should be noted that the capabilities reported by a device driver or underlying audio API are not always accurate and/or may be dependent on a combination of device settings.  For this reason, RtAudio does not rely on the queried values when attempting to open a stream.
+Note that the device enumeration is system specific and will change if any devices are plugged or unplugged by the user. Thus, the device numbers should be verified immediately before opening a stream. As well, if a user unplugs a device while an open stream is using that device, the resulting stream behaviour will be undefined (a system error will likely be generated).
+
+Also, the capabilities reported by a device driver or underlying audio API are not always accurate and/or may be dependent on a combination of device settings.  For this reason, RtAudio does not rely on the queried values when attempting to open a stream.
 
 */
