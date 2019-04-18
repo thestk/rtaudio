@@ -26,7 +26,7 @@ Many thanks to the following people for providing bug fixes and improvements:
 <LI>Dominic Mazzoni</LI>
 <LI>Tristan Matthews</LI>
 <LI>Peter Meerwald (PulseAudio)</LI>
-<LI>Jaromir Mike&scaron;</LI>
+<LI>Jaromir Mikes</LI>
 <LI>rehans</LI>
 <LI>Sebastian Reimers</LI>
 <LI>Ryan Schmidt</LI>

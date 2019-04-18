@@ -9,7 +9,7 @@ v.5.1.0: (17 April 2019)
 - bug fix for stream ticking in OS-X if using two devices for duplex
 - ALSA stream handle bug fixes
 - new C API wrapper
-- new functions to get API names
+- new static functions to get API names
 
 v5.0.0: (30 August 2017)
 - see git history for complete list of changes

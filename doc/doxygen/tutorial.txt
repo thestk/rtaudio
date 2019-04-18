@@ -18,7 +18,7 @@ RtAudio incorporates the concept of audio streams, which represent audio output 
 Changes in this release include:
 
 - new C API wrapper
-- new functions to get API names
+- new static functions to get API names
 - many WASAPI updates (thanks to Marcus Tomlinson)
 - miscellaneous build system updates
 - bug fix for stream ticking in CoreAudio if using two devices for duplex
