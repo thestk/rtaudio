@@ -4849,7 +4849,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.doConvertBuffer[mode] = true;
 
   if ( stream_.doConvertBuffer[mode] )
-    setConvertInfo( mode, 0 );
+    setConvertInfo( mode, firstChannel );
 
   // Allocate necessary internal buffers
   bufferBytes = stream_.nUserChannels[mode] * stream_.bufferSize * formatBytes( stream_.userFormat );
