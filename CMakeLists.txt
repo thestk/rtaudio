@@ -283,9 +283,11 @@ set(RTAUDIO_CMAKE_DESTINATION share/rtaudio)
 # Create CMake configuration export file.
 if(NEED_PTHREAD)
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "find_package(Threads REQUIRED)\n")
+  file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
+else()
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
 endif()
 
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
 
 # Install CMake configuration export file.
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
