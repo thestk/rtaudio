@@ -66,8 +66,7 @@ void usage( void ) {
 
 void errorCallback( RtAudioError::Type /*type*/, const std::string &errorText )
 {
-  // This example error handling function does exactly the same thing
-  // as the embedded RtAudio::error() function.
+  // This example error handling function simply outputs the error message to stderr.
   std::cerr << "\nerrorCallback: " << errorText << "\n\n";
 }
 
@@ -172,7 +171,9 @@ int main( int argc, char *argv[] )
 
   double *data = (double *) calloc( channels, sizeof( double ) );
 
-  // Let RtAudio print messages to stderr.
+  // Specify our own error callback function and tell RtAudio to
+  // output all messages, even warnings.
+  dac.setErrorCallback( &errorCallback );
   dac.showWarnings( true );
 
   // Set our stream parameters for output only.
@@ -191,11 +192,15 @@ int main( int argc, char *argv[] )
   options.flags |= RTAUDIO_NONINTERLEAVED;
 #endif
 
-  dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options, &errorCallback );
+  // An error in the openStream() function can be detected either by
+  // checking for a non-zero return value OR by a subsequent call to
+  // isStreamOpen().
+  if ( dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options ) )
+    goto cleanup;
   if ( dac.isStreamOpen() == false ) goto cleanup;
 
   // Stream is open ... now start it.
-  dac.startStream();
+  if ( dac.startStream() ) goto cleanup;
 
   if ( checkCount ) {
     while ( dac.isStreamRunning() == true ) SLEEP( 100 );

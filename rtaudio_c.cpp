@@ -161,8 +161,7 @@ int rtaudio_open_stream(rtaudio_t audio,
     audio->cb = cb;
     audio->userdata = userdata;
     audio->audio->openStream(out, in, (RtAudioFormat)format, sample_rate,
-                             buffer_frames, proxy_cb_func, (void *)audio, opts,
-                             NULL);
+                             buffer_frames, proxy_cb_func, (void *)audio, opts); //,  NULL);
     return 0;
   } catch (RtAudioError &err) {
     audio->has_error = 1;

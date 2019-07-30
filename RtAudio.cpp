@@ -264,7 +264,7 @@ RtAudio :: RtAudio( RtAudio::Api api )
   // It should not be possible to get here because the preprocessor
   // definition __RTAUDIO_DUMMY__ is automatically defined in RtAudio.h
   // if no API-specific definitions are passed to the compiler. But just
-  // in case something weird happens, we'll thow an error.
+  // in case something weird happens, we'll throw an error.
   std::string errorText = "\nRtAudio: no compiled API support found ... critical error!!\n\n";
   throw( RtAudioError( errorText, RtAudioError::UNSPECIFIED ) );
 }
@@ -275,17 +275,17 @@ RtAudio :: ~RtAudio()
     delete rtapi_;
 }
 
-void RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
-                            RtAudio::StreamParameters *inputParameters,
-                            RtAudioFormat format, unsigned int sampleRate,
-                            unsigned int *bufferFrames,
-                            RtAudioCallback callback, void *userData,
-                            RtAudio::StreamOptions *options,
-                            RtAudioErrorCallback errorCallback )
+//void RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
+RtAudioError::Type RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
+                                          RtAudio::StreamParameters *inputParameters,
+                                          RtAudioFormat format, unsigned int sampleRate,
+                                          unsigned int *bufferFrames,
+                                          RtAudioCallback callback, void *userData,
+                                          RtAudio::StreamOptions *options ) //, RtAudioErrorCallback errorCallback )
 {
   return rtapi_->openStream( outputParameters, inputParameters, format,
                              sampleRate, bufferFrames, callback,
-                             userData, options, errorCallback );
+                             userData, options ); //, errorCallback );
 }
 
 // *************************************************** //
@@ -299,8 +299,9 @@ RtApi :: RtApi()
 {
   clearStreamInfo();
   MUTEX_INITIALIZE( &stream_.mutex );
+  errorCallback_ = 0;
   showWarnings_ = true;
-  firstErrorOccurred_ = false;
+  //firstErrorOccurred_ = false;
 }
 
 RtApi :: ~RtApi()
@@ -308,18 +309,19 @@ RtApi :: ~RtApi()
   MUTEX_DESTROY( &stream_.mutex );
 }
 
-void RtApi :: openStream( RtAudio::StreamParameters *oParams,
-                          RtAudio::StreamParameters *iParams,
-                          RtAudioFormat format, unsigned int sampleRate,
-                          unsigned int *bufferFrames,
-                          RtAudioCallback callback, void *userData,
-                          RtAudio::StreamOptions *options,
-                          RtAudioErrorCallback errorCallback )
+//void RtApi :: openStream( RtAudio::StreamParameters *oParams,
+RtAudioError::Type RtApi :: openStream( RtAudio::StreamParameters *oParams,
+                                        RtAudio::StreamParameters *iParams,
+                                        RtAudioFormat format, unsigned int sampleRate,
+                                        unsigned int *bufferFrames,
+                                        RtAudioCallback callback, void *userData,
+                                        RtAudio::StreamOptions *options ) //, RtAudioErrorCallback errorCallback )
 {
+  //RtAudioError::Type type = RtAudioError::NO_ERROR;
   if ( stream_.state != STREAM_CLOSED ) {
+    //type = RtAudioError::INVALID_USE;
     errorText_ = "RtApi::openStream: a stream is already open!";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RtAudioError::INVALID_USE );
   }
 
   // Clear stream information potentially left from a previously open stream.
@@ -327,26 +329,26 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
   if ( oParams && oParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL output StreamParameters structure cannot have an nChannels value less than one.";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RtAudioError::INVALID_USE );
+    //return;
   }
 
   if ( iParams && iParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL input StreamParameters structure cannot have an nChannels value less than one.";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RtAudioError::INVALID_USE );
+    //return;
   }
 
   if ( oParams == NULL && iParams == NULL ) {
     errorText_ = "RtApi::openStream: input and output StreamParameters structures are both NULL!";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RtAudioError::INVALID_USE );
+    //return;
   }
 
   if ( formatBytes(format) == 0 ) {
     errorText_ = "RtApi::openStream: 'format' parameter value is undefined.";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RtAudioError::INVALID_USE );
+    //return;
   }
 
   unsigned int nDevices = getDeviceCount();
@@ -355,8 +357,8 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     oChannels = oParams->nChannels;
     if ( oParams->deviceId >= nDevices ) {
       errorText_ = "RtApi::openStream: output device parameter value is invalid.";
-      error( RtAudioError::INVALID_USE );
-      return;
+      return error( RtAudioError::INVALID_USE );
+      //return;
     }
   }
 
@@ -365,8 +367,8 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     iChannels = iParams->nChannels;
     if ( iParams->deviceId >= nDevices ) {
       errorText_ = "RtApi::openStream: input device parameter value is invalid.";
-      error( RtAudioError::INVALID_USE );
-      return;
+      return error( RtAudioError::INVALID_USE );
+      //return;
     }
   }
 
@@ -377,8 +379,8 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     result = probeDeviceOpen( oParams->deviceId, OUTPUT, oChannels, oParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
     if ( result == false ) {
-      error( RtAudioError::SYSTEM_ERROR );
-      return;
+      return error( RtAudioError::SYSTEM_ERROR );
+      //return;
     }
   }
 
@@ -388,17 +390,18 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
                               sampleRate, format, bufferFrames, options );
     if ( result == false ) {
       if ( oChannels > 0 ) closeStream();
-      error( RtAudioError::SYSTEM_ERROR );
-      return;
+      return error( RtAudioError::SYSTEM_ERROR );
+      //return;
     }
   }
 
   stream_.callbackInfo.callback = (void *) callback;
   stream_.callbackInfo.userData = userData;
-  stream_.callbackInfo.errorCallback = (void *) errorCallback;
+  //stream_.callbackInfo.errorCallback = (void *) errorCallback;
 
   if ( options ) options->numberOfBuffers = stream_.nBuffers;
   stream_.state = STREAM_STOPPED;
+  return RtAudioError::NO_ERROR;
 }
 
 unsigned int RtApi :: getDefaultInputDevice( void )
@@ -490,14 +493,12 @@ void RtApi :: setStreamTime( double time )
   */
 }
 
-/*
 unsigned int RtApi :: getStreamSampleRate( void )
 {
-  verifyStream();
-
- return stream_.sampleRate;
+  //verifyStream();
+  if ( isStreamOpen() ) return stream_.sampleRate;
+  else return 0;
 }
-*/
 
 
 // *************************************************** //
@@ -1564,7 +1565,8 @@ void RtApiCore :: closeStream( void )
   //stream_.state = STREAM_CLOSED;
 }
 
-void RtApiCore :: startStream( void )
+//void RtApiCore :: startStream( void )
+RtAudioError::Type RtApiCore :: startStream( void )
 {
   //verifyStream();
   if ( stream_.state != STREAM_STOPPED ) {
@@ -1572,8 +1574,8 @@ void RtApiCore :: startStream( void )
       errorText_ = "RtApiCore::startStream(): the stream is already running!";
     else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiCore::startStream(): the stream is stopping or closed!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RtAudioError::WARNING );
+    //return;
   }
 
   /*
@@ -1616,11 +1618,12 @@ void RtApiCore :: startStream( void )
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  if ( result == noErr ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result == noErr ) return RtAudioError::NO_ERROR;
+  return error( RtAudioError::SYSTEM_ERROR );
 }
 
-void RtApiCore :: stopStream( void )
+//void RtApiCore :: stopStream( void )
+RtAudioError::Type RtApiCore :: stopStream( void )
 {
   //verifyStream();
   if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
@@ -1628,8 +1631,8 @@ void RtApiCore :: stopStream( void )
       errorText_ = "RtApiCore::stopStream(): the stream is already stopped!";
     else if ( stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiCore::stopStream(): the stream is closed!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RtAudioError::WARNING );
+    //return;
   }
 
   OSStatus result = noErr;
@@ -1662,11 +1665,12 @@ void RtApiCore :: stopStream( void )
   stream_.state = STREAM_STOPPED;
 
  unlock:
-  if ( result == noErr ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result == noErr ) return RtAudioError::NO_ERROR;
+  return error( RtAudioError::SYSTEM_ERROR );
 }
 
-void RtApiCore :: abortStream( void )
+//void RtApiCore :: abortStream( void )
+RtAudioError::Type RtApiCore :: abortStream( void )
 {
   //verifyStream();
   if ( stream_.state != STREAM_RUNNING ) {
@@ -1674,15 +1678,15 @@ void RtApiCore :: abortStream( void )
       errorText_ = "RtApiCore::abortStream(): the stream is already stopped!";
     else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiCore::abortStream(): the stream is stopping or closed!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RtAudioError::WARNING );
+    //return;
   }
 
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   handle->drainCounter = 2;
 
   stream_.state = STREAM_STOPPING;
-  stopStream();
+  return stopStream();
 }
 
 // This function will be called by a spawned thread when the user
@@ -9983,19 +9987,21 @@ static void *ossCallbackHandler( void *ptr )
 
 // This method can be modified to control the behavior of error
 // message printing.
-void RtApi :: error( RtAudioError::Type type )
+//void RtApi :: error( RtAudioError::Type type )
+RtAudioError::Type RtApi :: error( RtAudioError::Type type )
 {
-  errorStream_.str(""); // clear the ostringstream
+  errorStream_.str(""); // clear the ostringstream to avoid repeated messages
 
-  RtAudioErrorCallback errorCallback = (RtAudioErrorCallback) stream_.callbackInfo.errorCallback;
-  if ( errorCallback ) {
+  // Don't output warnings if showWarnings_ is false
+  if ( type == RtAudioError::WARNING && showWarnings_ == false ) return type;
+  
+  if ( errorCallback_ ) {
     const std::string errorMessage = errorText_;
-    errorCallback( type, errorMessage );
+    errorCallback_( type, errorMessage );
   }
-  else {
-    if ( showWarnings_ == true )
-      std::cerr << '\n' << errorText_ << "\n\n";
-  }
+  else
+    std::cerr << '\n' << errorText_ << "\n\n";
+  return type;
 }
 
 /*
@@ -10023,7 +10029,7 @@ void RtApi :: clearStreamInfo()
   stream_.callbackInfo.callback = 0;
   stream_.callbackInfo.userData = 0;
   stream_.callbackInfo.isRunning = false;
-  stream_.callbackInfo.errorCallback = 0;
+  //stream_.callbackInfo.errorCallback = 0;
   for ( int i=0; i<2; i++ ) {
     stream_.device[i] = 11111;
     stream_.doConvertBuffer[i] = false;

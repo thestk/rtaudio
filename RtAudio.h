@@ -221,8 +221,8 @@ class RTAUDIO_DLL_PUBLIC RtAudioError : public std::runtime_error
  public:
   //! Defined RtAudioError types.
   enum Type {
+    NO_ERROR,          /*!< No error. */
     WARNING,           /*!< A non-critical error. */
-    DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
     UNSPECIFIED,       /*!< The default, unspecified error type. */
     NO_DEVICES_FOUND,  /*!< No devices found on system. */
     INVALID_DEVICE,    /*!< An invalid device ID was specified. */
@@ -531,11 +531,12 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     \param errorCallback A client-defined function that will be invoked
            when an error has occured.
   */
-  void openStream( RtAudio::StreamParameters *outputParameters,
-                   RtAudio::StreamParameters *inputParameters,
-                   RtAudioFormat format, unsigned int sampleRate,
-                   unsigned int *bufferFrames, RtAudioCallback callback,
-                   void *userData = NULL, RtAudio::StreamOptions *options = NULL, RtAudioErrorCallback errorCallback = NULL );
+  //void openStream( RtAudio::StreamParameters *outputParameters,
+  RtAudioError::Type openStream( RtAudio::StreamParameters *outputParameters,
+                                 RtAudio::StreamParameters *inputParameters,
+                                 RtAudioFormat format, unsigned int sampleRate,
+                                 unsigned int *bufferFrames, RtAudioCallback callback,
+                                 void *userData = NULL, RtAudio::StreamOptions *options = NULL ); //, RtAudioErrorCallback errorCallback = NULL );
 
   //! A function that closes a stream and frees any associated stream memory.
   /*!
@@ -546,30 +547,30 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 
   //! A function that starts a stream.
   /*!
-    An RtAudioError (type = SYSTEM_ERROR) is thrown if an error occurs
-    during processing.  An RtAudioError (type = INVALID_USE) is thrown if a
-    stream is not open.  A warning is issued if the stream is already
-    running.
+    An RtAudioError::SYSTEM_ERROR is returned if an error occurs
+    during processing. An RtAudioError:WARNING is returned if a
+    stream is not open or is already running.
   */
-  void startStream( void );
+  //void startStream( void );
+  RtAudioError::Type startStream( void );
 
   //! Stop a stream, allowing any samples remaining in the output queue to be played.
   /*!
-    An RtAudioError (type = SYSTEM_ERROR) is thrown if an error occurs
-    during processing.  An RtAudioError (type = INVALID_USE) is thrown if a
-    stream is not open.  A warning is issued if the stream is already
-    stopped.
+    An RtAudioError::SYSTEM_ERROR is returned if an error occurs
+    during processing.  An RtAudioError::WARNING is returned if a
+    stream is not open or is already stopped.
   */
-  void stopStream( void );
+  //void stopStream( void );
+  RtAudioError::Type stopStream( void );
 
   //! Stop a stream, discarding any samples remaining in the input/output queue.
   /*!
-    An RtAudioError (type = SYSTEM_ERROR) is thrown if an error occurs
-    during processing.  An RtAudioError (type = INVALID_USE) is thrown if a
-    stream is not open.  A warning is issued if the stream is already
-    stopped.
+    An RtAudioError::SYSTEM_ERROR is returned if an error occurs
+    during processing.  An RtAudioError::WARNING is returned if a
+    stream is not open or is already stopped.
   */
-  void abortStream( void );
+  //void abortStream( void );
+  RtAudioError::Type abortStream( void );
 
   //! Returns true if a stream is open and false if not.
   bool isStreamOpen( void ) const;
@@ -600,15 +601,23 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   */
   long getStreamLatency( void );
 
- //! Returns actual sample rate in use by the stream.
- /*!
-   On some systems, the sample rate used may be slightly different
-   than that specified in the stream parameters.  If a stream is not
-   open, an RtAudioError (type = INVALID_USE) will be thrown.
- */
+  //! Returns actual sample rate in use by the (open) stream.
+  /*!
+    On some systems, the sample rate used may be slightly different
+    than that specified in the stream parameters.  If a stream is not
+    open, a value of zero is returned.
+  */
   unsigned int getStreamSampleRate( void );
 
-  //! Specify whether warning messages should be printed to stderr.
+  //! Set a client-defined function that will be invoked when an error or warning occurs.
+  void setErrorCallback( RtAudioErrorCallback errorCallback );
+
+  //! Specify whether warning messages should be output or not.
+  /*!
+    The default behaviour is for warning messages to be output,
+    either to a client-defined error callback function (if specified)
+    or to stderr.
+  */
   void showWarnings( bool value = true );
 
  protected:
@@ -653,7 +662,7 @@ struct CallbackInfo {
   ThreadHandle thread;
   void *callback;
   void *userData;
-  void *errorCallback;
+  //  void *errorCallback;
   void *apiInfo;   // void pointer for API specific callback information
   bool isRunning;
   bool doRealtime;
@@ -662,7 +671,7 @@ struct CallbackInfo {
 
   // Default constructor.
   CallbackInfo()
-  :object(0), callback(0), userData(0), errorCallback(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
+  :object(0), callback(0), userData(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {} // errorCallback(0), 
 };
 
 // **************************************************************** //
@@ -725,22 +734,26 @@ public:
   virtual RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) = 0;
   virtual unsigned int getDefaultInputDevice( void );
   virtual unsigned int getDefaultOutputDevice( void );
-  void openStream( RtAudio::StreamParameters *outputParameters,
-                   RtAudio::StreamParameters *inputParameters,
-                   RtAudioFormat format, unsigned int sampleRate,
-                   unsigned int *bufferFrames, RtAudioCallback callback,
-                   void *userData, RtAudio::StreamOptions *options,
-                   RtAudioErrorCallback errorCallback );
+  //void openStream( RtAudio::StreamParameters *outputParameters,
+  RtAudioError::Type openStream( RtAudio::StreamParameters *outputParameters,
+                                 RtAudio::StreamParameters *inputParameters,
+                                 RtAudioFormat format, unsigned int sampleRate,
+                                 unsigned int *bufferFrames, RtAudioCallback callback,
+                                 void *userData, RtAudio::StreamOptions *options ); //, RtAudioErrorCallback errorCallback );
   virtual void closeStream( void );
-  virtual void startStream( void ) = 0;
-  virtual void stopStream( void ) = 0;
-  virtual void abortStream( void ) = 0;
+  //virtual void startStream( void ) = 0;
+  virtual RtAudioError::Type startStream( void ) = 0;
+  //virtual void stopStream( void ) = 0;
+  //virtual void abortStream( void ) = 0;
+  virtual RtAudioError::Type stopStream( void ) = 0;
+  virtual RtAudioError::Type abortStream( void ) = 0;
   long getStreamLatency( void );
-  unsigned int getStreamSampleRate( void ) const { return stream_.sampleRate; }
+  unsigned int getStreamSampleRate( void ); // const { return stream_.sampleRate; }
   virtual double getStreamTime( void ) const { return stream_.streamTime; }
   virtual void setStreamTime( double time );
   bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; }
   bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }
+  void setErrorCallback( RtAudioErrorCallback errorCallback ) { errorCallback_ = errorCallback; }
   void showWarnings( bool value ) { showWarnings_ = value; }
 
 
@@ -816,9 +829,10 @@ protected:
 
   std::ostringstream errorStream_;
   std::string errorText_;
+  RtAudioErrorCallback errorCallback_;
   bool showWarnings_;
   RtApiStream stream_;
-  bool firstErrorOccurred_;
+  //bool firstErrorOccurred_;
 
   /*!
     Protected, api-specific method that attempts to open a device
@@ -845,7 +859,8 @@ protected:
   void verifyStream( void );
 
   //! Protected common error method to allow global control over error handling.
-  void error( RtAudioError::Type type );
+  //void error( RtAudioError::Type type );
+  RtAudioError::Type error( RtAudioError::Type type );
 
   /*!
     Protected method used to perform format, channel number, and/or interleaving
@@ -875,15 +890,19 @@ inline RtAudio::DeviceInfo RtAudio :: getDeviceInfo( unsigned int device ) { ret
 inline unsigned int RtAudio :: getDefaultInputDevice( void ) { return rtapi_->getDefaultInputDevice(); }
 inline unsigned int RtAudio :: getDefaultOutputDevice( void ) { return rtapi_->getDefaultOutputDevice(); }
 inline void RtAudio :: closeStream( void ) { return rtapi_->closeStream(); }
-inline void RtAudio :: startStream( void ) { return rtapi_->startStream(); }
-inline void RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
-inline void RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
+//inline void RtAudio :: startStream( void ) { return rtapi_->startStream(); }
+inline RtAudioError::Type RtAudio :: startStream( void ) { return rtapi_->startStream(); }
+//inline void RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
+//inline void RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
+inline RtAudioError::Type RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
+inline RtAudioError::Type RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
 inline bool RtAudio :: isStreamOpen( void ) const { return rtapi_->isStreamOpen(); }
 inline bool RtAudio :: isStreamRunning( void ) const { return rtapi_->isStreamRunning(); }
 inline long RtAudio :: getStreamLatency( void ) { return rtapi_->getStreamLatency(); }
 inline unsigned int RtAudio :: getStreamSampleRate( void ) { return rtapi_->getStreamSampleRate(); }
 inline double RtAudio :: getStreamTime( void ) { return rtapi_->getStreamTime(); }
 inline void RtAudio :: setStreamTime( double time ) { return rtapi_->setStreamTime( time ); }
+inline void RtAudio :: setErrorCallback( RtAudioErrorCallback errorCallback ) { rtapi_->setErrorCallback( errorCallback ); }
 inline void RtAudio :: showWarnings( bool value ) { rtapi_->showWarnings( value ); }
 
 // RtApi Subclass prototypes.
@@ -904,9 +923,12 @@ public:
   unsigned int getDefaultOutputDevice( void );
   unsigned int getDefaultInputDevice( void );
   void closeStream( void );
-  void startStream( void );
-  void stopStream( void );
-  void abortStream( void );
+  //void startStream( void );
+  RtAudioError::Type startStream( void );
+  //void stopStream( void ;)
+  RtAudioError::Type stopStream( void );
+  //void abortStream( void );
+  RtAudioError::Type abortStream( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
