@@ -64,7 +64,7 @@ void usage( void ) {
   exit( 0 );
 }
 
-void errorCallback( RtAudioError::Type /*type*/, const std::string &errorText )
+void errorCallback( RtAudioErrorType /*type*/, const std::string &errorText )
 {
   // This example error handling function simply outputs the error message to stderr.
   std::cerr << "\nerrorCallback: " << errorText << "\n\n";
