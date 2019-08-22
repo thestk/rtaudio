@@ -1,7 +1,7 @@
 /******************************************/
 /*
   playsaw.cpp
-  by Gary P. Scavone, 2006
+  by Gary P. Scavone, 2006-2019.
 
   This program will output sawtooth waveforms
   of different frequencies on each channel.
@@ -11,6 +11,7 @@
 #include "RtAudio.h"
 #include <iostream>
 #include <cstdlib>
+#include <signal.h>
 
 /*
 typedef char MY_TYPE;
@@ -48,6 +49,10 @@ typedef double MY_TYPE;
   #include <unistd.h>
   #define SLEEP( milliseconds ) usleep( (unsigned long) (milliseconds * 1000.0) )
 #endif
+
+// Interrupt handler function
+bool done;
+static void finish( int /*ignore*/ ){ done = true; }
 
 #define BASE_RATE 0.005
 #define TIME   1.0
@@ -173,8 +178,9 @@ int main( int argc, char *argv[] )
 
   double *data = (double *) calloc( channels, sizeof( double ) );
 
-  // Tell RtAudio to output all messages, even warnings.
   //dac.setErrorCallback( &errorCallback ); // could use if not set via constructor
+
+  // Tell RtAudio to output all messages, even warnings.
   dac.showWarnings( true );
 
   // Set our stream parameters for output only.
@@ -200,6 +206,8 @@ int main( int argc, char *argv[] )
     goto cleanup;
   if ( dac.isStreamOpen() == false ) goto cleanup;
 
+  //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
+  
   // Stream is open ... now start it.
   if ( dac.startStream() ) goto cleanup;
 
@@ -207,13 +215,17 @@ int main( int argc, char *argv[] )
     while ( dac.isStreamRunning() == true ) SLEEP( 100 );
   }
   else {
-    char input;
-    //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
-    std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << bufferFrames << ").\n";
-    std::cin.get( input );
+    std::cout << "\nPlaying ... quit with Ctrl-C (buffer size = " << bufferFrames << ").\n";
+
+    // Install an interrupt handler function.
+    done = false;
+    (void) signal(SIGINT, finish);
+
+    while ( !done && dac.isStreamRunning() ) SLEEP( 100 );
 
     // Block released ... stop the stream
-    dac.stopStream();  // or could call dac.abortStream();
+    if ( dac.isStreamRunning() )
+      dac.stopStream();  // or could call dac.abortStream();
   }
 
  cleanup:

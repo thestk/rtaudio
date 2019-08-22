@@ -1,7 +1,7 @@
 /******************************************/
 /*
   duplex.cpp
-  by Gary P. Scavone, 2006-2007.
+  by Gary P. Scavone, 2006-2019.
 
   This program opens a duplex stream and passes
   input directly through to the output.
@@ -109,36 +109,29 @@ int main( int argc, char *argv[] )
     iParams.deviceId = adac.getDefaultInputDevice();
   if ( oDevice == 0 )
     oParams.deviceId = adac.getDefaultOutputDevice();
-
+  
   RtAudio::StreamOptions options;
   //options.flags |= RTAUDIO_NONINTERLEAVED;
 
   bufferBytes = bufferFrames * channels * sizeof( MY_TYPE );
-  try {
-    adac.openStream( &oParams, &iParams, FORMAT, fs, &bufferFrames, &inout, (void *)&bufferBytes, &options );
+  if ( adac.openStream( &oParams, &iParams, FORMAT, fs, &bufferFrames, &inout, (void *)&bufferBytes, &options ) ) {
+    goto cleanup;
   }
-  catch ( RtAudioError& e ) {
-    std::cout << '\n' << e.getMessage() << '\n' << std::endl;
-    exit( 1 );
-  }
+
+  if ( adac.isStreamOpen() == false ) goto cleanup;
 
   // Test RtAudio functionality for reporting latency.
   std::cout << "\nStream latency = " << adac.getStreamLatency() << " frames" << std::endl;
 
-  try {
-    adac.startStream();
+  if ( adac.startStream() ) goto cleanup;
 
-    char input;
-    std::cout << "\nRunning ... press <enter> to quit (buffer frames = " << bufferFrames << ").\n";
-    std::cin.get(input);
+  char input;
+  std::cout << "\nRunning ... press <enter> to quit (buffer frames = " << bufferFrames << ").\n";
+  std::cin.get(input);
 
-    // Stop the stream.
+  // Stop the stream.
+  if ( adac.isStreamRunning() )
     adac.stopStream();
-  }
-  catch ( RtAudioError& e ) {
-    std::cout << '\n' << e.getMessage() << '\n' << std::endl;
-    goto cleanup;
-  }
 
  cleanup:
   if ( adac.isStreamOpen() ) adac.closeStream();

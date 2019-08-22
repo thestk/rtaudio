@@ -393,7 +393,6 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
     result = probeDeviceOpen( iParams->deviceId, INPUT, iChannels, iParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
     if ( result == false ) {
-      if ( oChannels > 0 ) closeStream();
       return error( RTAUDIO_SYSTEM_ERROR );
     }
   }
@@ -537,9 +536,11 @@ struct CoreHandle {
   pthread_cond_t condition;
   int drainCounter;       // Tracks callback counts when draining
   bool internalDrain;     // Indicates if stop is initiated from callback or not.
+  bool xrunListenerAdded[2];
+  bool disconnectListenerAdded[2];
 
   CoreHandle()
-    :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; xrun[0] = false; xrun[1] = false; }
+    :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; procId[0] = 0; procId[1] = 0; xrun[0] = false; xrun[1] = false; xrunListenerAdded[0] = false; xrunListenerAdded[1] = false; disconnectListenerAdded[0] = false; disconnectListenerAdded[1] = false; }
 };
 
 RtApiCore:: RtApiCore()
@@ -1406,7 +1407,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   if ( mode == INPUT && stream_.mode == OUTPUT && stream_.device[0] == device )
-    // Only one callback procedure per device.
+    // Only one callback procedure and property listener per device.
     stream_.mode = DUPLEX;
   else {
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
@@ -1424,51 +1425,34 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       stream_.mode = DUPLEX;
     else
       stream_.mode = mode;
-  }
 
-  // Setup the device property listener for over/underload.
-  property.mSelector = kAudioDeviceProcessorOverload;
-  property.mScope = kAudioObjectPropertyScopeGlobal;
-  result = AudioObjectAddPropertyListener( id, &property, xrunListener, (void *) handle );
+    // Setup the device property listener for over/underload.
+    property.mSelector = kAudioDeviceProcessorOverload;
+    property.mScope = kAudioObjectPropertyScopeGlobal;
+    result = AudioObjectAddPropertyListener( id, &property, xrunListener, (void *) handle );
     if ( result != noErr ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error setting xrun listener for device (" << device << ").";
-    errorText_ = errorStream_.str();
-    goto error;
-  }
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting xrun listener for device (" << device << ").";
+      errorText_ = errorStream_.str();
+      goto error;
+    }
+    handle->xrunListenerAdded[mode] = true;
 
-  // Setup a listener to detect a possible device disconnect.
-  property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-  result = AudioObjectAddPropertyListener( id , &property, disconnectListener, (void *) &stream_.callbackInfo );
-  if ( result != noErr ) {
-    AudioObjectRemovePropertyListener( id, &property, xrunListener, (void *) handle );
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << device << ").";
-    errorText_ = errorStream_.str();
-    goto error;
+    // Setup a listener to detect a possible device disconnect.
+    property.mSelector = kAudioDevicePropertyDeviceIsAlive;
+    result = AudioObjectAddPropertyListener( id , &property, disconnectListener, (void *) &stream_.callbackInfo );
+    if ( result != noErr ) {
+      AudioObjectRemovePropertyListener( id, &property, xrunListener, (void *) handle );
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << device << ").";
+      errorText_ = errorStream_.str();
+      goto error;
+    }
+    handle->disconnectListenerAdded[mode] = true;
   }
 
   return SUCCESS;
 
  error:
-  if ( handle ) {
-    pthread_cond_destroy( &handle->condition );
-    delete handle;
-    stream_.apiHandle = 0;
-  }
-
-  for ( int i=0; i<2; i++ ) {
-    if ( stream_.userBuffer[i] ) {
-      free( stream_.userBuffer[i] );
-      stream_.userBuffer[i] = 0;
-    }
-  }
-
-  if ( stream_.deviceBuffer ) {
-    free( stream_.deviceBuffer );
-    stream_.deviceBuffer = 0;
-  }
-
-  clearStreamInfo();
-  //stream_.state = STREAM_CLOSED;
+  closeStream(); // this should safely clear out procedures, listeners and memory, even for duplex stream
   return FAILURE;
 }
 
@@ -1482,53 +1466,67 @@ void RtApiCore :: closeStream( void )
 
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
-    if (handle) {
+    if ( handle ) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
         kAudioObjectPropertyScopeGlobal,
         kAudioObjectPropertyElementMaster };
 
-      property.mSelector = kAudioDeviceProcessorOverload;
-      if (AudioObjectRemovePropertyListener( handle->id[0], &property, xrunListener, (void *) handle ) != noErr) {
-        errorText_ = "RtApiCore::closeStream(): error removing xrun property listener!";
-        error( RTAUDIO_WARNING );
+      if ( handle->xrunListenerAdded[0] ) {
+        property.mSelector = kAudioDeviceProcessorOverload;
+        if (AudioObjectRemovePropertyListener( handle->id[0], &property, xrunListener, (void *) handle ) != noErr) {
+          errorText_ = "RtApiCore::closeStream(): error removing xrun property listener!";
+          error( RTAUDIO_WARNING );
+        }
       }
-      property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-      if (AudioObjectRemovePropertyListener( handle->id[0], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
-        errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
-        error( RTAUDIO_WARNING );
+      if ( handle->disconnectListenerAdded[0] ) {
+        property.mSelector = kAudioDevicePropertyDeviceIsAlive;
+        if (AudioObjectRemovePropertyListener( handle->id[0], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+          errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
+          error( RTAUDIO_WARNING );
+        }
       }
-    }
-    if ( stream_.state == STREAM_RUNNING )
-      AudioDeviceStop( handle->id[0], callbackHandler );
+
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[0], callbackHandler );
+
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-    AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
+      if ( handle->procId[0] )
+        AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
 #else
-    // deprecated in favor of AudioDeviceDestroyIOProcID()
-    AudioDeviceRemoveIOProc( handle->id[0], callbackHandler );
+      // deprecated in favor of AudioDeviceDestroyIOProcID()
+      AudioDeviceRemoveIOProc( handle->id[0], callbackHandler );
 #endif
+    }
   }
 
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
-    if (handle) {
+    if ( handle ) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
         kAudioObjectPropertyScopeGlobal,
         kAudioObjectPropertyElementMaster };
 
-      property.mSelector = kAudioDeviceProcessorOverload;
-      if (AudioObjectRemovePropertyListener( handle->id[1], &property, xrunListener, (void *) handle ) != noErr) {
-        errorText_ = "RtApiCore::closeStream(): error removing xrun property listener!";
-        error( RTAUDIO_WARNING );
+      if ( handle->xrunListenerAdded[1] ) {
+        property.mSelector = kAudioDeviceProcessorOverload;
+        if (AudioObjectRemovePropertyListener( handle->id[1], &property, xrunListener, (void *) handle ) != noErr) {
+          errorText_ = "RtApiCore::closeStream(): error removing xrun property listener!";
+          error( RTAUDIO_WARNING );
+        }
       }
-      property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-      if (AudioObjectRemovePropertyListener( handle->id[1], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
-        errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
-        error( RTAUDIO_WARNING );
+
+      if ( handle->disconnectListenerAdded[0] ) {
+        property.mSelector = kAudioDevicePropertyDeviceIsAlive;
+        if (AudioObjectRemovePropertyListener( handle->id[1], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+          errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
+          error( RTAUDIO_WARNING );
+        }
       }
     }
+
     if ( stream_.state == STREAM_RUNNING )
       AudioDeviceStop( handle->id[1], callbackHandler );
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-    AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
+    if ( handle->procId[1] )
+      AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
 #else
     // deprecated in favor of AudioDeviceDestroyIOProcID()
     AudioDeviceRemoveIOProc( handle->id[1], callbackHandler );
@@ -1947,7 +1945,12 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
  unlock:
 
   // Make sure to only tick duplex stream time once if using two devices
-  if ( stream_.mode != DUPLEX || (stream_.mode == DUPLEX && handle->id[0] != handle->id[1] && deviceId == handle->id[0] ) )
+  if ( stream_.mode == DUPLEX ) {
+    if ( handle->id[0] == handle->id[1] ) // same device, only one callback
+      RtApi::tickStreamTime();
+    else if ( deviceId == handle->id[0] )
+      RtApi::tickStreamTime(); // only tick on the output callback
+  } else
     RtApi::tickStreamTime();
   
   return SUCCESS;
