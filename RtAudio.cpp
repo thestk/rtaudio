@@ -236,18 +236,27 @@ void RtAudio :: openRtApi( RtAudio::Api api )
 #endif
 }
 
-RtAudio :: RtAudio( RtAudio::Api api )
+RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback errorCallback )
 {
   rtapi_ = 0;
-  
+
+  std::string errorMessage;
   if ( api != UNSPECIFIED ) {
     // Attempt to open the specified API.
     openRtApi( api );
-    if ( rtapi_ ) return;
 
-    // No compiled support for specified API value.  Issue a debug
-    // warning and continue as if no API was specified.
-    std::cerr << "\nRtAudio: no compiled support for specified API argument!\n" << std::endl;
+    if ( rtapi_ ) {
+      if ( errorCallback ) rtapi_->setErrorCallback( errorCallback );
+      return;
+    }
+
+    // No compiled support for specified API value.  Issue a warning
+    // and continue as if no API was specified.
+    errorMessage = "RtAudio: no compiled support for specified API argument!";
+    if ( errorCallback )
+      errorCallback( RTAUDIO_INVALID_USE, errorMessage );
+    else
+      std::cerr << '\n' << errorMessage << '\n' << std::endl;
   }
 
   // Iterate through the compiled APIs and return as soon as we find
@@ -259,13 +268,20 @@ RtAudio :: RtAudio( RtAudio::Api api )
     if ( rtapi_ && rtapi_->getDeviceCount() ) break;
   }
 
-  if ( rtapi_ ) return;
+  if ( rtapi_ ) {
+    if ( errorCallback ) rtapi_->setErrorCallback( errorCallback );
+    return;
+  }
 
   // It should not be possible to get here because the preprocessor
   // definition __RTAUDIO_DUMMY__ is automatically defined in RtAudio.h
   // if no API-specific definitions are passed to the compiler. But just
   // in case something weird happens, issue an error message and abort.
-  std::cerr << "\nRtAudio: no compiled API support found ... critical error!\n" << std::endl;
+  errorMessage = "RtAudio: no compiled API support found ... critical error!";
+  if ( errorCallback )
+    errorCallback( RTAUDIO_INVALID_USE, errorMessage );
+  else
+    std::cerr << '\n' << errorMessage << '\n' << std::endl;
   abort();
 }
 
@@ -276,11 +292,11 @@ RtAudio :: ~RtAudio()
 }
 
 RtAudioErrorType RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
-                                          RtAudio::StreamParameters *inputParameters,
-                                          RtAudioFormat format, unsigned int sampleRate,
-                                          unsigned int *bufferFrames,
-                                          RtAudioCallback callback, void *userData,
-                                          RtAudio::StreamOptions *options )
+                                        RtAudio::StreamParameters *inputParameters,
+                                        RtAudioFormat format, unsigned int sampleRate,
+                                        unsigned int *bufferFrames,
+                                        RtAudioCallback callback, void *userData,
+                                        RtAudio::StreamOptions *options )
 {
   return rtapi_->openStream( outputParameters, inputParameters, format,
                              sampleRate, bufferFrames, callback,
@@ -308,11 +324,11 @@ RtApi :: ~RtApi()
 }
 
 RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
-                                        RtAudio::StreamParameters *iParams,
-                                        RtAudioFormat format, unsigned int sampleRate,
-                                        unsigned int *bufferFrames,
-                                        RtAudioCallback callback, void *userData,
-                                        RtAudio::StreamOptions *options )
+                                      RtAudio::StreamParameters *iParams,
+                                      RtAudioFormat format, unsigned int sampleRate,
+                                      unsigned int *bufferFrames,
+                                      RtAudioCallback callback, void *userData,
+                                      RtAudio::StreamOptions *options )
 {
   if ( stream_.state != STREAM_CLOSED ) {
     errorText_ = "RtApi::openStream: a stream is already open!";

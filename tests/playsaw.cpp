@@ -153,7 +153,9 @@ int main( int argc, char *argv[] )
   // minimal command-line checking
   if (argc < 3 || argc > 6 ) usage();
 
-  RtAudio dac;
+  // Specify our own error callback function.
+  RtAudio dac( RtAudio::UNSPECIFIED, &errorCallback );
+  
   if ( dac.getDeviceCount() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
     exit( 1 );
@@ -171,9 +173,8 @@ int main( int argc, char *argv[] )
 
   double *data = (double *) calloc( channels, sizeof( double ) );
 
-  // Specify our own error callback function and tell RtAudio to
-  // output all messages, even warnings.
-  dac.setErrorCallback( &errorCallback );
+  // Tell RtAudio to output all messages, even warnings.
+  //dac.setErrorCallback( &errorCallback ); // could use if not set via constructor
   dac.showWarnings( true );
 
   // Set our stream parameters for output only.
