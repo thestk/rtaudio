@@ -1949,9 +1949,9 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
     if ( handle->id[0] == handle->id[1] ) // same device, only one callback
       RtApi::tickStreamTime();
     else if ( deviceId == handle->id[0] )
-      RtApi::tickStreamTime(); // only tick on the output callback
+      RtApi::tickStreamTime(); // two devices, only tick on the output callback
   } else
-    RtApi::tickStreamTime();
+    RtApi::tickStreamTime(); // input or output stream only
   
   return SUCCESS;
 }
@@ -2004,9 +2004,10 @@ const char* RtApiCore :: getErrorCode( OSStatus code )
 #if defined(__UNIX_JACK__)
 
 // JACK is a low-latency audio server, originally written for the
-// GNU/Linux operating system and now also ported to OS-X. It can
-// connect a number of different applications to an audio device, as
-// well as allowing them to share audio between themselves.
+// GNU/Linux operating system and now also ported to OS-X and
+// Windows. It can connect a number of different applications to an
+// audio device, as well as allowing them to share audio between
+// themselves.
 //
 // When using JACK with RtAudio, "devices" refer to JACK clients that
 // have ports connected to the server.  The JACK server is typically
@@ -2141,7 +2142,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   if ( device >= nDevices ) {
     jack_client_close( client );
     errorText_ = "RtApiJack::getDeviceInfo: device ID is invalid!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
@@ -2173,7 +2174,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   if ( info.outputChannels == 0 && info.inputChannels == 0 ) {
     jack_client_close(client);
     errorText_ = "RtApiJack::getDeviceInfo: error determining Jack input/output channels!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -2214,10 +2215,11 @@ static void *jackCloseStream( void *ptr )
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiJack *object = (RtApiJack *) info->object;
 
+  info->deviceDisconnected = true;
   object->closeStream();
-
   pthread_exit( NULL );
 }
+
 static void jackShutdown( void *infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
@@ -2232,7 +2234,6 @@ static void jackShutdown( void *infoPointer )
 
   ThreadHandle threadId;
   pthread_create( &threadId, NULL, jackCloseStream, info );
-  std::cerr << "\nRtApiJack: the Jack server is shutting down this client ... stream stopped and closed!!\n" << std::endl;
 }
 
 static int jackXrun( void *infoPointer )
@@ -2263,7 +2264,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       client = jack_client_open( "RtApiJack", jackoptions, status );
     if ( client == 0 ) {
       errorText_ = "RtApiJack::probeDeviceOpen: Jack server not found or connection error!";
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       return FAILURE;
     }
   }
@@ -2504,13 +2505,12 @@ void RtApiJack :: closeStream( void )
 {
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiJack::closeStream(): no open stream to close!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
   if ( handle ) {
-
     if ( stream_.state == STREAM_RUNNING )
       jack_deactivate( handle->client );
 
@@ -2525,6 +2525,12 @@ void RtApiJack :: closeStream( void )
     stream_.apiHandle = 0;
   }
 
+  CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+  if ( info->deviceDisconnected ) {
+    errorText_ = "RtApiJack: the Jack server is shutting down this client ... stream stopped and closed!";
+    error( RTAUDIO_DEVICE_DISCONNECT );
+  }
+
   for ( int i=0; i<2; i++ ) {
     if ( stream_.userBuffer[i] ) {
       free( stream_.userBuffer[i] );
@@ -2537,22 +2543,26 @@ void RtApiJack :: closeStream( void )
     stream_.deviceBuffer = 0;
   }
 
-  stream_.mode = UNINITIALIZED;
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.mode = UNINITIALIZED;
+  //stream_.state = STREAM_CLOSED;
 }
 
-void RtApiJack :: startStream( void )
+RtAudioErrorType RtApiJack :: startStream( void )
 {
-  verifyStream();
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiJack::startStream(): the stream is already running!";
-    error( RtAudioError::WARNING );
-    return;
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiJack::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiJack::startStream(): the stream is stopping or closed!";
+    return error( RTAUDIO_WARNING );
   }
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
+  */
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
   int result = jack_activate( handle->client );
@@ -2615,17 +2625,18 @@ void RtApiJack :: startStream( void )
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  if ( result == 0 ) return;
-  error( RtAudioError::RTAUDIO_SYSTEM_ERROR );
+  if ( result == 0 ) return RTAUDIO_NO_ERROR;
+  return error( RTAUDIO_SYSTEM_ERROR );
 }
 
-void RtApiJack :: stopStream( void )
+RtAudioErrorType  RtApiJack :: stopStream( void )
 {
-  verifyStream();
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiJack::stopStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
-    return;
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiJack::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiJack::stopStream(): the stream is closed!";
+    return error( RTAUDIO_WARNING );
   }
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
@@ -2639,21 +2650,23 @@ void RtApiJack :: stopStream( void )
 
   jack_deactivate( handle->client );
   stream_.state = STREAM_STOPPED;
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiJack :: abortStream( void )
+RtAudioErrorType RtApiJack :: abortStream( void )
 {
-  verifyStream();
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiJack::abortStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
-    return;
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiJack::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiJack::abortStream(): the stream is stopping or closed!";
+    return error( RTAUDIO_WARNING );
   }
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
   handle->drainCounter = 2;
 
-  stopStream();
+  return stopStream();
 }
 
 // This function will be called by a spawned thread when the user
@@ -2674,13 +2687,13 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 {
   if ( stream_.state == STREAM_STOPPED || stream_.state == STREAM_STOPPING ) return SUCCESS;
   if ( stream_.state == STREAM_CLOSED ) {
-    errorText_ = "RtApiCore::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    error( RtAudioError::WARNING );
+    errorText_ = "RtApiJack::callbackEvent(): the stream is closed ... this shouldn't happen!";
+    error( RTAUDIO_WARNING );
     return FAILURE;
   }
   if ( stream_.bufferSize != nframes ) {
-    errorText_ = "RtApiCore::callbackEvent(): the JACK buffer size has changed ... cannot process!";
-    error( RtAudioError::WARNING );
+    errorText_ = "RtApiJack::callbackEvent(): the JACK buffer size has changed ... cannot process!";
+    error( RTAUDIO_WARNING );
     return FAILURE;
   }
 
@@ -2694,7 +2707,7 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
     stream_.state = STREAM_STOPPING;
     if ( handle->internalDrain == true )
       pthread_create( &threadId, NULL, jackStopStream, info );
-    else
+    else // external call to stopStream()
       pthread_cond_signal( &handle->condition );
     return SUCCESS;
   }
@@ -10021,6 +10034,7 @@ void RtApi :: clearStreamInfo()
   stream_.callbackInfo.callback = 0;
   stream_.callbackInfo.userData = 0;
   stream_.callbackInfo.isRunning = false;
+  stream_.callbackInfo.deviceDisconnected = false;
   for ( int i=0; i<2; i++ ) {
     stream_.device[i] = 11111;
     stream_.doConvertBuffer[i] = false;

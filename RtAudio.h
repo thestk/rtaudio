@@ -912,9 +912,9 @@ public:
   unsigned int getDeviceCount( void );
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
   void closeStream( void );
-  void startStream( void );
-  void stopStream( void );
-  void abortStream( void );
+  RtAudioErrorType startStream( void );
+  RtAudioErrorType stopStream( void );
+  RtAudioErrorType abortStream( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
