@@ -1486,16 +1486,18 @@ void RtApiCore :: closeStream( void )
         }
       }
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+      if ( handle->procId[0] ) {
+        if ( stream_.state == STREAM_RUNNING )
+          AudioDeviceStop( handle->id[0], handle-procId[0] );
+        AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
+      }
+#else // deprecated behaviour
       if ( stream_.state == STREAM_RUNNING )
         AudioDeviceStop( handle->id[0], callbackHandler );
-
-#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-      if ( handle->procId[0] )
-        AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
-#else
-      // deprecated in favor of AudioDeviceDestroyIOProcID()
       AudioDeviceRemoveIOProc( handle->id[0], callbackHandler );
 #endif
+      }
     }
   }
 
@@ -1520,17 +1522,19 @@ void RtApiCore :: closeStream( void )
           error( RTAUDIO_WARNING );
         }
       }
-    }
 
-    if ( stream_.state == STREAM_RUNNING )
-      AudioDeviceStop( handle->id[1], callbackHandler );
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-    if ( handle->procId[1] )
-      AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
-#else
-    // deprecated in favor of AudioDeviceDestroyIOProcID()
-    AudioDeviceRemoveIOProc( handle->id[1], callbackHandler );
+      if ( handle->procId[1] ) {
+        if ( stream_.state == STREAM_RUNNING )
+          AudioDeviceStop( handle->id[1], handle->procId[1] );
+        AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
+      }
+#else // deprecated behaviour
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[1], callbackHandler );
+      AudioDeviceRemoveIOProc( handle->id[1], callbackHandler );
 #endif
+    }
   }
 
   for ( int i=0; i<2; i++ ) {
@@ -1582,7 +1586,11 @@ RtAudioErrorType RtApiCore :: startStream( void )
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
-    result = AudioDeviceStart( handle->id[0], callbackHandler );
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStart( handle->id[0], handle->procId[0] );
+#else // deprecated behaviour
+  result = AudioDeviceStart( handle->id[0], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::startStream: system error (" << getErrorCode( result ) << ") starting callback procedure on device (" << stream_.device[0] << ").";
       errorText_ = errorStream_.str();
@@ -1598,7 +1606,11 @@ RtAudioErrorType RtApiCore :: startStream( void )
     bufferBytes = stream_.nUserChannels[1] * stream_.bufferSize * formatBytes( stream_.userFormat );
     memset( stream_.userBuffer[1], 0, bufferBytes * sizeof(char) );
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStart( handle->id[1], handle->procId[1] );
+#else // deprecated behaviour
     result = AudioDeviceStart( handle->id[1], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::startStream: system error starting input callback procedure on device (" << stream_.device[1] << ").";
       errorText_ = errorStream_.str();
@@ -1634,7 +1646,11 @@ RtAudioErrorType RtApiCore :: stopStream( void )
       pthread_cond_wait( &handle->condition, &stream_.mutex ); // block until signaled
     }
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStop( handle->id[0], handle->procId[0] );
+#else
     result = AudioDeviceStop( handle->id[0], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping callback procedure on device (" << stream_.device[0] << ").";
       errorText_ = errorStream_.str();
@@ -1643,8 +1659,11 @@ RtAudioErrorType RtApiCore :: stopStream( void )
   }
 
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
-
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStop( handle->id[1], handle->procId[1] );
+#else
     result = AudioDeviceStop( handle->id[1], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping input callback procedure on device (" << stream_.device[1] << ").";
       errorText_ = errorStream_.str();
