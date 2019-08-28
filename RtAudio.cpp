@@ -1478,13 +1478,14 @@ void RtApiCore :: closeStream( void )
         errorText_ = "RtApiCore::closeStream(): error removing property listener!";
         error( RtAudioError::WARNING );
       }
-    }
-    if ( stream_.state == STREAM_RUNNING ) {
+
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-      AudioDeviceStop( handle->id[0], handle->procId[0] );
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[0], handle->procId[0] );
       AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
 #else // deprecated behaviour
-      AudioDeviceStop( handle->id[0], callbackHandler );
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[0], callbackHandler );
       AudioDeviceRemoveIOProc( handle->id[0], callbackHandler );
 #endif
     }
@@ -1502,13 +1503,14 @@ void RtApiCore :: closeStream( void )
         errorText_ = "RtApiCore::closeStream(): error removing property listener!";
         error( RtAudioError::WARNING );
       }
-    }
-    if ( stream_.state == STREAM_RUNNING ) {
+
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-      AudioDeviceStop( handle->id[1], handle->procId[1] );
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[1], handle->procId[1] );
       AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
 #else // deprecated behaviour
-      AudioDeviceStop( handle->id[1], callbackHandler );
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[1], callbackHandler );
       AudioDeviceRemoveIOProc( handle->id[1], callbackHandler );
 #endif
     }
