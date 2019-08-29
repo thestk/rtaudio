@@ -8754,15 +8754,18 @@ void RtApiPulse::stopStream( void )
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( pah && pah->s_play ) {
-    int pa_error;
-    if ( pa_simple_drain( pah->s_play, &pa_error ) < 0 ) {
-      errorStream_ << "RtApiPulse::stopStream: error draining output device, " <<
-        pa_strerror( pa_error ) << ".";
-      errorText_ = errorStream_.str();
-      MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
-      return;
+  if ( pah } {
+    pah->runnable = false;
+    if ( pah->s_play ) {
+      int pa_error;
+      if ( pa_simple_drain( pah->s_play, &pa_error ) < 0 ) {
+        errorStream_ << "RtApiPulse::stopStream: error draining output device, " <<
+          pa_strerror( pa_error ) << ".";
+        errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
+        error( RtAudioError::SYSTEM_ERROR );
+        return;
+      }
     }
   }
 
@@ -8788,15 +8791,18 @@ void RtApiPulse::abortStream( void )
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( pah && pah->s_play ) {
-    int pa_error;
-    if ( pa_simple_flush( pah->s_play, &pa_error ) < 0 ) {
-      errorStream_ << "RtApiPulse::abortStream: error flushing output device, " <<
-        pa_strerror( pa_error ) << ".";
-      errorText_ = errorStream_.str();
-      MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
-      return;
+  if ( pah ) {
+    pah->runnable = false;
+    if ( pah->s_play ) {
+      int pa_error;
+      if ( pa_simple_flush( pah->s_play, &pa_error ) < 0 ) {
+        errorStream_ << "RtApiPulse::abortStream: error flushing output device, " <<
+          pa_strerror( pa_error ) << ".";
+        errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
+        error( RtAudioError::SYSTEM_ERROR );
+        return;
+      }
     }
   }
 
