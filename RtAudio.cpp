@@ -8482,7 +8482,7 @@ static void rt_pa_server_callback(pa_context *context, const pa_server_info *inf
   (void)data;
   pa_sample_spec ss;
 
-  if (info == nullptr)
+  if (!info)
     rt_pa_mainloop_api_quit(1);
 
   ss = info->sample_spec;
@@ -8501,7 +8501,7 @@ static void rt_pa_context_state_callback(pa_context *context, void *userdata) {
       break;
 
     case PA_CONTEXT_READY:
-      pa_context_get_server_info(context, rt_pa_server_callback, nullptr);
+      pa_context_get_server_info(context, rt_pa_server_callback, NULL);
       break;
 
     case PA_CONTEXT_TERMINATED:
