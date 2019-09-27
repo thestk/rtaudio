@@ -4084,15 +4084,14 @@ public:
       return;
     }
 
-    unsigned int outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
-
+    unsigned int outputBufferSize = 0;
     if ( maxOutSampleCount != -1 )
     {
-      unsigned int maxOutputBufferSize = _bytesPerSample * _channelCount * maxOutSampleCount;
-      if ( outputBufferSize > maxOutputBufferSize )
-      {
-        outputBufferSize = maxOutputBufferSize;
-      }
+      outputBufferSize = _bytesPerSample * _channelCount * maxOutSampleCount;
+    }
+    else
+    {
+      outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
     }
 
     IMFMediaBuffer* rInBuffer;
@@ -5206,11 +5205,6 @@ void RtApiWasapi::wasapiThread()
       if ( captureAudioClient )
       {
         int samplesToPull = ( unsigned int ) floorf( stream_.bufferSize * captureSrRatio );
-        if ( captureSrRatio != 1 )
-        {
-          // account for remainders
-          samplesToPull--;
-        }
 
         convBufferSize = 0;
         while ( convBufferSize < stream_.bufferSize )
@@ -5233,7 +5227,7 @@ void RtApiWasapi::wasapiThread()
                                      convBuffer,
                                      samplesToPull,
                                      convSamples,
-                                     stream_.bufferSize - convBufferSize );
+                                     convBufferSize == 0 ? -1 : stream_.bufferSize - convBufferSize );
 
           convBufferSize += convSamples;
           samplesToPull = 1; // now pull one sample at a time until we have stream_.bufferSize samples
