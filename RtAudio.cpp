@@ -4073,7 +4073,7 @@ public:
     #endif
   }
 
-  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount )
+  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount, int maxOutSampleCount = -1 )
   {
     unsigned int inputBufferSize = _bytesPerSample * _channelCount * inSampleCount;
     if ( _sampleRatio == 1 )
@@ -4085,6 +4085,15 @@ public:
     }
 
     unsigned int outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
+
+    if ( maxOutSampleCount != -1 )
+    {
+      unsigned int maxOutputBufferSize = _bytesPerSample * _channelCount * maxOutSampleCount;
+      if ( outputBufferSize > maxOutputBufferSize )
+      {
+        outputBufferSize = maxOutputBufferSize;
+      }
+    }
 
     IMFMediaBuffer* rInBuffer;
     IMFSample* rInSample;
@@ -5223,7 +5232,8 @@ void RtApiWasapi::wasapiThread()
           captureResampler->Convert( stream_.deviceBuffer + deviceBufferOffset,
                                      convBuffer,
                                      samplesToPull,
-                                     convSamples );
+                                     convSamples,
+                                     stream_.bufferSize - convBufferSize );
 
           convBufferSize += convSamples;
           samplesToPull = 1; // now pull one sample at a time until we have stream_.bufferSize samples
