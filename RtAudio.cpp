@@ -4073,7 +4073,7 @@ public:
     #endif
   }
 
-  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount )
+  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount, int maxOutSampleCount = -1 )
   {
     unsigned int inputBufferSize = _bytesPerSample * _channelCount * inSampleCount;
     if ( _sampleRatio == 1 )
@@ -4084,7 +4084,15 @@ public:
       return;
     }
 
-    unsigned int outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
+    unsigned int outputBufferSize = 0;
+    if ( maxOutSampleCount != -1 )
+    {
+      outputBufferSize = _bytesPerSample * _channelCount * maxOutSampleCount;
+    }
+    else
+    {
+      outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
+    }
 
     IMFMediaBuffer* rInBuffer;
     IMFSample* rInSample;
@@ -5197,11 +5205,6 @@ void RtApiWasapi::wasapiThread()
       if ( captureAudioClient )
       {
         int samplesToPull = ( unsigned int ) floorf( stream_.bufferSize * captureSrRatio );
-        if ( captureSrRatio != 1 )
-        {
-          // account for remainders
-          samplesToPull--;
-        }
 
         convBufferSize = 0;
         while ( convBufferSize < stream_.bufferSize )
@@ -5223,7 +5226,8 @@ void RtApiWasapi::wasapiThread()
           captureResampler->Convert( stream_.deviceBuffer + deviceBufferOffset,
                                      convBuffer,
                                      samplesToPull,
-                                     convSamples );
+                                     convSamples,
+                                     convBufferSize == 0 ? -1 : stream_.bufferSize - convBufferSize );
 
           convBufferSize += convSamples;
           samplesToPull = 1; // now pull one sample at a time until we have stream_.bufferSize samples
