@@ -1478,15 +1478,17 @@ void RtApiCore :: closeStream( void )
         errorText_ = "RtApiCore::closeStream(): error removing property listener!";
         error( RtAudioError::WARNING );
       }
-    }
-    if ( stream_.state == STREAM_RUNNING )
-      AudioDeviceStop( handle->id[0], callbackHandler );
+
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-    AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
-#else
-    // deprecated in favor of AudioDeviceDestroyIOProcID()
-    AudioDeviceRemoveIOProc( handle->id[0], callbackHandler );
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[0], handle->procId[0] );
+      AudioDeviceDestroyIOProcID( handle->id[0], handle->procId[0] );
+#else // deprecated behaviour
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[0], callbackHandler );
+      AudioDeviceRemoveIOProc( handle->id[0], callbackHandler );
 #endif
+    }
   }
 
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
@@ -1501,15 +1503,17 @@ void RtApiCore :: closeStream( void )
         errorText_ = "RtApiCore::closeStream(): error removing property listener!";
         error( RtAudioError::WARNING );
       }
-    }
-    if ( stream_.state == STREAM_RUNNING )
-      AudioDeviceStop( handle->id[1], callbackHandler );
+
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-    AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
-#else
-    // deprecated in favor of AudioDeviceDestroyIOProcID()
-    AudioDeviceRemoveIOProc( handle->id[1], callbackHandler );
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[1], handle->procId[1] );
+      AudioDeviceDestroyIOProcID( handle->id[1], handle->procId[1] );
+#else // deprecated behaviour
+      if ( stream_.state == STREAM_RUNNING )
+        AudioDeviceStop( handle->id[1], callbackHandler );
+      AudioDeviceRemoveIOProc( handle->id[1], callbackHandler );
 #endif
+    }
   }
 
   for ( int i=0; i<2; i++ ) {
@@ -1542,15 +1546,19 @@ void RtApiCore :: startStream( void )
     return;
   }
 
-  #if defined( HAVE_GETTIMEOFDAY )
+#if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
-  #endif
+#endif
 
   OSStatus result = noErr;
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStart( handle->id[0], handle->procId[0] );
+#else // deprecated behaviour
     result = AudioDeviceStart( handle->id[0], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::startStream: system error (" << getErrorCode( result ) << ") starting callback procedure on device (" << stream_.device[0] << ").";
       errorText_ = errorStream_.str();
@@ -1561,7 +1569,11 @@ void RtApiCore :: startStream( void )
   if ( stream_.mode == INPUT ||
        ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStart( handle->id[1], handle->procId[1] );
+#else // deprecated behaviour
     result = AudioDeviceStart( handle->id[1], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::startStream: system error starting input callback procedure on device (" << stream_.device[1] << ").";
       errorText_ = errorStream_.str();
@@ -1596,7 +1608,11 @@ void RtApiCore :: stopStream( void )
       pthread_cond_wait( &handle->condition, &stream_.mutex ); // block until signaled
     }
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStop( handle->id[0], handle->procId[0] );
+#else // deprecated behaviour
     result = AudioDeviceStop( handle->id[0], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping callback procedure on device (" << stream_.device[0] << ").";
       errorText_ = errorStream_.str();
@@ -1606,7 +1622,11 @@ void RtApiCore :: stopStream( void )
 
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
 
+#if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
+    result = AudioDeviceStop( handle->id[0], handle->procId[1] );
+#else  // deprecated behaviour
     result = AudioDeviceStop( handle->id[1], callbackHandler );
+#endif
     if ( result != noErr ) {
       errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping input callback procedure on device (" << stream_.device[1] << ").";
       errorText_ = errorStream_.str();
@@ -4053,7 +4073,7 @@ public:
     #endif
   }
 
-  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount )
+  void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount, int maxOutSampleCount = -1 )
   {
     unsigned int inputBufferSize = _bytesPerSample * _channelCount * inSampleCount;
     if ( _sampleRatio == 1 )
@@ -4064,7 +4084,15 @@ public:
       return;
     }
 
-    unsigned int outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
+    unsigned int outputBufferSize = 0;
+    if ( maxOutSampleCount != -1 )
+    {
+      outputBufferSize = _bytesPerSample * _channelCount * maxOutSampleCount;
+    }
+    else
+    {
+      outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
+    }
 
     IMFMediaBuffer* rInBuffer;
     IMFSample* rInSample;
@@ -4941,7 +4969,7 @@ void RtApiWasapi::wasapiThread()
   // declare local stream variables
   RtAudioCallback callback = ( RtAudioCallback ) stream_.callbackInfo.callback;
   BYTE* streamBuffer = NULL;
-  unsigned long captureFlags = 0;
+  DWORD captureFlags = 0;
   unsigned int bufferFrameCount = 0;
   unsigned int numFramesPadding = 0;
   unsigned int convBufferSize = 0;
@@ -5177,11 +5205,6 @@ void RtApiWasapi::wasapiThread()
       if ( captureAudioClient )
       {
         int samplesToPull = ( unsigned int ) floorf( stream_.bufferSize * captureSrRatio );
-        if ( captureSrRatio != 1 )
-        {
-          // account for remainders
-          samplesToPull--;
-        }
 
         convBufferSize = 0;
         while ( convBufferSize < stream_.bufferSize )
@@ -5203,7 +5226,8 @@ void RtApiWasapi::wasapiThread()
           captureResampler->Convert( stream_.deviceBuffer + deviceBufferOffset,
                                      convBuffer,
                                      samplesToPull,
-                                     convSamples );
+                                     convSamples,
+                                     convBufferSize == 0 ? -1 : stream_.bufferSize - convBufferSize );
 
           convBufferSize += convSamples;
           samplesToPull = 1; // now pull one sample at a time until we have stream_.bufferSize samples
@@ -8679,15 +8703,18 @@ void RtApiPulse::stopStream( void )
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( pah && pah->s_play ) {
-    int pa_error;
-    if ( pa_simple_drain( pah->s_play, &pa_error ) < 0 ) {
-      errorStream_ << "RtApiPulse::stopStream: error draining output device, " <<
-        pa_strerror( pa_error ) << ".";
-      errorText_ = errorStream_.str();
-      MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
-      return;
+  if ( pah ) {
+    pah->runnable = false;
+    if ( pah->s_play ) {
+      int pa_error;
+      if ( pa_simple_drain( pah->s_play, &pa_error ) < 0 ) {
+        errorStream_ << "RtApiPulse::stopStream: error draining output device, " <<
+          pa_strerror( pa_error ) << ".";
+        errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
+        error( RtAudioError::SYSTEM_ERROR );
+        return;
+      }
     }
   }
 
@@ -8713,15 +8740,18 @@ void RtApiPulse::abortStream( void )
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( pah && pah->s_play ) {
-    int pa_error;
-    if ( pa_simple_flush( pah->s_play, &pa_error ) < 0 ) {
-      errorStream_ << "RtApiPulse::abortStream: error flushing output device, " <<
-        pa_strerror( pa_error ) << ".";
-      errorText_ = errorStream_.str();
-      MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
-      return;
+  if ( pah ) {
+    pah->runnable = false;
+    if ( pah->s_play ) {
+      int pa_error;
+      if ( pa_simple_flush( pah->s_play, &pa_error ) < 0 ) {
+        errorStream_ << "RtApiPulse::abortStream: error flushing output device, " <<
+          pa_strerror( pa_error ) << ".";
+        errorText_ = errorStream_.str();
+        MUTEX_UNLOCK( &stream_.mutex );
+        error( RtAudioError::SYSTEM_ERROR );
+        return;
+      }
     }
   }
 
