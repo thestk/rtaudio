@@ -40,7 +40,12 @@ extern "C" {
 
     typedef struct 
     {
-        PyObject_HEAD;
+        PyObject_HEAD
+#if PY_MAJOR_VERSION < 3
+        void *padding; // python 2.7 seems to set dac to bad value
+                       // after print_function, causing a crash, no
+                       // idea why, but this fixes it.
+#endif
         RtAudio *dac;
         RtAudioFormat _format;
         int _bufferSize;
