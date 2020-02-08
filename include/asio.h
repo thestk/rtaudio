@@ -51,21 +51,21 @@ ASIOError ASIOInit(ASIODriverInfo *info);
 ASIOError ASIOExit(void);
 ASIOError ASIOStart(void);
 ASIOError ASIOStop(void);
-ASIOError ASIOGetChannels(long *numInputChannels, long *numOutputChannels);
-ASIOError ASIOGetLatencies(long *inputLatency, long *outputLatency);
-ASIOError ASIOGetBufferSize(long *minSize, long *maxSize, long *preferredSize, long *granularity);
+ASIOError ASIOGetChannels(LONG *numInputChannels, LONG *numOutputChannels);
+ASIOError ASIOGetLatencies(LONG *inputLatency, LONG *outputLatency);
+ASIOError ASIOGetBufferSize(LONG *minSize, LONG *maxSize, LONG *preferredSize, LONG *granularity);
 ASIOError ASIOCanSampleRate(ASIOSampleRate sampleRate);
 ASIOError ASIOGetSampleRate(ASIOSampleRate *currentRate);
 ASIOError ASIOSetSampleRate(ASIOSampleRate sampleRate);
-ASIOError ASIOGetClockSources(ASIOClockSource *clocks, long *numSources);
-ASIOError ASIOSetClockSource(long reference);
+ASIOError ASIOGetClockSources(ASIOClockSource *clocks, LONG *numSources);
+ASIOError ASIOSetClockSource(LONG reference);
 ASIOError ASIOGetSamplePosition (ASIOSamples *sPos, ASIOTimeStamp *tStamp);
 ASIOError ASIOGetChannelInfo(ASIOChannelInfo *info);
-ASIOError ASIOCreateBuffers(ASIOBufferInfo *bufferInfos, long numChannels,
-	long bufferSize, ASIOCallbacks *callbacks);
+ASIOError ASIOCreateBuffers(ASIOBufferInfo *bufferInfos, LONG numChannels,
+	LONG bufferSize, ASIOCallbacks *callbacks);
 ASIOError ASIODisposeBuffers(void);
 ASIOError ASIOControlPanel(void);
-void *ASIOFuture(long selector, void *params);
+void *ASIOFuture(LONG selector, void *params);
 ASIOError ASIOOutputReady(void);
 
 */
@@ -89,22 +89,22 @@ ASIOError ASIOOutputReady(void);
 
 // number of samples data type is 64 bit integer
 #if NATIVE_INT64
-	typedef long long int ASIOSamples;
+	typedef LONGLONG ASIOSamples;
 #else
 	typedef struct ASIOSamples {
-		unsigned long hi;
-		unsigned long lo;
+		ULONG hi;
+		ULONG lo;
 	} ASIOSamples;
 #endif
 
 // Timestamp data type is 64 bit integer,
 // Time format is Nanoseconds.
 #if NATIVE_INT64
-	typedef long long int ASIOTimeStamp ;
+	typedef LONGLONG ASIOTimeStamp ;
 #else
 	typedef struct ASIOTimeStamp {
-		unsigned long hi;
-		unsigned long lo;
+		ULONG hi;
+		ULONG lo;
 	} ASIOTimeStamp;
 #endif
 
@@ -118,15 +118,15 @@ ASIOError ASIOOutputReady(void);
 	} ASIOSampleRate;
 #endif
 
-// Boolean values are expressed as long
-typedef long ASIOBool;
+// Boolean values are expressed as LONG
+typedef LONG ASIOBool;
 enum {
 	ASIOFalse = 0,
 	ASIOTrue = 1
 };
 
-// Sample Types are expressed as long
-typedef long ASIOSampleType;
+// Sample Types are expressed as LONG
+typedef LONG ASIOSampleType;
 enum {
 	ASIOSTInt16MSB   = 0,
 	ASIOSTInt24MSB   = 1,		// used for 20 bits as well
@@ -206,7 +206,7 @@ enum {
 // Error codes
 //- - - - - - - - - - - - - - - - - - - - - - - - -
 
-typedef long ASIOError;
+typedef LONG ASIOError;
 enum {
 	ASE_OK = 0,             // This value will be returned whenever the call succeeded
 	ASE_SUCCESS = 0x3f4847a0,	// unique success return value for ASIOFuture calls
@@ -231,7 +231,7 @@ typedef struct ASIOTimeCode
 	double          speed;                  // speed relation (fraction of nominal speed)
 	                                        // optional; set to 0. or 1. if not supported
 	ASIOSamples     timeCodeSamples;        // time in samples
-	unsigned long   flags;                  // some information flags (see below)
+	ULONG   flags;                  // some information flags (see below)
 	char future[64];
 } ASIOTimeCode;
 
@@ -254,7 +254,7 @@ typedef struct AsioTimeInfo
 	                                        // on windows, must be derived from timeGetTime()
 	ASIOSamples     samplePosition;
 	ASIOSampleRate  sampleRate;             // current rate
-	unsigned long flags;                    // (see below)
+	ULONG flags;                    // (see below)
 	char reserved[12];
 } AsioTimeInfo;
 
@@ -271,7 +271,7 @@ typedef enum AsioTimeInfoFlags
 
 typedef struct ASIOTime                          // both input/output
 {
-	long reserved[4];                       // must be 0
+	LONG reserved[4];                       // must be 0
 	struct AsioTimeInfo     timeInfo;       // required
 	struct ASIOTimeCode     timeCode;       // optional, evaluated if (timeCode.flags & kTcValid)
 } ASIOTime;
@@ -335,7 +335,7 @@ in createBuffers()
 	}
 }
 
-void switchBuffers(long doubleBufferIndex, bool processNow)
+void switchBuffers(LONG doubleBufferIndex, bool processNow)
 {
 	if(timeInfoMode)
 	{
@@ -363,7 +363,7 @@ void switchBuffers(long doubleBufferIndex, bool processNow)
 		callbacks->bufferSwitch(doubleBufferIndex, ASIOFalse);
 }
 
-ASIOError ASIOFuture(long selector, void *params)
+ASIOError ASIOFuture(LONG selector, void *params)
 {
 	switch(selector)
 	{
@@ -391,7 +391,7 @@ ASIOError ASIOFuture(long selector, void *params)
 
 typedef struct ASIOCallbacks
 {
-	void (*bufferSwitch) (long doubleBufferIndex, ASIOBool directProcess);
+	void (CALLBACK *bufferSwitch) (LONG doubleBufferIndex, ASIOBool directProcess);
 		// bufferSwitch indicates that both input and output are to be processed.
 		// the current buffer half index (0 for A, 1 for B) determines
 		// - the output buffer that the host should start to fill. the other buffer
@@ -408,16 +408,16 @@ typedef struct ASIOCallbacks
 		// directProcess should be set to ASIOFalse.
 		// Note: bufferSwitch may be called at interrupt time for highest efficiency.
 
-	void (*sampleRateDidChange) (ASIOSampleRate sRate);
+	void (CALLBACK *sampleRateDidChange) (ASIOSampleRate sRate);
 		// gets called when the AudioStreamIO detects a sample rate change
 		// If sample rate is unknown, 0 is passed (for instance, clock loss
 		// when externally synchronized).
 
-	long (*asioMessage) (long selector, long value, void* message, double* opt);
+	LONG (CALLBACK *asioMessage) (LONG selector, LONG value, void* message, double* opt);
 		// generic callback for various purposes, see selectors below.
 		// note this is only present if the asio version is 2 or higher
 
-	ASIOTime* (*bufferSwitchTimeInfo) (ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess);
+	ASIOTime* (CALLBACK *bufferSwitchTimeInfo) (ASIOTime* params, LONG doubleBufferIndex, ASIOBool directProcess);
 		// new callback with time info. makes ASIOGetSamplePosition() and various
 		// calls to ASIOGetSampleRate obsolete,
 		// and allows for timecode sync etc. to be preferred; will be used if
@@ -446,7 +446,7 @@ enum
 								// once implemented, the new buffer size is expected
 								// in <value>, and on success returns 1L
 	kAsioResyncRequest,			// the driver went out of sync, such that
-								// the timestamp is no longer valid. this
+								// the timestamp is no LONGer valid. this
 								// is a request to re-start the engine and
 								// slave devices (sequencer). returns 1 for ok,
 								// 0 if not supported.
@@ -476,8 +476,8 @@ enum
 
 typedef struct ASIODriverInfo
 {
-	long asioVersion;		// currently, 2
-	long driverVersion;		// driver specific
+	LONG asioVersion;		// currently, 2
+	LONG driverVersion;		// driver specific
 	char name[32];
 	char errorMessage[124];
 	void *sysRef;			// on input: system reference
@@ -567,7 +567,7 @@ ASIOError ASIOStop(void);
 // Inquiry methods and sample rate
 //- - - - - - - - - - - - - - - - - - - - - - - - -
 
-ASIOError ASIOGetChannels(long *numInputChannels, long *numOutputChannels);
+ASIOError ASIOGetChannels(LONG *numInputChannels, LONG *numOutputChannels);
 /* Purpose:
 	  Returns number of individual input/output channels.
 	Parameter:
@@ -579,7 +579,7 @@ ASIOError ASIOGetChannels(long *numInputChannels, long *numOutputChannels);
 	  other parameter will be zero, and ASE_OK is returned.
 */
 
-ASIOError ASIOGetLatencies(long *inputLatency, long *outputLatency);
+ASIOError ASIOGetLatencies(LONG *inputLatency, LONG *outputLatency);
 /* Purpose:
 	  Returns the input and output latencies. This includes
 	  device specific delays, like FIFOs etc.
@@ -621,7 +621,7 @@ ASIOError ASIOGetLatencies(long *inputLatency, long *outputLatency);
 	  If no input/output is present ASE_NotPresent will be returned.
 */
 
-ASIOError ASIOGetBufferSize(long *minSize, long *maxSize, long *preferredSize, long *granularity);
+ASIOError ASIOGetBufferSize(LONG *minSize, LONG *maxSize, LONG *preferredSize, LONG *granularity);
 /* Purpose:
 	  Returns min, max, and preferred buffer sizes for input/output
 	Parameter:
@@ -678,14 +678,14 @@ ASIOError ASIOSetSampleRate(ASIOSampleRate sampleRate);
 
 typedef struct ASIOClockSource
 {
-	long index;					// as used for ASIOSetClockSource()
-	long associatedChannel;		// for instance, S/PDIF or AES/EBU
-	long associatedGroup;		// see channel groups (ASIOGetChannelInfo())
+	LONG index;					// as used for ASIOSetClockSource()
+	LONG associatedChannel;		// for instance, S/PDIF or AES/EBU
+	LONG associatedGroup;		// see channel groups (ASIOGetChannelInfo())
 	ASIOBool isCurrentSource;	// ASIOTrue if this is the current clock source
 	char name[32];				// for user selection
 } ASIOClockSource;
 
-ASIOError ASIOGetClockSources(ASIOClockSource *clocks, long *numSources);
+ASIOError ASIOGetClockSources(ASIOClockSource *clocks, LONG *numSources);
 /* Purpose:
 	  Get the available external audio clock sources
 	Parameter:
@@ -718,7 +718,7 @@ ASIOError ASIOGetClockSources(ASIOClockSource *clocks, long *numSources);
 	Notes:
 */
 
-ASIOError ASIOSetClockSource(long index);
+ASIOError ASIOSetClockSource(LONG index);
 /* Purpose:
 	  Set the audio clock source
 	Parameter:
@@ -766,10 +766,10 @@ ASIOError ASIOGetSamplePosition (ASIOSamples *sPos, ASIOTimeStamp *tStamp);
 
 typedef struct ASIOChannelInfo
 {
-	long channel;			// on input, channel index
+	LONG channel;			// on input, channel index
 	ASIOBool isInput;		// on input
 	ASIOBool isActive;		// on exit
-	long channelGroup;		// dto
+	LONG channelGroup;		// dto
 	ASIOSampleType type;	// dto
 	char name[32];			// dto
 } ASIOChannelInfo;
@@ -783,15 +783,15 @@ ASIOError ASIOGetChannelInfo(ASIOChannelInfo *info);
 	  	- isInput: on input, ASIOTrue if info for an input channel is
 	  	  requested, else output
 		- channelGroup: on return, the channel group that the channel
-		  belongs to. For drivers which support different types of
+		  beLONGs to. For drivers which support different types of
 		  channels, like analog, S/PDIF, AES/EBU, ADAT etc interfaces,
 		  there should be a reasonable grouping of these types. Groups
 		  are always independant form a channel index, that is, a channel
 		  index always counts from 0 to numInputs/numOutputs regardless
-		  of the group it may belong to.
+		  of the group it may beLONG to.
 		  There will always be at least one group (group 0). Please
 		  also note that by default, the host may decide to activate
-		  channels 0 and 1; thus, these should belong to the most
+		  channels 0 and 1; thus, these should beLONG to the most
 		  useful type (analog i/o, if present).
 	  	- type: on return, contains the sample type of the channel
 	  	- isActive: on return, ASIOTrue if channel is active as it was
@@ -816,12 +816,12 @@ ASIOError ASIOGetChannelInfo(ASIOChannelInfo *info);
 typedef struct ASIOBufferInfo
 {
 	ASIOBool isInput;			// on input:  ASIOTrue: input, else output
-	long channelNum;			// on input:  channel index
+	LONG channelNum;			// on input:  channel index
 	void *buffers[2];			// on output: double buffer addresses
 } ASIOBufferInfo;
 
-ASIOError ASIOCreateBuffers(ASIOBufferInfo *bufferInfos, long numChannels,
-	long bufferSize, ASIOCallbacks *callbacks);
+ASIOError ASIOCreateBuffers(ASIOBufferInfo *bufferInfos, LONG numChannels,
+	LONG bufferSize, ASIOCallbacks *callbacks);
 
 /* Purpose:
 	  Allocates input/output buffers for all input and output channels to be activated.
@@ -883,7 +883,7 @@ ASIOError ASIOControlPanel(void);
 	  ASIO_Callbacks).
 */
 
-ASIOError ASIOFuture(long selector, void *params);
+ASIOError ASIOFuture(LONG selector, void *params);
 /* Purpose:
 	  various
 	Parameter:
@@ -935,28 +935,28 @@ enum
 
 typedef struct ASIOInputMonitor
 {
-	long input;		// this input was set to monitor (or off), -1: all
-	long output;	// suggested output for monitoring the input (if so)
-	long gain;		// suggested gain, ranging 0 - 0x7fffffffL (-inf to +12 dB)
+	LONG input;		// this input was set to monitor (or off), -1: all
+	LONG output;	// suggested output for monitoring the input (if so)
+	LONG gain;		// suggested gain, ranging 0 - 0x7fffffffL (-inf to +12 dB)
 	ASIOBool state;	// ASIOTrue => on, ASIOFalse => off
-	long pan;		// suggested pan, 0 => all left, 0x7fffffff => right
+	LONG pan;		// suggested pan, 0 => all left, 0x7fffffff => right
 } ASIOInputMonitor;
 
 typedef struct ASIOChannelControls
 {
-	long channel;			// on input, channel index
+	LONG channel;			// on input, channel index
 	ASIOBool isInput;		// on input
-	long gain;				// on input,  ranges 0 thru 0x7fffffff
-	long meter;				// on return, ranges 0 thru 0x7fffffff
+	LONG gain;				// on input,  ranges 0 thru 0x7fffffff
+	LONG meter;				// on return, ranges 0 thru 0x7fffffff
 	char future[32];
 } ASIOChannelControls;
 
 typedef struct ASIOTransportParameters
 {
-	long command;		// see enum below
+	LONG command;		// see enum below
 	ASIOSamples samplePosition;
-	long track;
-	long trackSwitches[16];		// 512 tracks on/off
+	LONG track;
+	LONG trackSwitches[16];		// 512 tracks on/off
 	char future[64];
 } ASIOTransportParameters;
 
@@ -997,7 +997,7 @@ enum
 // Note: Switching between the formats need to be done before the "prepared"
 // state (see ASIO 2 documentation) is entered.
 */
-typedef long int ASIOIoFormatType;
+typedef LONG ASIOIoFormatType;
 enum ASIOIoFormatType_e
 {
 	kASIOFormatInvalid = -1,
@@ -1015,8 +1015,8 @@ typedef struct ASIOIoFormat_s
 // Note: Refers to buffering that goes beyond the double buffer e.g. used by USB driver designs
 typedef struct ASIOInternalBufferInfo
 {
-	long inputSamples;			// size of driver's internal input buffering which is included in getLatencies
-	long outputSamples;			// size of driver's internal output buffering which is included in getLatencies
+	LONG inputSamples;			// size of driver's internal input buffering which is included in getLatencies
+	LONG outputSamples;			// size of driver's internal output buffering which is included in getLatencies
 } ASIOInternalBufferInfo;
 
 
