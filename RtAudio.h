@@ -640,6 +640,10 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   */
   void showWarnings( bool value = true );
 
+#if defined(__UNIX_JACK__)
+  void* HACK__getJackClient();
+#endif
+
  protected:
 
   void openRtApi( RtAudio::Api api );
@@ -744,6 +748,8 @@ class S24 {
 
 class RTAUDIO_DLL_PUBLIC RtApi
 {
+friend RtAudio; // HACK
+
 public:
 
   RtApi();
