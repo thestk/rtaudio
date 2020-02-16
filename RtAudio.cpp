@@ -2033,6 +2033,13 @@ struct JackHandle {
     :client(0), drainCounter(0), internalDrain(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
 
+#if defined(__UNIX_JACK__)
+void* RtAudio :: HACK__getJackClient()
+{
+  return static_cast<JackHandle*>(rtapi_->stream_.apiHandle)->client; 
+}
+#endif
+
 #if !defined(__RTAUDIO_DEBUG__)
 static void jackSilentError( const char * ) {};
 #endif
