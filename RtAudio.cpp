@@ -1623,7 +1623,7 @@ void RtApiCore :: stopStream( void )
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
 
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
-    result = AudioDeviceStop( handle->id[0], handle->procId[1] );
+    result = AudioDeviceStop( handle->id[1], handle->procId[1] );
 #else  // deprecated behaviour
     result = AudioDeviceStop( handle->id[1], callbackHandler );
 #endif
