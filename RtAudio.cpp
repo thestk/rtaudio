@@ -7542,6 +7542,10 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       if ( result < 0 ) {
         errorStream_ << "RtApiAlsa::probeDeviceOpen: control open, card = " << card << ", " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
+
+#if defined(__RTAUDIO_DEBUG__)
+        snd_output_close(out);
+#endif
         return FAILURE;
       }
       subdevice = -1;
@@ -7574,12 +7578,18 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     if ( nDevices == 0 ) {
       // This should not happen because a check is made before this function is called.
       errorText_ = "RtApiAlsa::probeDeviceOpen: no devices found!";
+#if defined(__RTAUDIO_DEBUG__)
+        snd_output_close(out);
+#endif
       return FAILURE;
     }
 
     if ( device >= nDevices ) {
       // This should not happen because a check is made before this function is called.
       errorText_ = "RtApiAlsa::probeDeviceOpen: device ID is invalid!";
+#if defined(__RTAUDIO_DEBUG__)
+        snd_output_close(out);
+#endif
       return FAILURE;
     }
   }
@@ -7607,6 +7617,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     else
       errorStream_ << "RtApiAlsa::probeDeviceOpen: pcm device (" << name << ") won't open for input.";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7618,6 +7631,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error getting pcm device (" << name << ") parameters, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7652,6 +7668,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting pcm device (" << name << ") access, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7718,6 +7737,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   snd_pcm_close( phandle );
   errorStream_ << "RtApiAlsa::probeDeviceOpen: pcm device " << device << " data format not supported by RtAudio.";
   errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+  snd_output_close(out);
+#endif
   return FAILURE;
 
  setFormat:
@@ -7726,6 +7748,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting pcm device (" << name << ") data format, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7739,6 +7764,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       snd_pcm_close( phandle );
       errorStream_ << "RtApiAlsa::probeDeviceOpen: error getting pcm device (" << name << ") endian-ness, " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
       return FAILURE;
     }
   }
@@ -7749,6 +7777,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting sample rate on device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7762,6 +7793,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: requested channel parameters not supported by device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7770,6 +7804,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error getting minimum channels for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
   deviceChannels = value;
@@ -7782,6 +7819,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting channels for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7793,6 +7833,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting period size for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
   *bufferSize = periodSize;
@@ -7807,6 +7850,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting periods for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7816,6 +7862,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: system error setting buffer size for duplex stream on device (" << name << ").";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7827,6 +7876,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error installing hardware configuration on device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -7858,6 +7910,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error installing software configuration on device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
+#if defined(__RTAUDIO_DEBUG__)
+    snd_output_close(out);
+#endif
     return FAILURE;
   }
 
@@ -8007,6 +8062,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
   }
 
+#if defined(__RTAUDIO_DEBUG__)
+  snd_output_close(out);
+#endif
   return SUCCESS;
 
  error:
@@ -8033,6 +8091,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   stream_.state = STREAM_CLOSED;
+#if defined(__RTAUDIO_DEBUG__)
+  snd_output_close(out);
+#endif
   return FAILURE;
 }
 
