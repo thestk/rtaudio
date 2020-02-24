@@ -8448,7 +8448,11 @@ static void *alsaCallbackHandler( void *ptr )
 
 #include <pulse/error.h>
 #include <pulse/simple.h>
+#include <pulse/pulseaudio.h>
 #include <cstdio>
+
+static pa_mainloop_api *rt_pa_mainloop_api = NULL;
+static int rt_pa_preferredSampleRate = 0;
 
 static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
                                                       44100, 48000, 96000, 0};
@@ -8472,6 +8476,47 @@ struct PulseAudioHandle {
   bool runnable;
   PulseAudioHandle() : s_play(0), s_rec(0), runnable(false) { }
 };
+
+static void rt_pa_mainloop_api_quit(int ret) {
+    rt_pa_mainloop_api->quit(rt_pa_mainloop_api, ret);
+}
+
+static void rt_pa_server_callback(pa_context *context, const pa_server_info *info, void *data){
+  (void)context;
+  (void)data;
+  pa_sample_spec ss;
+
+  if (!info)
+    rt_pa_mainloop_api_quit(1);
+
+  ss = info->sample_spec;
+
+  rt_pa_preferredSampleRate = ss.rate;
+  rt_pa_mainloop_api_quit(0);
+}
+
+static void rt_pa_context_state_callback(pa_context *context, void *userdata) {
+  (void)userdata;
+
+  switch (pa_context_get_state(context)) {
+    case PA_CONTEXT_CONNECTING:
+    case PA_CONTEXT_AUTHORIZING:
+    case PA_CONTEXT_SETTING_NAME:
+      break;
+
+    case PA_CONTEXT_READY:
+      pa_context_get_server_info(context, rt_pa_server_callback, NULL);
+      break;
+
+    case PA_CONTEXT_TERMINATED:
+      rt_pa_mainloop_api_quit(0);
+      break;
+
+    case PA_CONTEXT_FAILED:
+    default:
+      rt_pa_mainloop_api_quit(1);
+  }
+}
 
 RtApiPulse::~RtApiPulse()
 {
@@ -8500,6 +8545,58 @@ RtAudio::DeviceInfo RtApiPulse::getDeviceInfo( unsigned int /*device*/ )
 
   info.preferredSampleRate = 48000;
   info.nativeFormats = RTAUDIO_SINT16 | RTAUDIO_SINT32 | RTAUDIO_FLOAT32;
+
+  //Try to get real info.preferredSampleRate
+  pa_context *context = NULL;
+  pa_mainloop *m = NULL;
+  char *server = NULL;
+  int ret = 1;
+
+  if (!(m = pa_mainloop_new())) {
+    errorStream_ << "RtApiPulse::DeviceInfo pa_mainloop_new() failed.";
+    errorText_ = errorStream_.str();
+    error( RtAudioError::WARNING );
+    goto quit;
+  }
+
+  rt_pa_mainloop_api = pa_mainloop_get_api(m);
+
+  if (!(context = pa_context_new_with_proplist(rt_pa_mainloop_api, NULL, NULL))) {
+    errorStream_ << "pa_context_new() failed.";
+    errorText_ = errorStream_.str();
+    error( RtAudioError::WARNING );
+    goto quit;
+  }
+
+  pa_context_set_state_callback(context, rt_pa_context_state_callback, NULL);
+
+  if (pa_context_connect(context, server, PA_CONTEXT_NOFLAGS, NULL) < 0) {
+    errorStream_ << "RtApiPulse::DeviceInfo pa_context_connect() failed: "
+      << pa_strerror(pa_context_errno(context));
+    errorText_ = errorStream_.str();
+    error( RtAudioError::WARNING );
+    goto quit;
+  }
+
+  if (pa_mainloop_run(m, &ret) < 0) {
+    errorStream_ << "pa_mainloop_run() failed.";
+    errorText_ = errorStream_.str();
+    error( RtAudioError::WARNING );
+    goto quit;
+  }
+
+  if (rt_pa_preferredSampleRate)
+    info.preferredSampleRate = rt_pa_preferredSampleRate;
+
+quit:
+  if (context)
+    pa_context_unref(context);
+
+  if (m) {
+    pa_mainloop_free(m);
+  }
+
+  pa_xfree(server);
 
   return info;
 }
