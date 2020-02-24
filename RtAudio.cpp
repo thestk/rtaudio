@@ -7520,7 +7520,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 {
 #if defined(__RTAUDIO_DEBUG__)
   struct SndOutputTdealloc {
-    SndOutputTdealloc() : _out(nullptr) { snd_output_stdio_attach(&_out, stderr, 0); }
+    SndOutputTdealloc() : _out(NULL) { snd_output_stdio_attach(&_out, stderr, 0); }
     ~SndOutputTdealloc() { snd_output_close(_out); }
     operator snd_output_t*() { return _out; }
     snd_output_t *_out;
