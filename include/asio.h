@@ -389,9 +389,15 @@ ASIOError ASIOFuture(LONG selector, void *params)
 // application's audio stream handler callbacks
 //- - - - - - - - - - - - - - - - - - - - - - - - -
 
+#ifdef _WIN64
+#define ASIO_CALLBACK CALLBACK
+#else
+#define ASIO_CALLBACK 
+#endif
+
 typedef struct ASIOCallbacks
 {
-	void (CALLBACK *bufferSwitch) (LONG doubleBufferIndex, ASIOBool directProcess);
+	void (ASIO_CALLBACK *bufferSwitch) (LONG doubleBufferIndex, ASIOBool directProcess);
 		// bufferSwitch indicates that both input and output are to be processed.
 		// the current buffer half index (0 for A, 1 for B) determines
 		// - the output buffer that the host should start to fill. the other buffer
@@ -408,16 +414,16 @@ typedef struct ASIOCallbacks
 		// directProcess should be set to ASIOFalse.
 		// Note: bufferSwitch may be called at interrupt time for highest efficiency.
 
-	void (CALLBACK *sampleRateDidChange) (ASIOSampleRate sRate);
+	void (ASIO_CALLBACK *sampleRateDidChange) (ASIOSampleRate sRate);
 		// gets called when the AudioStreamIO detects a sample rate change
 		// If sample rate is unknown, 0 is passed (for instance, clock loss
 		// when externally synchronized).
 
-	LONG (CALLBACK *asioMessage) (LONG selector, LONG value, void* message, double* opt);
+	LONG (ASIO_CALLBACK *asioMessage) (LONG selector, LONG value, void* message, double* opt);
 		// generic callback for various purposes, see selectors below.
 		// note this is only present if the asio version is 2 or higher
 
-	ASIOTime* (CALLBACK *bufferSwitchTimeInfo) (ASIOTime* params, LONG doubleBufferIndex, ASIOBool directProcess);
+	ASIOTime* (ASIO_CALLBACK *bufferSwitchTimeInfo) (ASIOTime* params, LONG doubleBufferIndex, ASIOBool directProcess);
 		// new callback with time info. makes ASIOGetSamplePosition() and various
 		// calls to ASIOGetSampleRate obsolete,
 		// and allows for timecode sync etc. to be preferred; will be used if
