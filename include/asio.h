@@ -446,7 +446,7 @@ enum
 								// once implemented, the new buffer size is expected
 								// in <value>, and on success returns 1L
 	kAsioResyncRequest,			// the driver went out of sync, such that
-								// the timestamp is no LONGer valid. this
+								// the timestamp is no longer valid. this
 								// is a request to re-start the engine and
 								// slave devices (sequencer). returns 1 for ok,
 								// 0 if not supported.
@@ -783,15 +783,15 @@ ASIOError ASIOGetChannelInfo(ASIOChannelInfo *info);
 	  	- isInput: on input, ASIOTrue if info for an input channel is
 	  	  requested, else output
 		- channelGroup: on return, the channel group that the channel
-		  beLONGs to. For drivers which support different types of
+		  belongs to. For drivers which support different types of
 		  channels, like analog, S/PDIF, AES/EBU, ADAT etc interfaces,
 		  there should be a reasonable grouping of these types. Groups
 		  are always independant form a channel index, that is, a channel
 		  index always counts from 0 to numInputs/numOutputs regardless
-		  of the group it may beLONG to.
+		  of the group it may belong to.
 		  There will always be at least one group (group 0). Please
 		  also note that by default, the host may decide to activate
-		  channels 0 and 1; thus, these should beLONG to the most
+		  channels 0 and 1; thus, these should belong to the most
 		  useful type (analog i/o, if present).
 	  	- type: on return, contains the sample type of the channel
 	  	- isActive: on return, ASIOTrue if channel is active as it was
