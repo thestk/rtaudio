@@ -227,7 +227,8 @@ endif()
 list(APPEND LIB_TARGETS rtaudio)
 
 # Add headers destination for install rule.
-set_target_properties(rtaudio PROPERTIES PUBLIC_HEADER RtAudio.h
+set_property(TARGET rtaudio PROPERTY PUBLIC_HEADER RtAudio.h rtaudio_c.h)
+set_target_properties(rtaudio PROPERTIES
   SOVERSION ${SO_VER}
   VERSION ${FULL_VER})
 
@@ -272,7 +273,7 @@ install(TARGETS ${LIB_TARGETS}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rtaudio)
 
 # Store the package in the user registry.
 export(PACKAGE RtAudio)
