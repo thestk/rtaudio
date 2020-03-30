@@ -10257,17 +10257,13 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
 
   int j;
   if (info.outFormat == RTAUDIO_FLOAT64) {
-    Float64 scale;
     Float64 *out = (Float64 *)outBuffer;
 
     if (info.inFormat == RTAUDIO_SINT8) {
       signed char *in = (signed char *)inBuffer;
-      scale = 1.0 / 127.5;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]] / 128.0;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10275,12 +10271,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT16) {
       Int16 *in = (Int16 *)inBuffer;
-      scale = 1.0 / 32767.5;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]] / 32768.0;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10288,12 +10281,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
       Int24 *in = (Int24 *)inBuffer;
-      scale = 1.0 / 8388607.5;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float64) (in[info.inOffset[j]].asInt());
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]].asInt() / 8388608.0;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10301,12 +10291,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT32) {
       Int32 *in = (Int32 *)inBuffer;
-      scale = 1.0 / 2147483647.5;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float64) in[info.inOffset[j]] / 2147483648.0;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10335,17 +10322,13 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
   }
   else if (info.outFormat == RTAUDIO_FLOAT32) {
-    Float32 scale;
     Float32 *out = (Float32 *)outBuffer;
 
     if (info.inFormat == RTAUDIO_SINT8) {
       signed char *in = (signed char *)inBuffer;
-      scale = (Float32) ( 1.0 / 127.5 );
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]] / 128.f;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10353,12 +10336,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT16) {
       Int16 *in = (Int16 *)inBuffer;
-      scale = (Float32) ( 1.0 / 32767.5 );
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]] / 32768.f;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10366,12 +10346,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
       Int24 *in = (Int24 *)inBuffer;
-      scale = (Float32) ( 1.0 / 8388607.5 );
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float32) (in[info.inOffset[j]].asInt());
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]].asInt() / 8388608.f;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10379,12 +10356,9 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT32) {
       Int32 *in = (Int32 *)inBuffer;
-      scale = (Float32) ( 1.0 / 2147483647.5 );
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
+          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]] / 2147483648.f;
         }
         in += info.inJump;
         out += info.outJump;
@@ -10462,7 +10436,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] * 2147483647.5 - 0.5);
+          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 2147483648.f), 2147483647L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10472,7 +10446,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] * 2147483647.5 - 0.5);
+          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 2147483648.0), 2147483647L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10529,7 +10503,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] * 8388607.5 - 0.5);
+          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 8388608.f), 8388607L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10539,7 +10513,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) (in[info.inOffset[j]] * 8388607.5 - 0.5);
+          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 8388608.0), 8388607L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10594,7 +10568,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) (in[info.inOffset[j]] * 32767.5 - 0.5);
+          out[info.outOffset[j]] = (Int16) std::min(std::lround(in[info.inOffset[j]] * 32768.f), 32767L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10604,7 +10578,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) (in[info.inOffset[j]] * 32767.5 - 0.5);
+          out[info.outOffset[j]] = (Int16) std::min(std::lround(in[info.inOffset[j]] * 32768.0), 32767L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10658,7 +10632,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) (in[info.inOffset[j]] * 127.5 - 0.5);
+          out[info.outOffset[j]] = (signed char) std::min(std::lround(in[info.inOffset[j]] * 128.f), 127L);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10668,7 +10642,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) (in[info.inOffset[j]] * 127.5 - 0.5);
+          out[info.outOffset[j]] = (signed char) std::min(std::lround(in[info.inOffset[j]] * 128.0), 127L);
         }
         in += info.inJump;
         out += info.outJump;
