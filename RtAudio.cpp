@@ -7172,6 +7172,13 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
   char name[64];
   snd_ctl_t *handle = 0;
 
+  strcpy(name, "default");
+  result = snd_ctl_open( &handle, "default", 0 );
+  if (result == 0) {
+    nDevices++;
+    snd_ctl_close( handle );
+  }
+
   // Count cards and devices
   card = -1;
   snd_card_next( &card );
@@ -7204,12 +7211,6 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
     snd_card_next( &card );
   }
 
-  result = snd_ctl_open( &handle, "default", 0 );
-  if (result == 0) {
-    nDevices++;
-    snd_ctl_close( handle );
-  }
-
   return nDevices;
 }
 
@@ -7219,13 +7220,19 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   info.probed = false;
 
   unsigned nDevices = 0;
-  int result, subdevice, card;
+  int result=-1, subdevice=-1, card=-1;
   char name[64];
   snd_ctl_t *chandle = 0;
 
+  result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
+  if ( result == 0 ) {
+    if ( nDevices++ == device ) {
+      strcpy( name, "default" );
+      goto foundDevice;
+    }
+  }
+
   // Count cards and devices
-  card = -1;
-  subdevice = -1;
   snd_card_next( &card );
   while ( card >= 0 ) {
     sprintf( name, "hw:%d", card );
@@ -7257,15 +7264,6 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     if ( chandle )
         snd_ctl_close( chandle );
     snd_card_next( &card );
-  }
-
-  result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
-  if ( result == 0 ) {
-    if ( nDevices == device ) {
-      strcpy( name, "default" );
-      goto foundDevice;
-    }
-    nDevices++;
   }
 
   if ( nDevices == 0 ) {
@@ -7488,11 +7486,13 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   }
 
   // Get the device name
-  char *cardname;
-  result = snd_card_get_name( card, &cardname );
-  if ( result >= 0 ) {
-    sprintf( name, "hw:%s,%d", cardname, subdevice );
-    free( cardname );
+  if (strncmp(name, "default", 7)!=0) {
+    char *cardname;
+    result = snd_card_get_name( card, &cardname );
+    if ( result >= 0 ) {
+      sprintf( name, "hw:%s,%d", cardname, subdevice );
+      free( cardname );
+    }
   }
   info.name = name;
 
@@ -7534,9 +7534,23 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   char name[64];
   snd_ctl_t *chandle;
 
-  if ( options && options->flags & RTAUDIO_ALSA_USE_DEFAULT )
-    snprintf(name, sizeof(name), "%s", "default");
+  if ( device == 0
+       || (options && options->flags & RTAUDIO_ALSA_USE_DEFAULT) )
+  {
+    strcpy(name, "default");
+    result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
+    if ( result == 0 ) {
+      if ( nDevices == device ) {
+        strcpy( name, "default" );
+        snd_ctl_close( chandle );
+        goto foundDevice;
+      }
+      nDevices++;
+    }
+  }
+
   else {
+    nDevices++;
     // Count cards and devices
     card = -1;
     snd_card_next( &card );
@@ -7563,17 +7577,6 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       snd_ctl_close( chandle );
       snd_card_next( &card );
     }
-
-    result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
-    if ( result == 0 ) {
-      if ( nDevices == device ) {
-        strcpy( name, "default" );
-        snd_ctl_close( chandle );
-        goto foundDevice;
-      }
-      nDevices++;
-    }
-    snd_ctl_close( chandle );
 
     if ( nDevices == 0 ) {
       // This should not happen because a check is made before this function is called.
