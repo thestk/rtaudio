@@ -64,6 +64,30 @@ if (CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
+#default SIMD configuration uses AVX2 build flags
+if(NOT DEFAULT_SIMD_FLAGS)
+    set(DEFAULT_SIMD_FLAGS "AVX2")
+endif()
+
+SET(ENABLE_SIMD_FLAGS "${DEFAULT_SIMD_FLAGS}" CACHE STRING "Set compiler SIMD flags")
+SET_PROPERTY(CACHE ENABLE_SIMD_FLAGS PROPERTY STRINGS none AVX2)
+
+#set up according to your own system environment
+#Windows
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC"
+    OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_SIMULATE_ID MATCHES "MSVC"))
+    if(${ENABLE_SIMD_FLAGS} MATCHES "AVX2")
+        add_definitions(/arch:AVX2 /D__AVX__)
+        message(STATUS "Enabling AVX2 instructions")
+    endif()
+#Linux
+else()
+    if(${ENABLE_SIMD_FLAGS} MATCHES "AVX")
+        add_definitions(-mmmx -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mpopcnt -mavx -mavx2 -mfma)
+        message(STATUS "Enabling AVX2 instructions")
+    endif()
+endif()
+
 # Add debug flags
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-D__RTAUDIO_DEBUG__)

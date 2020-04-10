@@ -49,6 +49,13 @@
 #include <cmath>
 #include <algorithm>
 
+#if __SSE2__
+#include <emmintrin.h>
+#endif
+#if __AVX__
+#include <immintrin.h>
+#endif
+
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
 const unsigned int RtApi::SAMPLE_RATES[] = {
@@ -537,7 +544,7 @@ struct CoreHandle {
   bool internalDrain;     // Indicates if stop is initiated from callback or not.
 
   CoreHandle()
-    :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; xrun[0] = false; xrun[1] = false; }
+    :deviceBuffer(0), drainCounter(0), internalDrain(false) { iStream[0] = 0; iStream[1] = 0; nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
 
 RtApiCore:: RtApiCore()
@@ -10386,6 +10393,10 @@ void RtApi :: setConvertInfo( StreamMode mode, unsigned int firstChannel )
 
 void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info )
 {
+  static const float kBias[8] = {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};
+  static const float kScale[8] = {32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f};
+  static const float kScaleI[8] = {1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f};
+
   // This function does format conversion, input/output channel compensation, and
   // data interleaving/deinterleaving.  24-bit integers are assumed to occupy
   // the lower three bytes of a 32-bit integer.
@@ -10394,6 +10405,12 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
   if ( outBuffer == stream_.deviceBuffer && stream_.mode == DUPLEX &&
        ( stream_.nDeviceChannels[0] < stream_.nDeviceChannels[1] ) )
     memset( outBuffer, 0, stream_.bufferSize * info.outJump * formatBytes( info.outFormat ) );
+
+  if (info.outFormat == info.inFormat && info.channels == 1)
+  {
+      std::memcpy(outBuffer, inBuffer, stream_.bufferSize * formatBytes(info.outFormat));
+      return;
+  }
 
   int j;
   if (info.outFormat == RTAUDIO_FLOAT64) {
@@ -10493,15 +10510,44 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_SINT16) {
       Int16 *in = (Int16 *)inBuffer;
-      scale = (Float32) ( 1.0 / 32767.5 );
-      for (unsigned int i=0; i<stream_.bufferSize; i++) {
-        for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Float32) in[info.inOffset[j]];
-          out[info.outOffset[j]] += 0.5;
-          out[info.outOffset[j]] *= scale;
-        }
-        in += info.inJump;
-        out += info.outJump;
+      scale = (Float32) ( 1.0f / 32767.5f );
+      if (info.channels == 1)
+      {
+          #if __AVX__
+          if (stream_.bufferSize % 8 == 0)
+          {
+              __m256 _bias = _mm256_broadcast_ss(kBias);
+              __m256 _scale = _mm256_broadcast_ss(kScaleI);
+              for (unsigned int i=0; i<stream_.bufferSize; i+=8) {
+                  __m128i x = _mm_loadu_si128((const __m128i*)(in + i));
+                  __m256i x_unpacked = _mm256_cvtepi16_epi32(x);
+                  __m256 converted =  _mm256_cvtepi32_ps(x_unpacked);
+                  converted = _mm256_mul_ps(_mm256_add_ps(converted, _bias), _scale);
+                  _mm256_store_ps(out + i, converted);
+              }
+          }
+          else{
+              for (unsigned int i=0; i<stream_.bufferSize; ++i) {
+                  out[i] = ((Float32) in[i] + 0.5) * scale;
+              }
+          }
+          #else
+          for (unsigned int i=0; i<stream_.bufferSize; ++i) {
+              out[i] = ((Float32) in[i] + 0.5) * scale;
+          }
+          #endif
+      }
+      else
+      {
+          for (unsigned int i=0; i<stream_.bufferSize; i++) {
+            for (j=0; j<info.channels; j++) {
+              out[info.outOffset[j]] = (Float32) in[info.inOffset[j]];
+              out[info.outOffset[j]] += 0.5;
+              out[info.outOffset[j]] *= scale;
+            }
+            in += info.inJump;
+            out += info.outJump;
+          }
       }
     }
     else if (info.inFormat == RTAUDIO_SINT24) {
@@ -10732,12 +10778,43 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
     }
     else if (info.inFormat == RTAUDIO_FLOAT32) {
       Float32 *in = (Float32 *)inBuffer;
-      for (unsigned int i=0; i<stream_.bufferSize; i++) {
-        for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) (in[info.inOffset[j]] * 32767.5 - 0.5);
-        }
-        in += info.inJump;
-        out += info.outJump;
+      if (info.channels == 1)
+      {
+          #if __AVX__
+          if (stream_.bufferSize % 8 == 0)
+          {
+              __m256 _bias = _mm256_broadcast_ss(kBias);
+              __m256 _scale = _mm256_broadcast_ss(kScale);
+              for (unsigned int i=0; i<stream_.bufferSize; i+=8) {
+                  __m256 in_x8 = _mm256_load_ps(in + i);
+                  __m256 scaled_bias = _mm256_fmsub_ps(in_x8, _scale, _bias);
+                  __m256i x = _mm256_cvtps_epi32(scaled_bias);
+                  __m128i xlo = _mm256_extractf128_si256(x, 0);
+                  __m128i xhi = _mm256_extractf128_si256(x, 1);
+                  __m128i converted = _mm_packs_epi32(xlo, xhi);
+                  _mm_store_si128((__m128i *)(out + i), converted);
+              }
+          }
+          else{
+              for (unsigned int i=0; i<stream_.bufferSize; ++i) {
+                  out[i] = (Int16) (in[i] * 32767.5 - 0.5);
+              }
+          }
+          #else
+          for (unsigned int i=0; i<stream_.bufferSize; ++i) {
+              out[i] = (Int16) (in[i] * 32767.5 - 0.5);
+          }
+          #endif
+      }
+      else
+      {
+          for (unsigned int i=0; i<stream_.bufferSize; i++) {
+            for (j=0; j<info.channels; j++) {
+              out[info.outOffset[j]] = (Int16) (in[info.inOffset[j]] * 32767.5 - 0.5);
+            }
+            in += info.inJump;
+            out += info.outJump;
+          }
       }
     }
     else if (info.inFormat == RTAUDIO_FLOAT64) {
