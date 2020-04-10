@@ -10514,7 +10514,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       if (info.channels == 1)
       {
           #if __AVX__
-          if (stream_.bufferSize % 8 == 0)
+          if (stream_.bufferSize >= 8 && stream_.bufferSize % 8 == 0)
           {
               __m256 _bias = _mm256_broadcast_ss(kBias);
               __m256 _scale = _mm256_broadcast_ss(kScaleI);
@@ -10781,7 +10781,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       if (info.channels == 1)
       {
           #if __AVX__
-          if (stream_.bufferSize % 8 == 0)
+          if (stream_.bufferSize >= 8 && stream_.bufferSize % 8 == 0)
           {
               __m256 _bias = _mm256_broadcast_ss(kBias);
               __m256 _scale = _mm256_broadcast_ss(kScale);
