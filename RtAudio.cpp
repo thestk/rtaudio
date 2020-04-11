@@ -10393,9 +10393,11 @@ void RtApi :: setConvertInfo( StreamMode mode, unsigned int firstChannel )
 
 void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info )
 {
+#ifdef __AVX__
   static const float kBias[8] = {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};
   static const float kScale[8] = {32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f, 32767.5f};
   static const float kScaleI[8] = {1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f, 1.0f / 32767.5f};
+#endif
 
   // This function does format conversion, input/output channel compensation, and
   // data interleaving/deinterleaving.  24-bit integers are assumed to occupy
