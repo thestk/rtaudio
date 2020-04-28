@@ -232,20 +232,22 @@ set_target_properties(rtaudio PROPERTIES
   SOVERSION ${SO_VER}
   VERSION ${FULL_VER})
 
+# Set standard installation directories.
+include(GNUInstallDirs)
+
 # Set include paths, populate target interface.
-target_include_directories(rtaudio PRIVATE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  ${INCDIRS})
+target_include_directories(rtaudio
+  INTERFACE
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/rtaudio>
+  PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    ${INCDIRS}
+)
 
 # Set compile-time definitions
 target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
 target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
 target_link_libraries(rtaudio ${LINKLIBS})
-
-
-# Set standard installation directories.
-include(GNUInstallDirs)
 
 # Subdirs
 include(CTest)
