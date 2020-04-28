@@ -284,15 +284,35 @@ export(PACKAGE RtAudio)
 set(RTAUDIO_CMAKE_DESTINATION share/rtaudio)
 
 # Create CMake configuration export file.
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake.in "@PACKAGE_INIT@\n")
+
 if(NEED_PTHREAD)
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "find_package(Threads REQUIRED)\n")
+  file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake.in "find_package(Threads REQUIRED)\n")
 endif()
 
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake.in "include(\${CMAKE_CURRENT_LIST_DIR}/RtAudioTargets.cmake)")
 
 # Install CMake configuration export file.
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
-        DESTINATION ${RTAUDIO_CMAKE_DESTINATION})
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
+  INSTALL_DESTINATION ${RTAUDIO_CMAKE_DESTINATION}
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig-version.cmake
+    VERSION ${FULL_VER}
+    COMPATIBILITY AnyNewerVersion
+)
+
+install(
+  FILES
+    ${CMAKE_BINARY_DIR}/RtAudioConfig.cmake
+    ${CMAKE_BINARY_DIR}/RtAudioConfig-version.cmake
+  DESTINATION
+    ${RTAUDIO_CMAKE_DESTINATION}
+)
 
 # Export library target (build-tree).
 export(EXPORT RtAudioTargets
