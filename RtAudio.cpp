@@ -10392,7 +10392,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
 
   // Clear our device buffer when in/out duplex device channels are different
   if ( outBuffer == stream_.deviceBuffer && stream_.mode == DUPLEX &&
-       ( stream_.nDeviceChannels[0] < stream_.nDeviceChannels[1] ) )
+       ( stream_.nDeviceChannels[0] != stream_.nDeviceChannels[1] ) )
     memset( outBuffer, 0, stream_.bufferSize * info.outJump * formatBytes( info.outFormat ) );
 
   int j;
