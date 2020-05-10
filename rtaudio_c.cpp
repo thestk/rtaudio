@@ -11,7 +11,7 @@ struct rtaudio {
   rtaudio_cb_t cb;
   void *userdata;
 
-  int has_error;
+  rtaudio_error_t errtype;
   char errmsg[MAX_ERROR_MESSAGE_LENGTH];
 };
 
@@ -29,31 +29,35 @@ unsigned int rtaudio_get_num_compiled_apis(void) {
 
 extern "C" const char* rtaudio_api_names[][2];
 const char *rtaudio_api_name(rtaudio_api_t api) {
-    if (api < 0 || api >= RTAUDIO_API_NUM)
-        return NULL;
-    return rtaudio_api_names[api][0];
+  if (api < 0 || api >= RTAUDIO_API_NUM)
+    return NULL;
+  return rtaudio_api_names[api][0];
 }
 
 const char *rtaudio_api_display_name(rtaudio_api_t api)
 {
-    if (api < 0 || api >= RTAUDIO_API_NUM)
-        return "Unknown";
-    return rtaudio_api_names[api][1];
+  if (api < 0 || api >= RTAUDIO_API_NUM)
+    return "Unknown";
+  return rtaudio_api_names[api][1];
 }
 
 rtaudio_api_t rtaudio_compiled_api_by_name(const char *name) {
-    RtAudio::Api api = RtAudio::UNSPECIFIED;
-    if (name) {
-        api = RtAudio::getCompiledApiByName(name);
-    }
-    return (rtaudio_api_t)api;
+  RtAudio::Api api = RtAudio::UNSPECIFIED;
+  if (name) {
+    api = RtAudio::getCompiledApiByName(name);
+  }
+  return (rtaudio_api_t)api;
 }
 
 const char *rtaudio_error(rtaudio_t audio) {
-  if (audio->has_error) {
-    return audio->errmsg;
+  if (audio->errtype == RTAUDIO_NO_ERROR) {
+    return NULL;
   }
-  return NULL;
+  return audio->errmsg;
+}
+
+rtaudio_error_t rtaudio_error_type(rtaudio_t audio) {
+  return audio->errtype;
 }
 
 rtaudio_t rtaudio_create(rtaudio_api_t api) {
@@ -61,7 +65,7 @@ rtaudio_t rtaudio_create(rtaudio_api_t api) {
   try {
     audio->audio = new RtAudio((RtAudio::Api)api);
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
   }
   return audio;
@@ -81,7 +85,7 @@ rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
   rtaudio_device_info_t result;
   std::memset(&result, 0, sizeof(result));
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     RtAudio::DeviceInfo info = audio->audio->getDeviceInfo(i);
     result.probed = info.probed;
     result.output_channels = info.outputChannels;
@@ -98,7 +102,7 @@ rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
       }
     }
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
   }
   return result;
@@ -127,7 +131,7 @@ int rtaudio_open_stream(rtaudio_t audio,
                         void *userdata, rtaudio_stream_options_t *options,
                         rtaudio_error_cb_t /*errcb*/) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     RtAudio::StreamParameters *in = NULL;
     RtAudio::StreamParameters *out = NULL;
     RtAudio::StreamOptions *opts = NULL;
@@ -165,7 +169,7 @@ int rtaudio_open_stream(rtaudio_t audio,
                              NULL);
     return 0;
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
     return -1;
   }
@@ -175,10 +179,10 @@ void rtaudio_close_stream(rtaudio_t audio) { audio->audio->closeStream(); }
 
 int rtaudio_start_stream(rtaudio_t audio) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     audio->audio->startStream();
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
   }
   return 0;
@@ -186,10 +190,10 @@ int rtaudio_start_stream(rtaudio_t audio) {
 
 int rtaudio_stop_stream(rtaudio_t audio) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     audio->audio->stopStream();
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
   }
   return 0;
@@ -197,10 +201,10 @@ int rtaudio_stop_stream(rtaudio_t audio) {
 
 int rtaudio_abort_stream(rtaudio_t audio) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     audio->audio->abortStream();
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
   }
   return 0;
@@ -216,10 +220,10 @@ int rtaudio_is_stream_running(rtaudio_t audio) {
 
 double rtaudio_get_stream_time(rtaudio_t audio) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     return audio->audio->getStreamTime();
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
     return 0;
   }
@@ -227,20 +231,20 @@ double rtaudio_get_stream_time(rtaudio_t audio) {
 
 void rtaudio_set_stream_time(rtaudio_t audio, double time) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;;
     audio->audio->setStreamTime(time);
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
   }
 }
 
 int rtaudio_get_stream_latency(rtaudio_t audio) {
   try {
-    audio->has_error = 0;
+    audio->errtype = RTAUDIO_NO_ERROR;
     return audio->audio->getStreamLatency();
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
     return -1;
   }
@@ -248,9 +252,10 @@ int rtaudio_get_stream_latency(rtaudio_t audio) {
 
 unsigned int rtaudio_get_stream_sample_rate(rtaudio_t audio) {
   try {
+    audio->errtype = RTAUDIO_NO_ERROR;
     return audio->audio->getStreamSampleRate();
   } catch (RtAudioError &err) {
-    audio->has_error = 1;
+    audio->errtype = (rtaudio_error_t)err.getType();
     strncpy(audio->errmsg, err.what(), sizeof(audio->errmsg) - 1);
     return -1;
   }
