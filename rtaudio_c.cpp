@@ -63,6 +63,7 @@ rtaudio_error_t rtaudio_error_type(rtaudio_t audio) {
 rtaudio_t rtaudio_create(rtaudio_api_t api) {
   rtaudio_t audio = new struct rtaudio();
   try {
+    audio->errtype = RTAUDIO_NO_ERROR;
     audio->audio = new RtAudio((RtAudio::Api)api);
   } catch (RtAudioError &err) {
     audio->errtype = (rtaudio_error_t)err.getType();
