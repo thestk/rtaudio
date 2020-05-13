@@ -7150,7 +7150,11 @@ struct AlsaHandle {
   bool runnable;
 
   AlsaHandle()
-    :synchronized(false), runnable(false) { xrun[0] = false; xrun[1] = false; }
+#if _cplusplus >= 201103L
+    :handles{nullptr, nullptr}, synchronized(false), runnable(false) { xrun[0] = false; xrun[1] = false; }
+#else 
+    : synchronized(false), runnable(false) { handles[0] = NULL; handles[1] = NULL; xrun[0] = false; xrun[1] = false; }
+#endif
 };
 
 static void *alsaCallbackHandler( void * ptr );
