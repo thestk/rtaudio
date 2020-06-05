@@ -83,6 +83,10 @@ int main()
           std::cout << info.sampleRates[j] << " ";
       }
       std::cout << std::endl;
+      if ( info.preferredSampleRate == 0 )
+        std::cout << "No preferred sample rate found!" << std::endl;
+      else
+        std::cout << "Preferred sample rate = " << info.preferredSampleRate << std::endl;
     }
   }
   std::cout << std::endl;

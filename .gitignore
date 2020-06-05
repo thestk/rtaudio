@@ -1,5 +1,7 @@
 Makefile
 *.o
+*.dirstamp
+*.deps
 build
 /config
 /configure

@@ -640,7 +640,7 @@ struct CallbackInfo {
 
   // Default constructor.
   CallbackInfo()
-  :object(0), callback(0), userData(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
+  :object(0), thread(0), callback(0), userData(0), errorCallback(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
 };
 
 // **************************************************************** //
@@ -1100,8 +1100,7 @@ public:
 
   private:
 
-  std::vector<RtAudio::DeviceInfo> devices_;
-  void saveDeviceInfo( void );
+  void collectDeviceInfo( void );
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,

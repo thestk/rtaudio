@@ -113,6 +113,7 @@ typedef int (*rtaudio_cb_t)(void *out, void *in, unsigned int nFrames,
     See \ref RtAudioError.
 */
 typedef enum rtaudio_error {
+  RTAUDIO_NO_ERROR = -1,           /*!< No error. */
   RTAUDIO_ERROR_WARNING,           /*!< A non-critical error. */
   RTAUDIO_ERROR_DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
   RTAUDIO_ERROR_UNSPECIFIED,       /*!< The default, unspecified error type. */
@@ -219,6 +220,8 @@ RTAUDIOAPI const char *rtaudio_api_display_name(rtaudio_api_t api);
 RTAUDIOAPI rtaudio_api_t rtaudio_compiled_api_by_name(const char *name);
 
 RTAUDIOAPI const char *rtaudio_error(rtaudio_t audio);
+
+RTAUDIOAPI rtaudio_error_t rtaudio_error_type(rtaudio_t audio);
 
 //! Create an instance of struct rtaudio.
 RTAUDIOAPI rtaudio_t rtaudio_create(rtaudio_api_t api);
