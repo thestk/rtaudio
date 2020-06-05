@@ -65,6 +65,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <functional>
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -225,7 +226,9 @@ enum RtAudioErrorType {
     \param type Type of error.
     \param errorText Error description.
  */
-typedef void (*RtAudioErrorCallback)( RtAudioErrorType type, const std::string &errorText );
+typedef std::function<void(RtAudioErrorType type,
+                           const std::string &errorText )>
+  RtAudioErrorCallback;
 
 // **************************************************************** //
 //
@@ -410,7 +413,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     An optional errorCallback function can be specified to
     subsequently receive warning and error messages.
   */
-  RtAudio( RtAudio::Api api=UNSPECIFIED, RtAudioErrorCallback errorCallback=0 );
+  RtAudio( RtAudio::Api api=UNSPECIFIED, RtAudioErrorCallback&& errorCallback=0 );
 
   //! The destructor.
   /*!
@@ -640,7 +643,7 @@ struct CallbackInfo {
 
   // Default constructor.
   CallbackInfo()
-  :object(0), thread(0), callback(0), userData(0), errorCallback(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
+  :object(0), thread(0), callback(0), userData(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
 };
 
 // **************************************************************** //
@@ -1056,9 +1059,9 @@ public:
   unsigned int getDeviceCount( void );
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
   void closeStream( void );
-  void startStream( void );
-  void stopStream( void );
-  void abortStream( void );
+  RtAudioErrorType startStream( void );
+  RtAudioErrorType stopStream( void );
+  RtAudioErrorType abortStream( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -1088,9 +1091,9 @@ public:
   unsigned int getDeviceCount( void );
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
   void closeStream( void );
-  void startStream( void );
-  void stopStream( void );
-  void abortStream( void );
+  RtAudioErrorType startStream( void );
+  RtAudioErrorType stopStream( void );
+  RtAudioErrorType abortStream( void );
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,

@@ -113,7 +113,7 @@ typedef int (*rtaudio_cb_t)(void *out, void *in, unsigned int nFrames,
     See \ref RtAudioError.
 */
 typedef enum rtaudio_error {
-  RTAUDIO_NO_ERROR = -1,           /*!< No error. */
+  RTAUDIO_ERROR_NONE = -1,         /*!< No error. */
   RTAUDIO_ERROR_WARNING,           /*!< A non-critical error. */
   RTAUDIO_ERROR_DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
   RTAUDIO_ERROR_UNSPECIFIED,       /*!< The default, unspecified error type. */

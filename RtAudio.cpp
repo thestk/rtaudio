@@ -236,7 +236,7 @@ void RtAudio :: openRtApi( RtAudio::Api api )
 #endif
 }
 
-RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback errorCallback )
+RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
 {
   rtapi_ = 0;
 
@@ -2871,7 +2871,7 @@ RtApiAsio :: RtApiAsio()
   HRESULT hr = CoInitialize( NULL ); 
   if ( FAILED(hr) ) {
     errorText_ = "RtApiAsio::ASIO requires a single-threaded appartment. Call CoInitializeEx(0,COINIT_APARTMENTTHREADED)";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
   }
   coInitialized_ = true;
 
@@ -2916,7 +2916,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   if ( stream_.state != STREAM_CLOSED ) {
     if ( device >= devices_.size() ) {
       errorText_ = "RtApiAsio::getDeviceInfo: device ID was not present before stream was opened.";
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       return info;
     }
     return devices_[ device ];
@@ -2927,7 +2927,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   if ( result != ASE_OK ) {
     errorStream_ << "RtApiAsio::getDeviceInfo: unable to get driver name (" << getAsioErrorString( result ) << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -2936,7 +2936,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   if ( !drivers.loadDriver( driverName ) ) {
     errorStream_ << "RtApiAsio::getDeviceInfo: unable to load driver (" << driverName << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -2944,7 +2944,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   if ( result != ASE_OK ) {
     errorStream_ << "RtApiAsio::getDeviceInfo: error (" << getAsioErrorString( result ) << ") initializing driver (" << driverName << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -2955,7 +2955,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
     drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::getDeviceInfo: error (" << getAsioErrorString( result ) << ") getting channel count (" << driverName << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -2986,7 +2986,7 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
     drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::getDeviceInfo: error (" << getAsioErrorString( result ) << ") getting driver channel info (" << driverName << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -3365,7 +3365,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( result != ASE_OK ) {
     errorStream_ << "RtApiAsio::probeDeviceOpen: driver (" << driverName << ") error (" << getAsioErrorString( result ) << ") getting latency.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING); // warn but don't fail
+    error( RTAUDIO_WARNING); // warn but don't fail
   }
   else {
     stream_.latency[0] = outputLatency;
@@ -3417,7 +3417,7 @@ void RtApiAsio :: closeStream()
 {
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAsio::closeStream(): no open stream to close!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -3460,7 +3460,7 @@ void RtApiAsio :: startStream()
   verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiAsio::startStream(): the stream is already running!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -3494,7 +3494,7 @@ void RtApiAsio :: stopStream()
   verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiAsio::stopStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -3523,7 +3523,7 @@ void RtApiAsio :: abortStream()
   verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiAsio::abortStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -3556,7 +3556,7 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
   if ( stream_.state == STREAM_STOPPED || stream_.state == STREAM_STOPPING ) return SUCCESS;
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAsio::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return FAILURE;
   }
 
@@ -4600,7 +4600,7 @@ void RtApiWasapi::closeStream( void )
 {
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiWasapi::closeStream: No open stream to close.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -4647,7 +4647,7 @@ void RtApiWasapi::startStream( void )
 
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiWasapi::startStream: The stream is already running.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -4679,7 +4679,7 @@ void RtApiWasapi::stopStream( void )
 
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::stopStream: The stream is already stopped.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -4712,7 +4712,7 @@ void RtApiWasapi::abortStream( void )
 
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::abortStream: The stream is already stopped.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -5688,7 +5688,7 @@ unsigned int RtApiDs :: getDeviceCount( void )
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
   }
 
   // Query DirectSoundCapture devices.
@@ -5697,7 +5697,7 @@ unsigned int RtApiDs :: getDeviceCount( void )
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating input devices!";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
   }
 
   // Clean out any devices that may have disappeared (code update submitted by Eli Zehngut).
@@ -5739,7 +5739,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") opening output device (" << dsDevices[ device ].name << ")!";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto probeInput;
   }
 
@@ -5749,7 +5749,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
     output->Release();
     errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") getting capabilities!";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto probeInput;
   }
 
@@ -5790,7 +5790,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") opening input device (" << dsDevices[ device ].name << ")!";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -5801,7 +5801,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
     input->Release();
     errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") getting object capabilities (" << dsDevices[ device ].name << ")!";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -6394,7 +6394,7 @@ void RtApiDs :: closeStream()
 {
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiDs::closeStream(): no open stream to close!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -6449,7 +6449,7 @@ void RtApiDs :: startStream()
   verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiDs::startStream(): the stream is already running!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -6509,7 +6509,7 @@ void RtApiDs :: stopStream()
   verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiDs::stopStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -6613,7 +6613,7 @@ void RtApiDs :: abortStream()
   verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiDs::abortStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -6632,7 +6632,7 @@ void RtApiDs :: callbackEvent()
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiDs::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -7247,7 +7247,7 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
       handle = 0;
       errorStream_ << "RtApiAlsa::getDeviceCount: control open, card = " << card << ", " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       goto nextcard;
     }
     subdevice = -1;
@@ -7256,7 +7256,7 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
       if ( result < 0 ) {
         errorStream_ << "RtApiAlsa::getDeviceCount: control next device, card = " << card << ", " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
-        error( RtAudioError::WARNING );
+        error( RTAUDIO_WARNING );
         break;
       }
       if ( subdevice < 0 )
@@ -7299,7 +7299,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       chandle = 0;
       errorStream_ << "RtApiAlsa::getDeviceInfo: control open, card = " << card << ", " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       goto nextcard;
     }
     subdevice = -1;
@@ -7308,7 +7308,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       if ( result < 0 ) {
         errorStream_ << "RtApiAlsa::getDeviceInfo: control next device, card = " << card << ", " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
-        error( RtAudioError::WARNING );
+        error( RTAUDIO_WARNING );
         break;
       }
       if ( subdevice < 0 ) break;
@@ -7326,13 +7326,13 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 
   if ( nDevices == 0 ) {
     errorText_ = "RtApiAlsa::getDeviceInfo: no devices found!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
   if ( device >= nDevices ) {
     errorText_ = "RtApiAlsa::getDeviceInfo: device ID is invalid!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
@@ -7345,7 +7345,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_ctl_close( chandle );
     if ( device >= devices_.size() ) {
       errorText_ = "RtApiAlsa::getDeviceInfo: device ID was not present before stream was opened.";
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       return info;
     }
     return devices_[ device ];
@@ -7377,7 +7377,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   if ( result < 0 ) {
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_open error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto captureProbe;
   }
 
@@ -7387,7 +7387,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto captureProbe;
   }
 
@@ -7398,7 +7398,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: error getting device (" << name << ") output channels, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto captureProbe;
   }
   info.outputChannels = value;
@@ -7425,7 +7425,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   if ( result < 0 ) {
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_open error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     if ( info.outputChannels == 0 ) return info;
     goto probeParameters;
   }
@@ -7436,7 +7436,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     if ( info.outputChannels == 0 ) return info;
     goto probeParameters;
   }
@@ -7446,7 +7446,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: error getting device (" << name << ") input channels, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     if ( info.outputChannels == 0 ) return info;
     goto probeParameters;
   }
@@ -7480,7 +7480,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   if ( result < 0 ) {
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_open error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -7490,7 +7490,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -7508,7 +7508,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: no supported sample rates found for device (" << name << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -7539,7 +7539,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     snd_pcm_close( phandle );
     errorStream_ << "RtApiAlsa::getDeviceInfo: pcm device (" << name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -8016,7 +8016,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       apiInfo->synchronized = true;
     else {
       errorText_ = "RtApiAlsa::probeDeviceOpen: unable to synchronize input and output devices.";
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
     }
   }
   else {
@@ -8105,7 +8105,7 @@ void RtApiAlsa :: closeStream()
 {
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAlsa::closeStream(): no open stream to close!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -8151,15 +8151,13 @@ void RtApiAlsa :: closeStream()
   stream_.state = STREAM_CLOSED;
 }
 
-void RtApiAlsa :: startStream()
+RtAudioErrorType RtApiAlsa :: startStream()
 {
   // This method calls snd_pcm_prepare if the device isn't already in that state.
 
-  verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiAlsa::startStream(): the stream is already running!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
@@ -8204,17 +8202,15 @@ void RtApiAlsa :: startStream()
   pthread_cond_signal( &apiInfo->runnable_cv );
   MUTEX_UNLOCK( &stream_.mutex );
 
-  if ( result >= 0 ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result >= 0 ) return error( RTAUDIO_SYSTEM_ERROR );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiAlsa :: stopStream()
+RtAudioErrorType RtApiAlsa :: stopStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiAlsa::stopStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   stream_.state = STREAM_STOPPED;
@@ -8248,17 +8244,15 @@ void RtApiAlsa :: stopStream()
   apiInfo->runnable = false; // fixes high CPU usage when stopped
   MUTEX_UNLOCK( &stream_.mutex );
 
-  if ( result >= 0 ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result >= 0 ) return error( RTAUDIO_SYSTEM_ERROR );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiAlsa :: abortStream()
+RtAudioErrorType RtApiAlsa :: abortStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiAlsa::abortStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   stream_.state = STREAM_STOPPED;
@@ -8289,8 +8283,8 @@ void RtApiAlsa :: abortStream()
   apiInfo->runnable = false; // fixes high CPU usage when stopped
   MUTEX_UNLOCK( &stream_.mutex );
 
-  if ( result >= 0 ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result >= 0 ) return error( RTAUDIO_SYSTEM_ERROR );
+  return RTAUDIO_NO_ERROR;
 }
 
 void RtApiAlsa :: callbackEvent()
@@ -8310,7 +8304,7 @@ void RtApiAlsa :: callbackEvent()
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAlsa::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -8393,7 +8387,7 @@ void RtApiAlsa :: callbackEvent()
         errorStream_ << "RtApiAlsa::callbackEvent: audio read error, " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
       }
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       goto tryOutput;
     }
 
@@ -8465,7 +8459,7 @@ void RtApiAlsa :: callbackEvent()
         errorStream_ << "RtApiAlsa::callbackEvent: audio write error, " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
       }
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       goto unlock;
     }
 
@@ -8703,7 +8697,7 @@ void RtApiPulse::collectDeviceInfo( void )
   if (!(m = pa_mainloop_new())) {
     errorStream_ << "RtApiPulse::DeviceInfo pa_mainloop_new() failed.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto quit;
   }
 
@@ -8712,7 +8706,7 @@ void RtApiPulse::collectDeviceInfo( void )
   if (!(context = pa_context_new_with_proplist(rt_pa_mainloop_api, NULL, NULL))) {
     errorStream_ << "pa_context_new() failed.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto quit;
   }
 
@@ -8722,14 +8716,14 @@ void RtApiPulse::collectDeviceInfo( void )
     errorStream_ << "RtApiPulse::DeviceInfo pa_context_connect() failed: "
       << pa_strerror(pa_context_errno(context));
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto quit;
   }
 
   if (pa_mainloop_run(m, &ret) < 0) {
     errorStream_ << "pa_mainloop_run() failed.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     goto quit;
   }
 
@@ -8839,7 +8833,7 @@ void RtApiPulse::callbackEvent( void )
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiPulse::callbackEvent(): the stream is closed ... "
       "this shouldn't happen!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -8879,7 +8873,7 @@ void RtApiPulse::callbackEvent( void )
       errorStream_ << "RtApiPulse::callbackEvent: audio write error, " <<
         pa_strerror( pa_error ) << ".";
       errorText_ = errorStream_.str();
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
     }
   }
 
@@ -8895,7 +8889,7 @@ void RtApiPulse::callbackEvent( void )
       errorStream_ << "RtApiPulse::callbackEvent: audio read error, " <<
         pa_strerror( pa_error ) << ".";
       errorText_ = errorStream_.str();
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
     }
     if ( stream_.doConvertBuffer[INPUT] ) {
       convertBuffer( stream_.userBuffer[INPUT],
@@ -8912,19 +8906,17 @@ void RtApiPulse::callbackEvent( void )
     stopStream();
 }
 
-void RtApiPulse::startStream( void )
+RtAudioErrorType RtApiPulse::startStream( void )
 {
   PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiPulse::startStream(): the stream is not open!";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RTAUDIO_INVALID_USE );
   }
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiPulse::startStream(): the stream is already running!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
@@ -8938,27 +8930,26 @@ void RtApiPulse::startStream( void )
   pah->runnable = true;
   pthread_cond_signal( &pah->runnable_cv );
   MUTEX_UNLOCK( &stream_.mutex );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiPulse::stopStream( void )
+RtAudioErrorType RtApiPulse::stopStream( void )
 {
   PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiPulse::stopStream(): the stream is not open!";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RTAUDIO_INVALID_USE );
   }
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiPulse::stopStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
 
-  if ( pah } {
+  if ( pah ) {
     pah->runnable = false;
     if ( pah->s_play ) {
       int pa_error;
@@ -8967,29 +8958,27 @@ void RtApiPulse::stopStream( void )
           pa_strerror( pa_error ) << ".";
         errorText_ = errorStream_.str();
         MUTEX_UNLOCK( &stream_.mutex );
-        error( RtAudioError::SYSTEM_ERROR );
-        return;
+        return error( RTAUDIO_SYSTEM_ERROR );
       }
     }
   }
 
   stream_.state = STREAM_STOPPED;
   MUTEX_UNLOCK( &stream_.mutex );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiPulse::abortStream( void )
+RtAudioErrorType RtApiPulse::abortStream( void )
 {
   PulseAudioHandle *pah = static_cast<PulseAudioHandle*>( stream_.apiHandle );
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiPulse::abortStream(): the stream is not open!";
-    error( RtAudioError::INVALID_USE );
-    return;
+    return error( RTAUDIO_INVALID_USE );
   }
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiPulse::abortStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   stream_.state = STREAM_STOPPED;
@@ -9004,14 +8993,14 @@ void RtApiPulse::abortStream( void )
           pa_strerror( pa_error ) << ".";
         errorText_ = errorStream_.str();
         MUTEX_UNLOCK( &stream_.mutex );
-        error( RtAudioError::SYSTEM_ERROR );
-        return;
+        return error( RTAUDIO_SYSTEM_ERROR );
       }
     }
   }
 
   stream_.state = STREAM_STOPPED;
   MUTEX_UNLOCK( &stream_.mutex );
+  return RTAUDIO_NO_ERROR;
 }
 
 bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
@@ -9329,7 +9318,7 @@ unsigned int RtApiOss :: getDeviceCount( void )
   int mixerfd = open( "/dev/mixer", O_RDWR, 0 );
   if ( mixerfd == -1 ) {
     errorText_ = "RtApiOss::getDeviceCount: error opening '/dev/mixer'.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return 0;
   }
 
@@ -9337,7 +9326,7 @@ unsigned int RtApiOss :: getDeviceCount( void )
   if ( ioctl( mixerfd, SNDCTL_SYSINFO, &sysinfo ) == -1 ) {
     close( mixerfd );
     errorText_ = "RtApiOss::getDeviceCount: error getting sysinfo, OSS version >= 4.0 is required.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return 0;
   }
 
@@ -9353,7 +9342,7 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   int mixerfd = open( "/dev/mixer", O_RDWR, 0 );
   if ( mixerfd == -1 ) {
     errorText_ = "RtApiOss::getDeviceInfo: error opening '/dev/mixer'.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -9362,7 +9351,7 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   if ( result == -1 ) {
     close( mixerfd );
     errorText_ = "RtApiOss::getDeviceInfo: error getting sysinfo, OSS version >= 4.0 is required.";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -9388,7 +9377,7 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   if ( result == -1 ) {
     errorStream_ << "RtApiOss::getDeviceInfo: error getting device (" << ainfo.name << ") info.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -9419,7 +9408,7 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   if ( info.nativeFormats == 0 ) {
     errorStream_ << "RtApiOss::getDeviceInfo: device (" << ainfo.name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return info;
   }
 
@@ -9454,7 +9443,7 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   if ( info.sampleRates.size() == 0 ) {
     errorStream_ << "RtApiOss::getDeviceInfo: no supported sample rates found for device (" << ainfo.name << ").";
     errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
   }
   else {
     info.probed = true;
@@ -9914,7 +9903,7 @@ void RtApiOss :: closeStream()
 {
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiOss::closeStream(): no open stream to close!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -9963,7 +9952,7 @@ void RtApiOss :: startStream()
   verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiOss::startStream(): the stream is already running!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -9989,7 +9978,7 @@ void RtApiOss :: stopStream()
   verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiOss::stopStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -10026,7 +10015,7 @@ void RtApiOss :: stopStream()
       result = write( handle->id[0], buffer, samples * formatBytes(format) );
       if ( result == -1 ) {
         errorText_ = "RtApiOss::stopStream: audio write error.";
-        error( RtAudioError::WARNING );
+        error( RTAUDIO_WARNING );
       }
     }
 
@@ -10061,7 +10050,7 @@ void RtApiOss :: abortStream()
   verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiOss::abortStream(): the stream is already stopped!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -10117,7 +10106,7 @@ void RtApiOss :: callbackEvent()
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiOss::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    error( RtAudioError::WARNING );
+    error( RTAUDIO_WARNING );
     return;
   }
 
@@ -10187,7 +10176,7 @@ void RtApiOss :: callbackEvent()
       // specific means for determining that.
       handle->xrun[0] = true;
       errorText_ = "RtApiOss::callbackEvent: audio write error.";
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       // Continue on to input section.
     }
   }
@@ -10214,7 +10203,7 @@ void RtApiOss :: callbackEvent()
       // specific means for determining that.
       handle->xrun[1] = true;
       errorText_ = "RtApiOss::callbackEvent: audio read error.";
-      error( RtAudioError::WARNING );
+      error( RTAUDIO_WARNING );
       goto unlock;
     }
 

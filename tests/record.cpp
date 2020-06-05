@@ -126,13 +126,10 @@ int main( int argc, char *argv[] )
 
   InputData data;
   data.buffer = 0;
-  try {
-    adc.openStream( NULL, &iParams, FORMAT, fs, &bufferFrames, &input, (void *)&data );
-  }
-  catch ( RtAudioError& e ) {
-    std::cout << '\n' << e.getMessage() << '\n' << std::endl;
+  if ( adc.openStream( NULL, &iParams, FORMAT, fs, &bufferFrames, &input, (void *)&data ) )
     goto cleanup;
-  }
+
+  if ( adc.isStreamOpen() == false ) goto cleanup;
 
   data.bufferBytes = bufferFrames * channels * sizeof( MY_TYPE );
   data.totalFrames = (unsigned long) (fs * time);
@@ -148,13 +145,7 @@ int main( int argc, char *argv[] )
     goto cleanup;
   }
 
-  try {
-    adc.startStream();
-  }
-  catch ( RtAudioError& e ) {
-    std::cout << '\n' << e.getMessage() << '\n' << std::endl;
-    goto cleanup;
-  }
+  if ( adc.startStream() ) goto cleanup;
 
   std::cout << "\nRecording for " << time << " seconds ... writing file 'record.raw' (buffer frames = " << bufferFrames << ")." << std::endl;
   while ( adc.isStreamRunning() ) {

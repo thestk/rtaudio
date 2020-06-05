@@ -9,8 +9,8 @@ lib_LTLIBRARIES = %D%/librtaudio.la
 %C%_librtaudio_la_CXXFLAGS = -DRTAUDIO_EXPORT
 %C%_librtaudio_la_LDFLAGS = -no-undefined -export-dynamic -version-info @SO_VERSION@
 %C%_librtaudio_la_SOURCES = \
-  %D%/RtAudio.cpp
-#  %D%/rtaudio_c.cpp
+  %D%/RtAudio.cpp \
+  %D%/rtaudio_c.cpp
 
 if ASIO
 %C%_librtaudio_la_SOURCES += \
