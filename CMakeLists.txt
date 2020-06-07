@@ -93,8 +93,8 @@ set(FULL_VER "${SO_current_minus_age}.${SO_revision}.${SO_age}")
 # Read package version info from configure.ac
 set(R "AC_INIT\\(RtAudio, ([0-9\\.]+),.*\\)")
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/configure.ac" CONFIGAC
-  REGEX ${R})
-string(REGEX REPLACE ${R} "\\1" PACKAGE_VERSION ${CONFIGAC})
+  REGEX "${R}")
+string(REGEX REPLACE "${R}" "\\1" PACKAGE_VERSION "${CONFIGAC}")
 
 # Init variables
 set(rtaudio_SOURCES RtAudio.cpp RtAudio.h rtaudio_c.cpp rtaudio_c.h)
