@@ -28,22 +28,22 @@ matrix:
     env: HOST="" API="oss"
     compiler: clang
   - os: linux
-    env: HOST="--host=i686-w64-mingw32" API="dsound" CPPFLAGS="-Wno-unused-function"
+    env: HOST="--host=i686-w64-mingw32" API="dsound"
     compiler: gcc
   - os: linux
-    env: HOST="--host=x86_64-w64-mingw32" API="dsound" CPPFLAGS="-Wno-unused-function"
+    env: HOST="--host=x86_64-w64-mingw32" API="dsound"
     compiler: gcc
   - os: linux
-    env: HOST="--host=i686-w64-mingw32" API="asio" CPPFLAGS="-Wno-unused-function -Wno-unused-but-set-variable"
+    env: HOST="--host=i686-w64-mingw32" API="asio" CPPFLAGS="-Wno-unused-but-set-variable"
     compiler: gcc
   - os: linux
-    env: HOST="--host=x86_64-w64-mingw32" API="asio" CPPFLAGS="-Wno-unused-function -Wno-unused-but-set-variable"
+    env: HOST="--host=x86_64-w64-mingw32" API="asio" CPPFLAGS="-Wno-unused-but-set-variable"
     compiler: gcc
   - os: linux
-    env: HOST="--host=i686-w64-mingw32" API="wasapi" CPPFLAGS="-Wno-unused-function"
+    env: HOST="--host=i686-w64-mingw32" API="wasapi"
     compiler: gcc
   - os: linux
-    env: HOST="--host=x86_64-w64-mingw32" API="wasapi" CPPFLAGS="-Wno-unused-function"
+    env: HOST="--host=x86_64-w64-mingw32" API="wasapi"
     compiler: gcc
   # jack and asound not found on ARM gnueabihf
   # - os: linux

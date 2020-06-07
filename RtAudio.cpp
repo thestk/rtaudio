@@ -64,12 +64,17 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 
   #include "tchar.h"
 
-  static std::string convertCharPointerToStdString(const char *text)
+  template<typename T> inline
+  std::string convertCharPointerToStdString(const T *text);
+
+  template<> inline
+  std::string convertCharPointerToStdString(const char *text)
   {
     return std::string(text);
   }
 
-  static std::string convertCharPointerToStdString(const wchar_t *text)
+  template<> inline
+  std::string convertCharPointerToStdString(const wchar_t *text)
   {
     int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
     std::string s( length-1, '\0' );

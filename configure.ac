@@ -89,8 +89,8 @@ AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 AS_IF([test "x${GXX}" = "xyes" ], [
   CXXFLAGS="-Wall -Wextra ${CXXFLAGS}"
   AS_IF([ test "x${enable_debug}" = "xyes" ], [
-    # Add -Werror in debug mode (except unused-function)
-    CXXFLAGS="-Werror -Wno-error=unused-function ${CXXFLAGS}"
+    # Add -Werror in debug mode
+    CXXFLAGS="-Werror ${CXXFLAGS}"
   ], [
     # hide private symbols in non-debug mode
     visibility="-fvisibility=hidden"
