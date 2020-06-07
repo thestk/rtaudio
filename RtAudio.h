@@ -949,9 +949,9 @@ public:
   unsigned int getDeviceCount( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
-  void startStream( void ) override;
-  void stopStream( void ) override;
-  void abortStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -986,9 +986,9 @@ public:
   unsigned int getDefaultInputDevice( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
-  void startStream( void ) override;
-  void stopStream( void ) override;
-  void abortStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -1026,9 +1026,9 @@ public:
   unsigned int getDefaultOutputDevice( void ) override;
   unsigned int getDefaultInputDevice( void ) override;
   void closeStream( void ) override;
-  void startStream( void ) override;
-  void stopStream( void ) override;
-  void abortStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
 
 private:
   bool coInitialized_;
@@ -1124,9 +1124,9 @@ public:
   unsigned int getDeviceCount( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
-  void startStream( void ) override;
-  void stopStream( void ) override;
-  void abortStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,

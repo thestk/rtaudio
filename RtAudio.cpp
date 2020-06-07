@@ -2902,13 +2902,13 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   unsigned int nDevices = getDeviceCount();
   if ( nDevices == 0 ) {
     errorText_ = "RtApiAsio::getDeviceInfo: no devices found!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
   if ( device >= nDevices ) {
     errorText_ = "RtApiAsio::getDeviceInfo: device ID is invalid!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
@@ -3455,13 +3455,11 @@ void RtApiAsio :: closeStream()
 
 bool stopThreadCalled = false;
 
-void RtApiAsio :: startStream()
+RtAudioErrorType RtApiAsio :: startStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiAsio::startStream(): the stream is already running!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   #if defined( HAVE_GETTIMEOFDAY )
@@ -3485,17 +3483,15 @@ void RtApiAsio :: startStream()
  unlock:
   stopThreadCalled = false;
 
-  if ( result == ASE_OK ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result == ASE_OK ) return RTAUDIO_NO_ERROR;
+  return error( RTAUDIO_SYSTEM_ERROR );
 }
 
-void RtApiAsio :: stopStream()
+RtAudioErrorType RtApiAsio :: stopStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiAsio::stopStream(): the stream is already stopped!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
@@ -3514,17 +3510,15 @@ void RtApiAsio :: stopStream()
     errorText_ = errorStream_.str();
   }
 
-  if ( result == ASE_OK ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result == ASE_OK ) return RTAUDIO_NO_ERROR;
+  return error( RTAUDIO_SYSTEM_ERROR );
 }
 
-void RtApiAsio :: abortStream()
+RtAudioErrorType RtApiAsio :: abortStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiAsio::abortStream(): the stream is already stopped!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   // The following lines were commented-out because some behavior was
@@ -3534,6 +3528,7 @@ void RtApiAsio :: abortStream()
   // AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   // handle->drainCounter = 2;
   stopStream();
+  return RTAUDIO_NO_ERROR;
 }
 
 // This function will be called by a spawned thread when the user
@@ -3714,11 +3709,8 @@ static void sampleRateChanged( ASIOSampleRate sRate )
   // audio device.
 
   RtApi *object = (RtApi *) asioCallbackInfo->object;
-  try {
-    object->stopStream();
-  }
-  catch ( RtAudioError &exception ) {
-    std::cerr << "\nRtApiAsio: sampleRateChanged() error (" << exception.getMessage() << ")!\n" << std::endl;
+  if ( object->stopStream() ) {
+    std::cerr << "\nRtApiAsio: sampleRateChanged() error (" << /*TODO object->errorText_ <<*/ ")!\n" << std::endl;
     return;
   }
 
@@ -4337,7 +4329,7 @@ Exit:
   if ( errorText_.empty() )
     return captureDeviceCount + renderDeviceCount;
 
-  error( RtAudioError::DRIVER_ERROR );
+  error( RTAUDIO_DRIVER_ERROR );
   return 0;
 }
 
@@ -4370,7 +4362,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
 
   // Count capture devices
   errorText_.clear();
-  RtAudioError::Type errorType = RtAudioError::DRIVER_ERROR;
+  RtAudioErrorType errorType = RTAUDIO_DRIVER_ERROR;
   HRESULT hr = deviceEnumerator_->EnumAudioEndpoints( eCapture, DEVICE_STATE_ACTIVE, &captureDevices );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::getDeviceInfo: Unable to retrieve capture device collection.";
@@ -4399,7 +4391,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   // validate device index
   if ( device >= captureDeviceCount + renderDeviceCount ) {
     errorText_ = "RtApiWasapi::getDeviceInfo: Invalid device index.";
-    errorType = RtAudioError::INVALID_USE;
+    errorType = RTAUDIO_INVALID_USE;
     goto Exit;
   }
 
@@ -4641,14 +4633,11 @@ void RtApiWasapi::closeStream( void )
 
 //-----------------------------------------------------------------------------
 
-void RtApiWasapi::startStream( void )
+RtAudioErrorType RtApiWasapi::startStream( void )
 {
-  verifyStream();
-
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiWasapi::startStream: The stream is already running.";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   #if defined( HAVE_GETTIMEOFDAY )
@@ -4663,24 +4652,22 @@ void RtApiWasapi::startStream( void )
 
   if ( !stream_.callbackInfo.thread ) {
     errorText_ = "RtApiWasapi::startStream: Unable to instantiate callback thread.";
-    error( RtAudioError::THREAD_ERROR );
+    return error( RTAUDIO_THREAD_ERROR );
   }
   else {
     SetThreadPriority( ( void* ) stream_.callbackInfo.thread, stream_.callbackInfo.priority );
     ResumeThread( ( void* ) stream_.callbackInfo.thread );
   }
+  return RTAUDIO_NO_ERROR;
 }
 
 //-----------------------------------------------------------------------------
 
-void RtApiWasapi::stopStream( void )
+RtAudioErrorType RtApiWasapi::stopStream( void )
 {
-  verifyStream();
-
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::stopStream: The stream is already stopped.";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   // inform stream thread by setting stream state to STREAM_STOPPING
@@ -4697,23 +4684,20 @@ void RtApiWasapi::stopStream( void )
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
     errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
-    error( RtAudioError::THREAD_ERROR );
-    return;
+    return error( RTAUDIO_THREAD_ERROR );
   }
 
   stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  return RTAUDIO_NO_ERROR;
 }
 
 //-----------------------------------------------------------------------------
 
-void RtApiWasapi::abortStream( void )
+RtAudioErrorType RtApiWasapi::abortStream( void )
 {
-  verifyStream();
-
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::abortStream: The stream is already stopped.";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   // inform stream thread by setting stream state to STREAM_STOPPING
@@ -4727,11 +4711,11 @@ void RtApiWasapi::abortStream( void )
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
     errorText_ = "RtApiWasapi::abortStream: Unable to close callback thread.";
-    error( RtAudioError::THREAD_ERROR );
-    return;
+    return error( RTAUDIO_THREAD_ERROR );
   }
 
   stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  return RTAUDIO_NO_ERROR;
 }
 
 //-----------------------------------------------------------------------------
@@ -4758,7 +4742,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   // Count capture devices
   errorText_.clear();
-  RtAudioError::Type errorType = RtAudioError::DRIVER_ERROR;
+  RtAudioErrorType errorType = RTAUDIO_DRIVER_ERROR;
   HRESULT hr = deviceEnumerator_->EnumAudioEndpoints( eCapture, DEVICE_STATE_ACTIVE, &captureDevices );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device collection.";
@@ -4786,7 +4770,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   // validate device index
   if ( device >= captureDeviceCount + renderDeviceCount ) {
-    errorType = RtAudioError::INVALID_USE;
+    errorType = RTAUDIO_INVALID_USE;
     errorText_ = "RtApiWasapi::probeDeviceOpen: Invalid device index.";
     goto Exit;
   }
@@ -4794,7 +4778,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // if device index falls within capture devices
   if ( device >= renderDeviceCount ) {
     if ( mode != INPUT ) {
-      errorType = RtAudioError::INVALID_USE;
+      errorType = RTAUDIO_INVALID_USE;
       errorText_ = "RtApiWasapi::probeDeviceOpen: Capture device selected as output device.";
       goto Exit;
     }
@@ -4938,7 +4922,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   stream_.userBuffer[mode] = ( char* ) calloc( bufferBytes, 1 );
   if ( !stream_.userBuffer[mode] ) {
-    errorType = RtAudioError::MEMORY_ERROR;
+    errorType = RTAUDIO_MEMORY_ERROR;
     errorText_ = "RtApiWasapi::probeDeviceOpen: Error allocating user buffer memory.";
     goto Exit;
   }
@@ -5039,7 +5023,7 @@ void RtApiWasapi::wasapiThread()
   unsigned int deviceBuffSize = 0;
 
   std::string errorText;
-  RtAudioError::Type errorType = RtAudioError::DRIVER_ERROR;
+  RtAudioErrorType errorType = RTAUDIO_DRIVER_ERROR;
 
   // Attempt to assign "Pro Audio" characteristic to thread
   HMODULE AvrtDll = LoadLibrary( (LPCTSTR) "AVRT.dll" );
@@ -5091,7 +5075,7 @@ void RtApiWasapi::wasapiThread()
         // configure captureEvent to trigger on every available capture buffer
         captureEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
         if ( !captureEvent ) {
-          errorType = RtAudioError::SYSTEM_ERROR;
+          errorType = RTAUDIO_SYSTEM_ERROR;
           errorText = "RtApiWasapi::wasapiThread: Unable to create capture event.";
           goto Exit;
         }
@@ -5174,7 +5158,7 @@ void RtApiWasapi::wasapiThread()
       // configure renderEvent to trigger on every available render buffer
       renderEvent = CreateEvent( NULL, FALSE, FALSE, NULL );
       if ( !renderEvent ) {
-        errorType = RtAudioError::SYSTEM_ERROR;
+        errorType = RTAUDIO_SYSTEM_ERROR;
         errorText = "RtApiWasapi::wasapiThread: Unable to create render event.";
         goto Exit;
       }
@@ -5242,7 +5226,7 @@ void RtApiWasapi::wasapiThread()
   convBuffer = ( char* ) calloc( convBuffSize, 1 );
   stream_.deviceBuffer = ( char* ) calloc( deviceBuffSize, 1 );
   if ( !convBuffer || !stream_.deviceBuffer ) {
-    errorType = RtAudioError::MEMORY_ERROR;
+    errorType = RTAUDIO_MEMORY_ERROR;
     errorText = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
     goto Exit;
   }
@@ -5331,12 +5315,12 @@ void RtApiWasapi::wasapiThread()
           // instantiate a thread to stop this thread
           HANDLE threadHandle = CreateThread( NULL, 0, stopWasapiThread, this, 0, NULL );
           if ( !threadHandle ) {
-            errorType = RtAudioError::THREAD_ERROR;
+            errorType = RTAUDIO_THREAD_ERROR;
             errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream stop thread.";
             goto Exit;
           }
           else if ( !CloseHandle( threadHandle ) ) {
-            errorType = RtAudioError::THREAD_ERROR;
+            errorType = RTAUDIO_THREAD_ERROR;
             errorText = "RtApiWasapi::wasapiThread: Unable to close stream stop thread handle.";
             goto Exit;
           }
@@ -5347,12 +5331,12 @@ void RtApiWasapi::wasapiThread()
           // instantiate a thread to stop this thread
           HANDLE threadHandle = CreateThread( NULL, 0, abortWasapiThread, this, 0, NULL );
           if ( !threadHandle ) {
-            errorType = RtAudioError::THREAD_ERROR;
+            errorType = RTAUDIO_THREAD_ERROR;
             errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream abort thread.";
             goto Exit;
           }
           else if ( !CloseHandle( threadHandle ) ) {
-            errorType = RtAudioError::THREAD_ERROR;
+            errorType = RTAUDIO_THREAD_ERROR;
             errorText = "RtApiWasapi::wasapiThread: Unable to close stream abort thread handle.";
             goto Exit;
           }
@@ -5719,14 +5703,14 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
     getDeviceCount();
     if ( dsDevices.size() == 0 ) {
       errorText_ = "RtApiDs::getDeviceInfo: no devices found!";
-      error( RtAudioError::INVALID_USE );
+      error( RTAUDIO_INVALID_USE );
       return info;
     }
   }
 
   if ( device >= dsDevices.size() ) {
     errorText_ = "RtApiDs::getDeviceInfo: device ID is invalid!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
@@ -6444,13 +6428,11 @@ void RtApiDs :: closeStream()
   stream_.state = STREAM_CLOSED;
 }
 
-void RtApiDs :: startStream()
+RtAudioErrorType RtApiDs :: startStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiDs::startStream(): the stream is already running!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   #if defined( HAVE_GETTIMEOFDAY )
@@ -6501,16 +6483,15 @@ void RtApiDs :: startStream()
   stream_.state = STREAM_RUNNING;
 
  unlock:
-  if ( FAILED( result ) ) error( RtAudioError::SYSTEM_ERROR );
+  if ( FAILED( result ) ) error( RTAUDIO_SYSTEM_ERROR );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiDs :: stopStream()
+RtAudioErrorType RtApiDs :: stopStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiDs::stopStream(): the stream is already stopped!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   HRESULT result = 0;
@@ -6605,22 +6586,22 @@ void RtApiDs :: stopStream()
   timeEndPeriod( 1 ); // revert to normal scheduler frequency on lesser windows.
   MUTEX_UNLOCK( &stream_.mutex );
 
-  if ( FAILED( result ) ) error( RtAudioError::SYSTEM_ERROR );
+  if ( FAILED( result ) ) error( RTAUDIO_SYSTEM_ERROR );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiDs :: abortStream()
+RtAudioErrorType RtApiDs :: abortStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiDs::abortStream(): the stream is already stopped!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
   handle->drainCounter = 2;
 
   stopStream();
+  return RTAUDIO_NO_ERROR;
 }
 
 void RtApiDs :: callbackEvent()
@@ -6725,7 +6706,7 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
         MUTEX_UNLOCK( &stream_.mutex );
-        error( RtAudioError::SYSTEM_ERROR );
+        error( RTAUDIO_SYSTEM_ERROR );
         return;
       }
       result = dsCaptureBuffer->GetCurrentPosition( NULL, &startSafeReadPointer );
@@ -6733,7 +6714,7 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
         errorText_ = errorStream_.str();
         MUTEX_UNLOCK( &stream_.mutex );
-        error( RtAudioError::SYSTEM_ERROR );
+        error( RTAUDIO_SYSTEM_ERROR );
         return;
       }
       while ( true ) {
@@ -6742,7 +6723,7 @@ void RtApiDs :: callbackEvent()
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
           errorText_ = errorStream_.str();
           MUTEX_UNLOCK( &stream_.mutex );
-          error( RtAudioError::SYSTEM_ERROR );
+          error( RTAUDIO_SYSTEM_ERROR );
           return;
         }
         result = dsCaptureBuffer->GetCurrentPosition( NULL, &safeReadPointer );
@@ -6750,7 +6731,7 @@ void RtApiDs :: callbackEvent()
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
           errorText_ = errorStream_.str();
           MUTEX_UNLOCK( &stream_.mutex );
-          error( RtAudioError::SYSTEM_ERROR );
+          error( RTAUDIO_SYSTEM_ERROR );
           return;
         }
         if ( safeWritePointer != startSafeWritePointer && safeReadPointer != startSafeReadPointer ) break;
@@ -6772,7 +6753,7 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
         MUTEX_UNLOCK( &stream_.mutex );
-        error( RtAudioError::SYSTEM_ERROR );
+        error( RTAUDIO_SYSTEM_ERROR );
         return;
       }
       handle->bufferPointer[0] = safeWritePointer + handle->dsPointerLeadTime[0];
@@ -6824,7 +6805,7 @@ void RtApiDs :: callbackEvent()
         errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current write position!";
         errorText_ = errorStream_.str();
         MUTEX_UNLOCK( &stream_.mutex );
-        error( RtAudioError::SYSTEM_ERROR );
+        error( RTAUDIO_SYSTEM_ERROR );
         return;
       }
 
@@ -6866,7 +6847,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") locking buffer during playback!";
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
+      error( RTAUDIO_SYSTEM_ERROR );
       return;
     }
 
@@ -6880,7 +6861,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") unlocking buffer during playback!";
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
+      error( RTAUDIO_SYSTEM_ERROR );
       return;
     }
     nextWritePointer = ( nextWritePointer + bufferSize1 + bufferSize2 ) % dsBufferSize;
@@ -6917,7 +6898,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
+      error( RTAUDIO_SYSTEM_ERROR );
       return;
     }
 
@@ -6979,7 +6960,7 @@ void RtApiDs :: callbackEvent()
           errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") getting current read position!";
           errorText_ = errorStream_.str();
           MUTEX_UNLOCK( &stream_.mutex );
-          error( RtAudioError::SYSTEM_ERROR );
+          error( RTAUDIO_SYSTEM_ERROR );
           return;
         }
       
@@ -6994,7 +6975,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") locking capture buffer!";
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
+      error( RTAUDIO_SYSTEM_ERROR );
       return;
     }
 
@@ -7016,7 +6997,7 @@ void RtApiDs :: callbackEvent()
       errorStream_ << "RtApiDs::callbackEvent: error (" << getErrorString( result ) << ") unlocking capture buffer!";
       errorText_ = errorStream_.str();
       MUTEX_UNLOCK( &stream_.mutex );
-      error( RtAudioError::SYSTEM_ERROR );
+      error( RTAUDIO_SYSTEM_ERROR );
       return;
     }
     handle->bufferPointer[1] = nextReadPointer;
@@ -8304,8 +8285,7 @@ void RtApiAlsa :: callbackEvent()
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAlsa::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   int doStopStream = 0;
@@ -9359,14 +9339,14 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
   if ( nDevices == 0 ) {
     close( mixerfd );
     errorText_ = "RtApiOss::getDeviceInfo: no devices found!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
   if ( device >= nDevices ) {
     close( mixerfd );
     errorText_ = "RtApiOss::getDeviceInfo: device ID is invalid!";
-    error( RtAudioError::INVALID_USE );
+    error( RTAUDIO_INVALID_USE );
     return info;
   }
 
@@ -9947,13 +9927,11 @@ void RtApiOss :: closeStream()
   stream_.state = STREAM_CLOSED;
 }
 
-void RtApiOss :: startStream()
+RtAudioErrorType RtApiOss :: startStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiOss::startStream(): the stream is already running!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
@@ -9971,15 +9949,14 @@ void RtApiOss :: startStream()
 
   OssHandle *handle = (OssHandle *) stream_.apiHandle;
   pthread_cond_signal( &handle->runnable );
+  return RTAUDIO_NO_ERROR;
 }
 
-void RtApiOss :: stopStream()
+RtAudioErrorType RtApiOss :: stopStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiOss::stopStream(): the stream is already stopped!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
@@ -9987,7 +9964,7 @@ void RtApiOss :: stopStream()
   // The state might change while waiting on a mutex.
   if ( stream_.state == STREAM_STOPPED ) {
     MUTEX_UNLOCK( &stream_.mutex );
-    return;
+    return RTAUDIO_NO_ERROR;
   }
 
   int result = 0;
@@ -10041,17 +10018,15 @@ void RtApiOss :: stopStream()
   stream_.state = STREAM_STOPPED;
   MUTEX_UNLOCK( &stream_.mutex );
 
-  if ( result != -1 ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result != -1 ) return RTAUDIO_NO_ERROR;
+  return error( RTAUDIO_SYSTEM_ERROR );
 }
 
-void RtApiOss :: abortStream()
+RtAudioErrorType RtApiOss :: abortStream()
 {
-  verifyStream();
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiOss::abortStream(): the stream is already stopped!";
-    error( RTAUDIO_WARNING );
-    return;
+    return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
@@ -10059,7 +10034,7 @@ void RtApiOss :: abortStream()
   // The state might change while waiting on a mutex.
   if ( stream_.state == STREAM_STOPPED ) {
     MUTEX_UNLOCK( &stream_.mutex );
-    return;
+    return RTAUDIO_NO_ERROR;
   }
 
   int result = 0;
@@ -10087,8 +10062,8 @@ void RtApiOss :: abortStream()
   stream_.state = STREAM_STOPPED;
   MUTEX_UNLOCK( &stream_.mutex );
 
-  if ( result != -1 ) return;
-  error( RtAudioError::SYSTEM_ERROR );
+  if ( result != -1 ) return RTAUDIO_SYSTEM_ERROR;
+  return error( RTAUDIO_SYSTEM_ERROR );
 }
 
 void RtApiOss :: callbackEvent()
