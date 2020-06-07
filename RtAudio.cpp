@@ -8285,7 +8285,8 @@ void RtApiAlsa :: callbackEvent()
 
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiAlsa::callbackEvent(): the stream is closed ... this shouldn't happen!";
-    return error( RTAUDIO_WARNING );
+    error( RTAUDIO_WARNING );
+    return;
   }
 
   int doStopStream = 0;
