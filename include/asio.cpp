@@ -10,6 +10,9 @@
 	
 #include <string.h>
 #include "asiosys.h"		// platform definition
+#if WINDOWS
+#include "windows.h"
+#endif
 #include "asio.h"
 
 #if MAC
@@ -29,7 +32,6 @@ long main()
 
 #elif WINDOWS
 
-#include "windows.h"
 #include "iasiodrv.h"
 #include "asiodrivers.h"
 
