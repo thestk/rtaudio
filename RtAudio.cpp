@@ -4814,19 +4814,20 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     if (FAILED(hr = devicePtr->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, NULL, (void**)&captureAudioClient))) {
         hr = devicePtr->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&captureAudioClient);
+        if (FAILED(hr)) {
+            errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device audio client.";
+            goto Exit;
+        }
+        hr = captureAudioClient->GetMixFormat(&deviceFormat);
+        if (FAILED(hr)) {
+            errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device mix format.";
+            goto Exit;
+        }
     }
     else {
+        IAudioClient3* client3 = (IAudioClient3*)captureAudioClient;
+        client3->GetCurrentSharedModeEnginePeriod(&deviceFormat,bufferSize);
         iaudioclient3_available = true;
-    }
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device audio client.";
-      goto Exit;
-    }
-
-    hr = captureAudioClient->GetMixFormat( &deviceFormat );
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device mix format.";
-      goto Exit;
     }
 
     stream_.nDeviceChannels[mode] = deviceFormat->nChannels;
