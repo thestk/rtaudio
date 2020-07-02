@@ -1064,6 +1064,8 @@ private:
   static DWORD WINAPI stopWasapiThread( void* wasapiPtr );
   static DWORD WINAPI abortWasapiThread( void* wasapiPtr );
   void wasapiThread();
+
+  static bool iaudioclient3_available;
 };
 
 #endif

@@ -3799,6 +3799,86 @@ if ( objectPtr )\
 
 typedef HANDLE ( __stdcall *TAvSetMmThreadCharacteristicsPtr )( LPCWSTR TaskName, LPDWORD TaskIndex );
 
+// Copied from header
+#ifndef __IAudioClient2_INTERFACE_DEFINED__
+#define __IAudioClient2_INTERFACE_DEFINED__
+
+/* interface IAudioClient2 */
+/* [local][unique][uuid][object] */
+
+EXTERN_C const IID IID_IAudioClient2;
+
+MIDL_INTERFACE("726778CD-F60A-4eda-82DE-E47610CD78AA")
+IAudioClient2 : public IAudioClient
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE IsOffloadCapable(
+        /* [annotation][in] */
+        _In_  AUDIO_STREAM_CATEGORY Category,
+        /* [annotation][out] */
+        _Out_  BOOL * pbOffloadCapable) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE SetClientProperties(
+        /* [annotation][in] */
+        _In_  const AudioClientProperties* pProperties) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetBufferSizeLimits(
+        /* [annotation][in] */
+        _In_  const WAVEFORMATEX* pFormat,
+        /* [annotation][in] */
+        _In_  BOOL bEventDriven,
+        /* [annotation][out] */
+        _Out_  REFERENCE_TIME* phnsMinBufferDuration,
+        /* [annotation][out] */
+        _Out_  REFERENCE_TIME* phnsMaxBufferDuration) = 0;
+
+};
+#endif
+
+#ifndef __IAudioClient3_INTERFACE_DEFINED__
+#define __IAudioClient3_INTERFACE_DEFINED__
+
+/* interface IAudioClient3 */
+/* [local][unique][uuid][object] */
+
+
+EXTERN_C const IID IID_IAudioClient3;
+
+MIDL_INTERFACE("7ED4EE07-8E67-4CD4-8C1A-2B7A5987AD42")
+IAudioClient3 : public IAudioClient2
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE GetSharedModeEnginePeriod(
+        /* [annotation][in] */
+        _In_  const WAVEFORMATEX * pFormat,
+        /* [annotation][out] */
+        _Out_  UINT32 * pDefaultPeriodInFrames,
+        /* [annotation][out] */
+        _Out_  UINT32 * pFundamentalPeriodInFrames,
+        /* [annotation][out] */
+        _Out_  UINT32 * pMinPeriodInFrames,
+        /* [annotation][out] */
+        _Out_  UINT32 * pMaxPeriodInFrames) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetCurrentSharedModeEnginePeriod(
+        /* [unique][annotation][out] */
+        _Out_  WAVEFORMATEX** ppFormat,
+        /* [annotation][out] */
+        _Out_  UINT32* pCurrentPeriodInFrames) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE InitializeSharedAudioStream(
+        /* [annotation][in] */
+        _In_  DWORD StreamFlags,
+        /* [annotation][in] */
+        _In_  UINT32 PeriodInFrames,
+        /* [annotation][in] */
+        _In_  const WAVEFORMATEX* pFormat,
+        /* [annotation][in] */
+        _In_opt_  LPCGUID AudioSessionGuid) = 0;
+
+};
+#endif
+
 //-----------------------------------------------------------------------------
 
 // WASAPI dictates stream sample rate, format, channel count, and in some cases, buffer size.
@@ -4398,7 +4478,12 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   }
 
   // channel count
-  hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL, NULL, ( void** ) &audioClient );
+  if (FAILED(hr = devicePtr->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, NULL, (void**)&audioClient))) {
+    hr = devicePtr->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&audioClient);
+  }
+  else{
+     iaudioclient3_available = true;
+  }
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::getDeviceInfo: Unable to retrieve device audio client.";
     goto Exit;
@@ -4726,8 +4811,13 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       goto Exit;
     }
 
-    hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
-                              NULL, ( void** ) &captureAudioClient );
+
+    if (FAILED(hr = devicePtr->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, NULL, (void**)&captureAudioClient))) {
+        hr = devicePtr->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&captureAudioClient);
+    }
+    else {
+        iaudioclient3_available = true;
+    }
     if ( FAILED( hr ) ) {
       errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve capture device audio client.";
       goto Exit;
@@ -4762,8 +4852,12 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       goto Exit;
     }
 
-    hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
-                              NULL, ( void** ) &captureAudioClient );
+    if (FAILED(hr = devicePtr->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, NULL, (void**)&captureAudioClient))) {
+        hr = devicePtr->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&captureAudioClient);
+    }
+    else {
+        iaudioclient3_available = true;
+    }
     if ( FAILED( hr ) ) {
       errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device audio client.";
       goto Exit;
@@ -4796,14 +4890,24 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       goto Exit;
     }
 
-    hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
-                              NULL, ( void** ) &renderAudioClient );
+    if (FAILED(hr = devicePtr->Activate(__uuidof(IAudioClient3), CLSCTX_ALL, NULL, (void**)&renderAudioClient))) {
+        hr = devicePtr->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&renderAudioClient);
+    }
+    else {
+        iaudioclient3_available = true;
+    }
     if ( FAILED( hr ) ) {
       errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device audio client.";
       goto Exit;
     }
 
-    hr = renderAudioClient->GetMixFormat( &deviceFormat );
+    if(iaudioclient3_available){
+        IAudioClient3* client3 = (IAudioClient3*)renderAudioClient;
+        hr = client3->GetCurrentSharedModeEnginePeriod(&deviceFormat,bufferSize);
+    }
+    else{
+        hr = renderAudioClient->GetMixFormat(&deviceFormat);
+    }
     if ( FAILED( hr ) ) {
       errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve render device mix format.";
       goto Exit;
@@ -5071,12 +5175,30 @@ void RtApiWasapi::wasapiThread()
     renderSrRatio = ( ( float ) renderFormat->nSamplesPerSec / stream_.sampleRate );
 
     if ( !renderClient ) {
-      hr = renderAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
-                                          AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                          0,
-                                          0,
-                                          renderFormat,
-                                          NULL );
+      if(iaudioclient3_available){
+        IAudioClient3* client3 = (IAudioClient3*)renderAudioClient;
+        UINT32 DefaultPeriodInFrames, FundamentalPeriodInFrames, MinPeriodInFrames, MaxPeriodInFrames;
+        hr = client3->GetSharedModeEnginePeriod(renderFormat,&DefaultPeriodInFrames,&FundamentalPeriodInFrames,&MinPeriodInFrames,&MaxPeriodInFrames);
+        if(FAILED(hr)){
+            hr = renderAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
+                                AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                0,
+                                0,
+                                renderFormat,
+                                NULL);
+        }
+        else {
+          hr = client3->InitializeSharedAudioStream(AUDCLNT_STREAMFLAGS_EVENTCALLBACK,DefaultPeriodInFrames,renderFormat,NULL);
+        }
+      }
+      else{
+        hr = renderAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
+                                        AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                        0,
+                                        0,
+                                        renderFormat,
+                                        NULL);
+      }
       if ( FAILED( hr ) ) {
         errorText = "RtApiWasapi::wasapiThread: Unable to initialize render audio client.";
         goto Exit;
