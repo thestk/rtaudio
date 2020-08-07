@@ -8324,6 +8324,7 @@ void RtApiAlsa :: callbackEvent()
     }
 
     if ( result < (int) stream_.bufferSize ) {
+      RtAudioError::Type specificErrorType = RtAudioError::WARNING;
       // Either an error or overrun occured.
       if ( result == -EPIPE ) {
         snd_pcm_state_t state = snd_pcm_state( handle[1] );
