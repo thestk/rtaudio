@@ -843,7 +843,7 @@ protected:
   void verifyStream( void );
 
   //! Protected common error method to allow global control over error handling.
-  void error( RtAudioError::Type type );
+  void error( RtAudioError::Type type, RtAudioError::Type specificErrorTypeForCallBack=RtAudioError::WARNING);
 
   /*!
     Protected method used to perform format, channel number, and/or interleaving

@@ -8343,8 +8343,10 @@ void RtApiAlsa :: callbackEvent()
       else {
         errorStream_ << "RtApiAlsa::callbackEvent: audio read error, " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
+        if(result==-ENODEV)
+            specificErrorType = RtAudioError::NO_DEVICES_FOUND;
       }
-      error( RtAudioError::WARNING );
+      error( RtAudioError::WARNING, specificErrorType );
       goto tryOutput;
     }
 
@@ -8394,6 +8396,7 @@ void RtApiAlsa :: callbackEvent()
     }
 
     if ( result < (int) stream_.bufferSize ) {
+      RtAudioError::Type specificErrorType = RtAudioError::WARNING;
       // Either an error or underrun occured.
       if ( result == -EPIPE ) {
         snd_pcm_state_t state = snd_pcm_state( handle[0] );
@@ -8415,8 +8418,10 @@ void RtApiAlsa :: callbackEvent()
       else {
         errorStream_ << "RtApiAlsa::callbackEvent: audio write error, " << snd_strerror( result ) << ".";
         errorText_ = errorStream_.str();
+        if(result==-ENODEV)
+            specificErrorType = RtAudioError::NO_DEVICES_FOUND;
       }
-      error( RtAudioError::WARNING );
+      error( RtAudioError::WARNING, specificErrorType );
       goto unlock;
     }
 
@@ -10219,7 +10224,7 @@ static void *ossCallbackHandler( void *ptr )
 
 // This method can be modified to control the behavior of error
 // message printing.
-void RtApi :: error( RtAudioError::Type type )
+void RtApi :: error( RtAudioError::Type type, RtAudioError::Type specificErrorTypeForCallBack )
 {
   errorStream_.str(""); // clear the ostringstream
 
@@ -10237,8 +10242,7 @@ void RtApi :: error( RtAudioError::Type type )
       stream_.callbackInfo.isRunning = false; // exit from the thread
       abortStream();
     }
-
-    errorCallback( type, errorMessage );
+    errorCallback( specificErrorTypeForCallBack, errorMessage );
     firstErrorOccurred_ = false;
     return;
   }
