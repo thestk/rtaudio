@@ -10238,7 +10238,7 @@ void RtApi :: error( RtAudioError::Type type )
       abortStream();
     }
 
-    errorCallback( type, errorMessage );
+    errorCallback( type, errorMessage, stream_.callbackInfo.userData );
     firstErrorOccurred_ = false;
     return;
   }
