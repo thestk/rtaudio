@@ -9028,8 +9028,8 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     }
   }
   if ( !sr_found ) {
-    errorText_ = "RtApiPulse::probeDeviceOpen: unsupported sample rate.";
-    return false;
+    stream_.sampleRate = sampleRate;
+    ss.rate = sampleRate;
   }
 
   bool sf_found = 0;
