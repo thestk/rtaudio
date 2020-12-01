@@ -7240,6 +7240,8 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       goto foundDevice;
     }
   }
+  if ( chandle )
+    snd_ctl_close( chandle );
 
   // Count cards and devices
   snd_card_next( &card );
