@@ -10399,9 +10399,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
   // data interleaving/deinterleaving.  24-bit integers are assumed to occupy
   // the lower three bytes of a 32-bit integer.
 
-  // Clear our device buffer when in/out duplex device channels are different
-  if ( outBuffer == stream_.deviceBuffer && stream_.mode == DUPLEX &&
-       ( stream_.nDeviceChannels[0] < stream_.nDeviceChannels[1] ) )
+  // Clear our duplex device output buffer if there are more device outputs than user outputs
+  if ( outBuffer == stream_.deviceBuffer && stream_.mode == DUPLEX && info.outJump > info.inJump )
     memset( outBuffer, 0, stream_.bufferSize * info.outJump * formatBytes( info.outFormat ) );
 
   int j;
