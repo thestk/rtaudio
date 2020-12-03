@@ -61,6 +61,7 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
+  #define MUTEX_SPINLOCK(A)   while (!TryEnterCriticalSection(A))
 
   #include "tchar.h"
 
@@ -323,9 +324,11 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
                           RtAudio::StreamOptions *options,
                           RtAudioErrorCallback errorCallback )
 {
+  MUTEX_LOCK( &stream_.mutex );
   if ( stream_.state != STREAM_CLOSED ) {
     errorText_ = "RtApi::openStream: a stream is already open!";
     error( RtAudioError::INVALID_USE );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
@@ -335,24 +338,28 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
   if ( oParams && oParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL output StreamParameters structure cannot have an nChannels value less than one.";
     error( RtAudioError::INVALID_USE );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
   if ( iParams && iParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL input StreamParameters structure cannot have an nChannels value less than one.";
     error( RtAudioError::INVALID_USE );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
   if ( oParams == NULL && iParams == NULL ) {
     errorText_ = "RtApi::openStream: input and output StreamParameters structures are both NULL!";
     error( RtAudioError::INVALID_USE );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
   if ( formatBytes(format) == 0 ) {
     errorText_ = "RtApi::openStream: 'format' parameter value is undefined.";
     error( RtAudioError::INVALID_USE );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
@@ -363,6 +370,7 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
     if ( oParams->deviceId >= nDevices ) {
       errorText_ = "RtApi::openStream: output device parameter value is invalid.";
       error( RtAudioError::INVALID_USE );
+      MUTEX_UNLOCK( &stream_.mutex );
       return;
     }
   }
@@ -380,17 +388,18 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
   bool result;
 
   if ( oChannels > 0 ) {
-
+    MUTEX_UNLOCK( &stream_.mutex );
     result = probeDeviceOpen( oParams->deviceId, OUTPUT, oChannels, oParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
     if ( result == false ) {
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
+    MUTEX_LOCK( &stream_.mutex );
   }
 
   if ( iChannels > 0 ) {
-
+    MUTEX_UNLOCK( &stream_.mutex );
     result = probeDeviceOpen( iParams->deviceId, INPUT, iChannels, iParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
     if ( result == false ) {
@@ -398,6 +407,7 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
       error( RtAudioError::SYSTEM_ERROR );
       return;
     }
+    MUTEX_LOCK( &stream_.mutex );
   }
 
   stream_.callbackInfo.callback = (void *) callback;
@@ -406,6 +416,7 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
   if ( options ) options->numberOfBuffers = stream_.nBuffers;
   stream_.state = STREAM_STOPPED;
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 unsigned int RtApi :: getDefaultInputDevice( void )
@@ -4555,8 +4566,11 @@ void RtApiWasapi::closeStream( void )
     return;
   }
 
-  if ( stream_.state != STREAM_STOPPED )
+  if ( stream_.state != STREAM_STOPPED ) {
     stopStream();
+  }
+
+  MUTEX_SPINLOCK( &stream_.mutex );
 
   // clean up stream memory
   SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient )
@@ -4588,6 +4602,7 @@ void RtApiWasapi::closeStream( void )
 
   // update stream state
   stream_.state = STREAM_CLOSED;
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 //-----------------------------------------------------------------------------
@@ -4596,9 +4611,11 @@ void RtApiWasapi::startStream( void )
 {
   verifyStream();
 
+  MUTEX_SPINLOCK( &stream_.mutex );
   if ( stream_.state == STREAM_RUNNING ) {
     errorText_ = "RtApiWasapi::startStream: The stream is already running.";
     error( RtAudioError::WARNING );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
@@ -4614,12 +4631,16 @@ void RtApiWasapi::startStream( void )
 
   if ( !stream_.callbackInfo.thread ) {
     errorText_ = "RtApiWasapi::startStream: Unable to instantiate callback thread.";
+
+    MUTEX_UNLOCK( &stream_.mutex );
     error( RtAudioError::THREAD_ERROR );
+    MUTEX_LOCK( &stream_.mutex );
   }
   else {
     SetThreadPriority( ( void* ) stream_.callbackInfo.thread, stream_.callbackInfo.priority );
     ResumeThread( ( void* ) stream_.callbackInfo.thread );
   }
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 //-----------------------------------------------------------------------------
@@ -4628,8 +4649,10 @@ void RtApiWasapi::stopStream( void )
 {
   verifyStream();
 
+  MUTEX_SPINLOCK( &stream_.mutex );
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::stopStream: The stream is already stopped.";
+    MUTEX_UNLOCK( &stream_.mutex );
     error( RtAudioError::WARNING );
     return;
   }
@@ -4637,6 +4660,7 @@ void RtApiWasapi::stopStream( void )
   // inform stream thread by setting stream state to STREAM_STOPPING
   stream_.state = STREAM_STOPPING;
 
+  MUTEX_UNLOCK( &stream_.mutex );
   // wait until stream thread is stopped
   while( stream_.state != STREAM_STOPPED ) {
     Sleep( 1 );
@@ -4645,14 +4669,10 @@ void RtApiWasapi::stopStream( void )
   // Wait for the last buffer to play before stopping.
   Sleep( 1000 * stream_.bufferSize / stream_.sampleRate );
 
-  // close thread handle
-  if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
-    errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
-    error( RtAudioError::THREAD_ERROR );
-    return;
-  }
+  MUTEX_LOCK( &stream_.mutex );
 
   stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 //-----------------------------------------------------------------------------
@@ -4661,8 +4681,10 @@ void RtApiWasapi::abortStream( void )
 {
   verifyStream();
 
+  MUTEX_SPINLOCK( &stream_.mutex );
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::abortStream: The stream is already stopped.";
+    MUTEX_UNLOCK( &stream_.mutex );
     error( RtAudioError::WARNING );
     return;
   }
@@ -4670,19 +4692,15 @@ void RtApiWasapi::abortStream( void )
   // inform stream thread by setting stream state to STREAM_STOPPING
   stream_.state = STREAM_STOPPING;
 
+  MUTEX_UNLOCK( &stream_.mutex );
   // wait until stream thread is stopped
   while ( stream_.state != STREAM_STOPPED ) {
     Sleep( 1 );
   }
-
-  // close thread handle
-  if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
-    errorText_ = "RtApiWasapi::abortStream: Unable to close callback thread.";
-    error( RtAudioError::THREAD_ERROR );
-    return;
-  }
+  MUTEX_LOCK( &stream_.mutex );
 
   stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 //-----------------------------------------------------------------------------
@@ -5197,9 +5215,12 @@ void RtApiWasapi::wasapiThread()
     errorText = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
     goto Exit;
   }
-
+  HANDLE threadHandle = NULL;
+  bool mutex_locked = false;
   // stream process loop
   while ( stream_.state != STREAM_STOPPING ) {
+    MUTEX_LOCK( &stream_.mutex );
+    mutex_locked = true;
     if ( !callbackPulled ) {
       // Callback Input
       // ==============
@@ -5279,35 +5300,13 @@ void RtApiWasapi::wasapiThread()
 
         // Handle return value from callback
         if ( callbackResult == 1 ) {
-          // instantiate a thread to stop this thread
-          HANDLE threadHandle = CreateThread( NULL, 0, stopWasapiThread, this, 0, NULL );
-          if ( !threadHandle ) {
-            errorType = RtAudioError::THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream stop thread.";
-            goto Exit;
-          }
-          else if ( !CloseHandle( threadHandle ) ) {
-            errorType = RtAudioError::THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to close stream stop thread handle.";
-            goto Exit;
-          }
-
+          stream_.state = STREAM_STOPPING;
+          // Wait for the last buffer to play before stopping.
+          Sleep(1000 * stream_.bufferSize / stream_.sampleRate);
           callbackStopped = true;
         }
         else if ( callbackResult == 2 ) {
-          // instantiate a thread to stop this thread
-          HANDLE threadHandle = CreateThread( NULL, 0, abortWasapiThread, this, 0, NULL );
-          if ( !threadHandle ) {
-            errorType = RtAudioError::THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream abort thread.";
-            goto Exit;
-          }
-          else if ( !CloseHandle( threadHandle ) ) {
-            errorType = RtAudioError::THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to close stream abort thread handle.";
-            goto Exit;
-          }
-
+          stream_.state = STREAM_STOPPING;
           callbackStopped = true;
         }
       }
@@ -5487,9 +5486,14 @@ void RtApiWasapi::wasapiThread()
       callbackPulled = false;
     }
 
+    MUTEX_UNLOCK( &stream_.mutex );
+    mutex_locked = false;
   }
 
 Exit:
+  if ( !mutex_locked )
+    MUTEX_LOCK( &stream_.mutex );
+
   // clean up
   CoTaskMemFree( captureFormat );
   CoTaskMemFree( renderFormat );
@@ -5498,10 +5502,18 @@ Exit:
   delete renderResampler;
   delete captureResampler;
 
+  if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
+    errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
+    MUTEX_UNLOCK( &stream_.mutex );
+    error( RtAudioError::THREAD_ERROR );
+    MUTEX_UNLOCK( &stream_.mutex );
+  }
+
   CoUninitialize();
 
   // update stream state
   stream_.state = STREAM_STOPPED;
+    MUTEX_UNLOCK( &stream_.mutex );
 
   if ( !errorText.empty() )
   {
@@ -10223,26 +10235,31 @@ void RtApi :: error( RtAudioError::Type type )
 {
   errorStream_.str(""); // clear the ostringstream
 
+  MUTEX_LOCK( &stream_.mutex );
   RtAudioErrorCallback errorCallback = (RtAudioErrorCallback) stream_.callbackInfo.errorCallback;
   if ( errorCallback ) {
     // abortStream() can generate new error messages. Ignore them. Just keep original one.
 
-    if ( firstErrorOccurred_ )
+    if ( firstErrorOccurred_ ) {
+      MUTEX_UNLOCK( &stream_.mutex );
       return;
-
+    }
     firstErrorOccurred_ = true;
     const std::string errorMessage = errorText_;
 
     if ( type != RtAudioError::WARNING && stream_.state != STREAM_STOPPED) {
       stream_.callbackInfo.isRunning = false; // exit from the thread
+      MUTEX_UNLOCK( &stream_.mutex );
       abortStream();
+      MUTEX_LOCK( &stream_.mutex );
     }
-
+    MUTEX_UNLOCK( &stream_.mutex );
     errorCallback( type, errorMessage );
     firstErrorOccurred_ = false;
     return;
   }
 
+  MUTEX_UNLOCK( &stream_.mutex );
   if ( type == RtAudioError::WARNING && showWarnings_ == true )
     std::cerr << '\n' << errorText_ << "\n\n";
   else if ( type != RtAudioError::WARNING )
