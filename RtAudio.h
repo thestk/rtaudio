@@ -642,7 +642,7 @@ struct CallbackInfo {
   void *apiInfo{};   // void pointer for API specific callback information
   bool isRunning{false};
   bool doRealtime{false};
-  int priority[];
+  int priority{};
 };
 
 // **************************************************************** //
