@@ -44,7 +44,6 @@
  */
 
 #ifndef __RTAUDIO_H
-#define __RTAUDIO_H
 
 #define RTAUDIO_VERSION "5.1.0"
 
@@ -66,6 +65,7 @@
 #include <vector>
 #include <stdexcept>
 #include <iostream>
+#include <memory>
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -260,6 +260,21 @@ class RTAUDIO_DLL_PUBLIC RtAudioError : public std::runtime_error
     \param errorText Error description.
  */
 typedef void (*RtAudioErrorCallback)( RtAudioError::Type type, const std::string &errorText );
+
+/************************************************************************/
+/*! \class RtAudioClientHandle
+    \brief Base class for API-specific handles.
+
+    This is pointed to by RtAudio::StreamOptions.clientHandle if
+    stream was opened successfully.
+
+    Caller must #include appropriate API headers and #define
+    RTAUDIO_API_SPECIFIC to get access to derived classes.
+*/
+/************************************************************************/
+struct RtAudioClientHandle {
+  virtual ~RtAudioClientHandle() {}
+};
 
 // **************************************************************** //
 //
@@ -606,6 +621,16 @@ class RTAUDIO_DLL_PUBLIC RtAudio
  */
   unsigned int getStreamSampleRate( void );
 
+  //! Returns a struct containing API-specific client data.
+  /*!
+    To use the returned struct it must be dynamic_cast<> to an
+    API-specific derived struct, which is only available by including
+    the appropriate API headers and defining RTAUDIO_API_SPECIFIC
+    before including RtAudio.h.  The dynamic_cast<> shall return
+    nullptr if the expected API is not the one in use.
+  */
+  RtAudioClientHandle *getClientHandle();
+
   //! Specify whether warning messages should be printed to stderr.
   void showWarnings( bool value = true );
 
@@ -740,7 +765,7 @@ public:
   bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; }
   bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }
   void showWarnings( bool value ) { showWarnings_ = value; }
-
+  virtual RtAudioClientHandle *getClientHandle() { return nullptr; }
 
 protected:
 
@@ -940,6 +965,7 @@ public:
   void startStream( void ) override;
   void stopStream( void ) override;
   void abortStream( void ) override;
+  RtAudioClientHandle *getClientHandle( void ) override;
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -956,6 +982,16 @@ public:
 
   bool shouldAutoconnect_;
 };
+
+#if defined(RTAUDIO_API_SPECIFIC) || defined(RTAUDIO_API_SPECIFIC_JACK)
+struct RtAudioClientHandleJack : public RtAudioClientHandle
+{
+/* If compiler errors encountered here: recall you are responsible for
+ * including API headers if you define RTAUDIO_API_SPECIFIC_*! */
+  jack_client_t *client;
+  jack_port_t **ports[2];
+};
+#endif
 
 #endif
 
@@ -1116,6 +1152,7 @@ public:
   void startStream( void ) override;
   void stopStream( void ) override;
   void abortStream( void ) override;
+  RtAudioClientHandle *getClientHandle( void ) override;
 
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
@@ -1131,6 +1168,16 @@ public:
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;
 };
+
+#if defined(RTAUDIO_API_SPECIFIC) || defined(RTAUDIO_API_SPECIFIC_PULSE)
+struct RtAudioClientHandlePulse : public RtAudioClientHandle
+{
+/* If compiler errors encountered here: recall you are responsible for
+ * including API headers if you define RTAUDIO_API_SPECIFIC_*! */
+  pa_simple *s_play = nullptr;
+  pa_simple *s_rec = nullptr;
+};
+#endif
 
 #endif
 
@@ -1191,6 +1238,7 @@ public:
 
 #endif
 
+#define __RTAUDIO_H
 #endif
 
 // Indentation settings for Vim and Emacs

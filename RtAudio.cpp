@@ -291,6 +291,11 @@ void RtAudio :: openStream( RtAudio::StreamParameters *outputParameters,
                              userData, options, errorCallback );
 }
 
+RtAudioClientHandle *RtAudio :: getClientHandle( void )
+{
+  return rtapi_->getClientHandle();
+}
+
 // *************************************************** //
 //
 // Public RtApi definitions (see end of file for
@@ -502,6 +507,9 @@ unsigned int RtApi :: getStreamSampleRate( void )
  return stream_.sampleRate;
 }
 
+// Re-include RtAudio.h to get API-specific structs
+#define RTAUDIO_API_SPECIFIC
+#include "RtAudio.h"
 
 // *************************************************** //
 //
@@ -2019,10 +2027,18 @@ const char* RtApiCore :: getErrorCode( OSStatus code )
 #include <cstdio>
 
 // A structure to hold various information related to the Jack API
+// implementation that can be exposed to caller.  Same struct is
+// defined in RtAudio.h if RTAUDIO_API_SPECIFIC is defined.
+struct RtAudioClientHandleJack : public RtAudioClientHandle
+{
+  jack_client_t *client = 0;
+  jack_port_t **ports[2] = {0,0};
+};
+
+// A structure to hold various information related to the Jack API
 // implementation.
 struct JackHandle {
-  jack_client_t *client;
-  jack_port_t **ports[2];
+  RtAudioClientHandleJack ch;
   std::string deviceName[2];
   bool xrun[2];
   pthread_cond_t condition;
@@ -2030,7 +2046,8 @@ struct JackHandle {
   bool internalDrain;     // Indicates if stop is initiated from callback or not.
 
   JackHandle()
-    :client(0), drainCounter(0), internalDrain(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
+    : drainCounter(0), internalDrain(false)
+    { xrun[0] = false; xrun[1] = false; }
 };
 
 #if !defined(__RTAUDIO_DEBUG__)
@@ -2177,6 +2194,13 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   return info;
 }
 
+RtAudioClientHandle *RtApiJack :: getClientHandle()
+{
+  JackHandle *handle = (JackHandle *) stream_.apiHandle;
+
+  return &handle->ch;
+}
+
 static int jackCallbackHandler( jack_nframes_t nframes, void *infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
@@ -2221,8 +2245,8 @@ static int jackXrun( void *infoPointer )
 {
   JackHandle *handle = *((JackHandle **) infoPointer);
 
-  if ( handle->ports[0] ) handle->xrun[0] = true;
-  if ( handle->ports[1] ) handle->xrun[1] = true;
+  if ( handle->ch.ports[0] ) handle->xrun[0] = true;
+  if ( handle->ch.ports[1] ) handle->xrun[1] = true;
 
   return 0;
 }
@@ -2251,7 +2275,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
   else {
     // The handle must have been created on an earlier pass.
-    client = handle->client;
+    client = handle->ch.client;
   }
 
   const char **ports;
@@ -2370,7 +2394,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
       goto error;
     }
     stream_.apiHandle = (void *) handle;
-    handle->client = client;
+    handle->ch.client = client;
   }
   handle->deviceName[mode] = deviceName;
 
@@ -2408,8 +2432,8 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   // Allocate memory for the Jack ports (channels) identifiers.
-  handle->ports[mode] = (jack_port_t **) malloc ( sizeof (jack_port_t *) * channels );
-  if ( handle->ports[mode] == NULL )  {
+  handle->ch.ports[mode] = (jack_port_t **) malloc ( sizeof (jack_port_t *) * channels );
+  if ( handle->ch.ports[mode] == NULL )  {
     errorText_ = "RtApiJack::probeDeviceOpen: error allocating port memory.";
     goto error;
   }
@@ -2424,9 +2448,10 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     stream_.mode = DUPLEX;
   else {
     stream_.mode = mode;
-    jack_set_process_callback( handle->client, jackCallbackHandler, (void *) &stream_.callbackInfo );
-    jack_set_xrun_callback( handle->client, jackXrun, (void *) &stream_.apiHandle );
-    jack_on_shutdown( handle->client, jackShutdown, (void *) &stream_.callbackInfo );
+    jack_set_process_callback( handle->ch.client, jackCallbackHandler,
+                               (void *) &stream_.callbackInfo );
+    jack_set_xrun_callback( handle->ch.client, jackXrun, (void *) &stream_.apiHandle );
+    jack_on_shutdown( handle->ch.client, jackShutdown, (void *) &stream_.callbackInfo );
   }
 
   // Register our ports.
@@ -2434,15 +2459,15 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( mode == OUTPUT ) {
     for ( unsigned int i=0; i<stream_.nUserChannels[0]; i++ ) {
       snprintf( label, 64, "outport %d", i );
-      handle->ports[0][i] = jack_port_register( handle->client, (const char *)label,
-                                                JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0 );
+      handle->ch.ports[0][i] = jack_port_register( handle->ch.client, (const char *)label,
+                                                   JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0 );
     }
   }
   else {
     for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ ) {
       snprintf( label, 64, "inport %d", i );
-      handle->ports[1][i] = jack_port_register( handle->client, (const char *)label,
-                                                JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0 );
+      handle->ch.ports[1][i] = jack_port_register( handle->ch.client, (const char *)label,
+                                                   JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0 );
     }
   }
 
@@ -2458,10 +2483,10 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
  error:
   if ( handle ) {
     pthread_cond_destroy( &handle->condition );
-    jack_client_close( handle->client );
+    jack_client_close( handle->ch.client );
 
-    if ( handle->ports[0] ) free( handle->ports[0] );
-    if ( handle->ports[1] ) free( handle->ports[1] );
+    if ( handle->ch.ports[0] ) free( handle->ch.ports[0] );
+    if ( handle->ch.ports[1] ) free( handle->ch.ports[1] );
 
     delete handle;
     stream_.apiHandle = 0;
@@ -2494,14 +2519,14 @@ void RtApiJack :: closeStream( void )
   if ( handle ) {
 
     if ( stream_.state == STREAM_RUNNING )
-      jack_deactivate( handle->client );
+      jack_deactivate( handle->ch.client );
 
-    jack_client_close( handle->client );
+    jack_client_close( handle->ch.client );
   }
 
   if ( handle ) {
-    if ( handle->ports[0] ) free( handle->ports[0] );
-    if ( handle->ports[1] ) free( handle->ports[1] );
+    if ( handle->ch.ports[0] ) free( handle->ch.ports[0] );
+    if ( handle->ch.ports[1] ) free( handle->ch.ports[1] );
     pthread_cond_destroy( &handle->condition );
     delete handle;
     stream_.apiHandle = 0;
@@ -2537,7 +2562,7 @@ void RtApiJack :: startStream( void )
   #endif
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
-  int result = jack_activate( handle->client );
+  int result = jack_activate( handle->ch.client );
   if ( result ) {
     errorText_ = "RtApiJack::startStream(): unable to activate JACK client!";
     goto unlock;
@@ -2548,7 +2573,8 @@ void RtApiJack :: startStream( void )
   // Get the list of available ports.
   if ( shouldAutoconnect_ && (stream_.mode == OUTPUT || stream_.mode == DUPLEX) ) {
     result = 1;
-    ports = jack_get_ports( handle->client, handle->deviceName[0].c_str(), JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput);
+    ports = jack_get_ports( handle->ch.client, handle->deviceName[0].c_str(),
+                            JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput);
     if ( ports == NULL) {
       errorText_ = "RtApiJack::startStream(): error determining available JACK input ports!";
       goto unlock;
@@ -2560,7 +2586,8 @@ void RtApiJack :: startStream( void )
     for ( unsigned int i=0; i<stream_.nUserChannels[0]; i++ ) {
       result = 1;
       if ( ports[ stream_.channelOffset[0] + i ] )
-        result = jack_connect( handle->client, jack_port_name( handle->ports[0][i] ), ports[ stream_.channelOffset[0] + i ] );
+        result = jack_connect( handle->ch.client, jack_port_name( handle->ch.ports[0][i] ),
+                               ports[ stream_.channelOffset[0] + i ] );
       if ( result ) {
         free( ports );
         errorText_ = "RtApiJack::startStream(): error connecting output ports!";
@@ -2572,7 +2599,8 @@ void RtApiJack :: startStream( void )
 
   if ( shouldAutoconnect_ && (stream_.mode == INPUT || stream_.mode == DUPLEX) ) {
     result = 1;
-    ports = jack_get_ports( handle->client, handle->deviceName[1].c_str(), JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput );
+    ports = jack_get_ports( handle->ch.client, handle->deviceName[1].c_str(),
+                            JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput );
     if ( ports == NULL) {
       errorText_ = "RtApiJack::startStream(): error determining available JACK output ports!";
       goto unlock;
@@ -2582,7 +2610,8 @@ void RtApiJack :: startStream( void )
     for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ ) {
       result = 1;
       if ( ports[ stream_.channelOffset[1] + i ] )
-        result = jack_connect( handle->client, ports[ stream_.channelOffset[1] + i ], jack_port_name( handle->ports[1][i] ) );
+        result = jack_connect( handle->ch.client, ports[ stream_.channelOffset[1] + i ],
+                               jack_port_name( handle->ch.ports[1][i] ) );
       if ( result ) {
         free( ports );
         errorText_ = "RtApiJack::startStream(): error connecting input ports!";
@@ -2619,7 +2648,7 @@ void RtApiJack :: stopStream( void )
     }
   }
 
-  jack_deactivate( handle->client );
+  jack_deactivate( handle->ch.client );
   stream_.state = STREAM_STOPPED;
 }
 
@@ -2716,7 +2745,8 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
     if ( handle->drainCounter > 1 ) { // write zeros to the output stream
 
       for ( unsigned int i=0; i<stream_.nDeviceChannels[0]; i++ ) {
-        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer( handle->ports[0][i], (jack_nframes_t) nframes );
+        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer(
+          handle->ch.ports[0][i], (jack_nframes_t) nframes );
         memset( jackbuffer, 0, bufferBytes );
       }
 
@@ -2726,13 +2756,15 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
       convertBuffer( stream_.deviceBuffer, stream_.userBuffer[0], stream_.convertInfo[0] );
 
       for ( unsigned int i=0; i<stream_.nDeviceChannels[0]; i++ ) {
-        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer( handle->ports[0][i], (jack_nframes_t) nframes );
+        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer(
+          handle->ch.ports[0][i], (jack_nframes_t) nframes );
         memcpy( jackbuffer, &stream_.deviceBuffer[i*bufferBytes], bufferBytes );
       }
     }
     else { // no buffer conversion
       for ( unsigned int i=0; i<stream_.nUserChannels[0]; i++ ) {
-        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer( handle->ports[0][i], (jack_nframes_t) nframes );
+        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer(
+          handle->ch.ports[0][i], (jack_nframes_t) nframes );
         memcpy( jackbuffer, &stream_.userBuffer[0][i*bufferBytes], bufferBytes );
       }
     }
@@ -2748,14 +2780,16 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 
     if ( stream_.doConvertBuffer[1] ) {
       for ( unsigned int i=0; i<stream_.nDeviceChannels[1]; i++ ) {
-        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer( handle->ports[1][i], (jack_nframes_t) nframes );
+        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer(
+          handle->ch.ports[1][i], (jack_nframes_t) nframes );
         memcpy( &stream_.deviceBuffer[i*bufferBytes], jackbuffer, bufferBytes );
       }
       convertBuffer( stream_.userBuffer[1], stream_.deviceBuffer, stream_.convertInfo[1] );
     }
     else { // no buffer conversion
       for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ ) {
-        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer( handle->ports[1][i], (jack_nframes_t) nframes );
+        jackbuffer = (jack_default_audio_sample_t *) jack_port_get_buffer(
+          handle->ch.ports[1][i], (jack_nframes_t) nframes );
         memcpy( &stream_.userBuffer[1][i*bufferBytes], jackbuffer, bufferBytes );
       }
     }
@@ -8500,13 +8534,17 @@ static const rtaudio_pa_format_mapping_t supported_sampleformats[] = {
   {RTAUDIO_FLOAT32, PA_SAMPLE_FLOAT32LE},
   {0, PA_SAMPLE_INVALID}};
 
+struct RtAudioClientHandlePulse : public RtAudioClientHandle
+{
+  pa_simple *s_play = nullptr;
+  pa_simple *s_rec = nullptr;
+};
+
 struct PulseAudioHandle {
-  pa_simple *s_play;
-  pa_simple *s_rec;
+  RtAudioClientHandlePulse ch;
   pthread_t thread;
   pthread_cond_t runnable_cv;
-  bool runnable;
-  PulseAudioHandle() : s_play(0), s_rec(0), runnable(false) { }
+  bool runnable = false;
 };
 
 static void rt_pa_mainloop_api_quit(int ret) {
@@ -8748,12 +8786,12 @@ void RtApiPulse::closeStream( void )
     MUTEX_UNLOCK( &stream_.mutex );
 
     pthread_join( pah->thread, 0 );
-    if ( pah->s_play ) {
-      pa_simple_flush( pah->s_play, NULL );
-      pa_simple_free( pah->s_play );
+    if ( pah->ch.s_play ) {
+      pa_simple_flush( pah->ch.s_play, NULL );
+      pa_simple_free( pah->ch.s_play );
     }
-    if ( pah->s_rec )
-      pa_simple_free( pah->s_rec );
+    if ( pah->ch.s_rec )
+      pa_simple_free( pah->ch.s_rec );
 
     pthread_cond_destroy( &pah->runnable_cv );
     delete pah;
@@ -8828,7 +8866,7 @@ void RtApiPulse::callbackEvent( void )
         bytes = stream_.nUserChannels[OUTPUT] * stream_.bufferSize *
                 formatBytes( stream_.userFormat );
 
-    if ( pa_simple_write( pah->s_play, pulse_out, bytes, &pa_error ) < 0 ) {
+    if ( pa_simple_write( pah->ch.s_play, pulse_out, bytes, &pa_error ) < 0 ) {
       errorStream_ << "RtApiPulse::callbackEvent: audio write error, " <<
         pa_strerror( pa_error ) << ".";
       errorText_ = errorStream_.str();
@@ -8844,7 +8882,7 @@ void RtApiPulse::callbackEvent( void )
       bytes = stream_.nUserChannels[INPUT] * stream_.bufferSize *
         formatBytes( stream_.userFormat );
             
-    if ( pa_simple_read( pah->s_rec, pulse_in, bytes, &pa_error ) < 0 ) {
+    if ( pa_simple_read( pah->ch.s_rec, pulse_in, bytes, &pa_error ) < 0 ) {
       errorStream_ << "RtApiPulse::callbackEvent: audio read error, " <<
         pa_strerror( pa_error ) << ".";
       errorText_ = errorStream_.str();
@@ -8913,9 +8951,9 @@ void RtApiPulse::stopStream( void )
 
   if ( pah ) {
     pah->runnable = false;
-    if ( pah->s_play ) {
+    if ( pah->ch.s_play ) {
       int pa_error;
-      if ( pa_simple_drain( pah->s_play, &pa_error ) < 0 ) {
+      if ( pa_simple_drain( pah->ch.s_play, &pa_error ) < 0 ) {
         errorStream_ << "RtApiPulse::stopStream: error draining output device, " <<
           pa_strerror( pa_error ) << ".";
         errorText_ = errorStream_.str();
@@ -8950,9 +8988,9 @@ void RtApiPulse::abortStream( void )
 
   if ( pah ) {
     pah->runnable = false;
-    if ( pah->s_play ) {
+    if ( pah->ch.s_play ) {
       int pa_error;
-      if ( pa_simple_flush( pah->s_play, &pa_error ) < 0 ) {
+      if ( pa_simple_flush( pah->ch.s_play, &pa_error ) < 0 ) {
         errorStream_ << "RtApiPulse::abortStream: error flushing output device, " <<
           pa_strerror( pa_error ) << ".";
         errorText_ = errorStream_.str();
@@ -9132,17 +9170,17 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     buffer_attr.fragsize = bufferBytes;
     buffer_attr.maxlength = -1;
 
-    pah->s_rec = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_RECORD,
+    pah->ch.s_rec = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_RECORD,
                                 dev_input, "Record", &ss, NULL, &buffer_attr, &error );
-    if ( !pah->s_rec ) {
+    if ( !pah->ch.s_rec ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error connecting input to PulseAudio server.";
       goto error;
     }
     break;
   case OUTPUT:
-    pah->s_play = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_PLAYBACK,
+    pah->ch.s_play = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_PLAYBACK,
                                  dev_output, "Playback", &ss, NULL, NULL, &error );
-    if ( !pah->s_play ) {
+    if ( !pah->ch.s_play ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error connecting output to PulseAudio server.";
       goto error;
     }
@@ -9238,6 +9276,12 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
 
   stream_.state = STREAM_CLOSED;
   return FAILURE;
+}
+
+RtAudioClientHandle* RtApiPulse :: getClientHandle( void )
+{
+  PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
+  return &pah->ch;
 }
 
 //******************** End of __LINUX_PULSE__ *********************//
