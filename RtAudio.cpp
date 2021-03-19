@@ -10603,7 +10603,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 2147483648.f), 2147483647L);
+          // Use llround() which returns `long long` which is guaranteed to be at least 64 bits.
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 2147483648.f), 2147483647LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10613,7 +10614,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 2147483648.0), 2147483647L);
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 2147483648.0), 2147483647LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10670,7 +10671,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 8388608.f), 8388607L);
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 8388608.f), 8388607LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10680,7 +10681,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 8388608.0), 8388607L);
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 8388608.0), 8388607LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10735,7 +10736,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) std::min(std::lround(in[info.inOffset[j]] * 32768.f), 32767L);
+          out[info.outOffset[j]] = (Int16) std::min(std::llround(in[info.inOffset[j]] * 32768.f), 32767LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10745,7 +10746,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) std::min(std::lround(in[info.inOffset[j]] * 32768.0), 32767L);
+          out[info.outOffset[j]] = (Int16) std::min(std::llround(in[info.inOffset[j]] * 32768.0), 32767LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10799,7 +10800,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) std::min(std::lround(in[info.inOffset[j]] * 128.f), 127L);
+          out[info.outOffset[j]] = (signed char) std::min(std::llround(in[info.inOffset[j]] * 128.f), 127LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10809,7 +10810,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) std::min(std::lround(in[info.inOffset[j]] * 128.0), 127L);
+          out[info.outOffset[j]] = (signed char) std::min(std::llround(in[info.inOffset[j]] * 128.0), 127LL);
         }
         in += info.inJump;
         out += info.outJump;
