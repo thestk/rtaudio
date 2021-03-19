@@ -299,30 +299,21 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   struct DeviceInfo {
     bool probed;                  /*!< true if the device capabilities were successfully probed. */
     std::string name;             /*!< Character string device identifier. */
-    unsigned int outputChannels;  /*!< Maximum output channels supported by device. */
-    unsigned int inputChannels;   /*!< Maximum input channels supported by device. */
-    unsigned int duplexChannels;  /*!< Maximum simultaneous input/output channels supported by device. */
-    bool isDefaultOutput;         /*!< true if this is the default output device. */
-    bool isDefaultInput;          /*!< true if this is the default input device. */
+    unsigned int outputChannels{};  /*!< Maximum output channels supported by device. */
+    unsigned int inputChannels{};   /*!< Maximum input channels supported by device. */
+    unsigned int duplexChannels{};  /*!< Maximum simultaneous input/output channels supported by device. */
+    bool isDefaultOutput{false};         /*!< true if this is the default output device. */
+    bool isDefaultInput{false};          /*!< true if this is the default input device. */
     std::vector<unsigned int> sampleRates; /*!< Supported sample rates (queried from list of standard rates). */
-    unsigned int preferredSampleRate; /*!< Preferred sample rate, e.g. for WASAPI the system sample rate. */
-    RtAudioFormat nativeFormats;  /*!< Bit mask of supported data formats. */
-
-    // Default constructor.
-    DeviceInfo()
-      :probed(false), outputChannels(0), inputChannels(0), duplexChannels(0),
-       isDefaultOutput(false), isDefaultInput(false), preferredSampleRate(0), nativeFormats(0) {}
+    unsigned int preferredSampleRate{}; /*!< Preferred sample rate, e.g. for WASAPI the system sample rate. */
+    RtAudioFormat nativeFormats{};  /*!< Bit mask of supported data formats. */
   };
 
   //! The structure for specifying input or ouput stream parameters.
   struct StreamParameters {
-    unsigned int deviceId;     /*!< Device index (0 to getDeviceCount() - 1). */
-    unsigned int nChannels;    /*!< Number of channels. */
-    unsigned int firstChannel; /*!< First channel index on device (default = 0). */
-
-    // Default constructor.
-    StreamParameters()
-      : deviceId(0), nChannels(0), firstChannel(0) {}
+    unsigned int deviceId{};     /*!< Device index (0 to getDeviceCount() - 1). */
+    unsigned int nChannels{};    /*!< Number of channels. */
+    unsigned int firstChannel{}; /*!< First channel index on device (default = 0). */
   };
 
   //! The structure for specifying stream options.
@@ -383,14 +374,10 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     RtAudio with Jack, each instance must have a unique client name.
   */
   struct StreamOptions {
-    RtAudioStreamFlags flags;      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */
-    unsigned int numberOfBuffers;  /*!< Number of stream buffers. */
+    RtAudioStreamFlags flags{};      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */
+    unsigned int numberOfBuffers{};  /*!< Number of stream buffers. */
     std::string streamName;        /*!< A stream name (currently used only in Jack). */
-    int priority;                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
-
-    // Default constructor.
-    StreamOptions()
-    : flags(0), numberOfBuffers(0), priority(0) {}
+    int priority{};                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
   };
 
   //! A static function to determine the current RtAudio version.
@@ -647,20 +634,15 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 // between the private RtAudio stream structure and global callback
 // handling functions.
 struct CallbackInfo {
-  void *object;    // Used as a "this" pointer.
-  ThreadHandle thread;
-  void *callback;
-  void *userData;
-  void *errorCallback;
-  void *apiInfo;   // void pointer for API specific callback information
-  bool isRunning;
-  bool doRealtime;
-  int priority;
-
-  // Default constructor.
-  CallbackInfo()
-  :object(0), thread(0), callback(0), userData(0), errorCallback(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0) {}
-
+  void *object{};    // Used as a "this" pointer.
+  ThreadHandle thread{};
+  void *callback{};
+  void *userData{};
+  void *errorCallback{};
+  void *apiInfo{};   // void pointer for API specific callback information
+  bool isRunning{false};
+  bool doRealtime{false};
+  int priority{};
 };
 
 // **************************************************************** //
