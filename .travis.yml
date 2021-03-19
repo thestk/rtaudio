@@ -60,7 +60,7 @@ matrix:
     compiler: clang
 install:
 - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install libasound2-dev libjack-dev libpulse-dev doxygen g++-mingw-w64-i686 g++-mingw-w64-x86-64 g++-arm-linux-gnueabihf oss4-dev; fi
-- if [ $TRAVIS_OS_NAME = osx ]; then brew install doxygen || (brew update && brew install doxygen); fi
+#- if [ $TRAVIS_OS_NAME = osx ]; then brew install doxygen || (brew update && brew install doxygen); fi
 - if [ -n "$HOST" ]; then unset CXX; unset CC; fi
 script: ./autogen.sh --enable-debug --with-$API $HOST && make
 after_script:
