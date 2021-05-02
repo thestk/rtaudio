@@ -166,7 +166,6 @@ AsioDriverList::AsioDriverList ()
 	LPASIODRVSTRUCT	pdl;
 	LONG 			cr;
 	DWORD			index = 0;
-	BOOL			fin = FALSE;
 
 	numdrv		= 0;
 	lpdrvlist	= 0;
@@ -184,7 +183,6 @@ AsioDriverList::AsioDriverList ()
 #endif
 			lpdrvlist = newDrvStruct (hkEnum,keyname,0,lpdrvlist);
 		}
-		else fin = TRUE;
 	}
 	if (hkEnum) RegCloseKey(hkEnum);
 
