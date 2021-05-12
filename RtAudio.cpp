@@ -4995,7 +4995,7 @@ void RtApiWasapi::wasapiThread()
   RtAudioError::Type errorType = RtAudioError::DRIVER_ERROR;
 
   // Attempt to assign "Pro Audio" characteristic to thread
-  HMODULE AvrtDll = LoadLibrary( (LPCTSTR) "AVRT.dll" );
+  HMODULE AvrtDll = LoadLibraryW( L"AVRT.dll" );
   if ( AvrtDll ) {
     DWORD taskIndex = 0;
     TAvSetMmThreadCharacteristicsPtr AvSetMmThreadCharacteristicsPtr =
