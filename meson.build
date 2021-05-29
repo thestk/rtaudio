@@ -3,6 +3,8 @@ project('rtaudio', 'cpp')
 src = ['RtAudio.cpp']
 incdir = include_directories('include')
 
+install_headers('RtAudio.h')
+
 compiler = meson.get_compiler('cpp')
 
 deps = []
