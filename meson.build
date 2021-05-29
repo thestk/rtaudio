@@ -68,3 +68,4 @@ endif
 rtaudio = library('rtaudio', src, include_directories: incdir, dependencies: deps)
 rtaudio_dep = declare_dependency(include_directories : incdir,
   link_with : rtaudio)
+meson.override_dependency('rtaudio', rtaudio_dep)
