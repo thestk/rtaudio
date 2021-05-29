@@ -54,10 +54,10 @@ if get_option('wasapi') == true
 endif
 
 if get_option('asio') == true
-	src += ['asio.cpp',
-		'asiolist.cpp',
-		'asiodrivers.cpp',
-		'iasiothiscallresolver.cpp']
+	src += ['include/asio.cpp',
+		'include/asiolist.cpp',
+		'include/asiodrivers.cpp',
+		'include/iasiothiscallresolver.cpp']
 	defines += '-D__WINDOWS_ASIO__'
 endif
 
