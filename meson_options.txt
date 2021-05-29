@@ -1,0 +1,8 @@
+option('jack', type : 'feature', value : 'auto', description: 'Build with JACK Backend')
+option('alsa', type : 'feature', value : 'auto', description: 'Build with ALSA Backend')
+option('pulse', type : 'feature', value : 'auto', description: 'Build with Pulseaudio Backend')
+option('oss', type : 'boolean', value : 'false', description: 'Build with OSS Backend')
+option('core', type : 'feature', value : 'auto', description: 'Build with CoreAudio Backend')
+option('dsound', type : 'feature', value : 'auto', description: 'Build with DirectSound Backend')
+option('asio', type : 'boolean', value : 'false', description: 'Build with ASIO Backend')
+option('wasapi', type : 'boolean', value : 'false', description: 'Build with WASAPI Backend')
