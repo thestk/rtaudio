@@ -28,9 +28,11 @@ if get_option('oss') == true
 endif
 
 pulse_dep = dependency('libpulse', required: get_option('pulse'))
-if pulse_dep.found()
+pulsesimple_dep = dependency('libpulse-simple', required: get_option('pulse'))
+if pulse_dep.found() and pulsesimple_dep.found()
 	defines += '-D__LINUX_PULSE__'
 	deps += pulse_dep
+	deps += pulsesimple_dep
 endif
 
 core_dep = dependency('appleframeworks', modules: ['CoreAudio', 'CoreFoundation'], required: get_option('core'))
