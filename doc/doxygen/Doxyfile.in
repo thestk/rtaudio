@@ -1210,7 +1210,7 @@ FORMULA_TRANSPARENT    = YES
 USE_MATHJAX            = NO
 
 # When MathJax is enabled you can set the default output format to be used for 
-# thA MathJax output. Supported types are HTML-CSS, NativeMML (i.e. MathML) and 
+# the MathJax output. Supported types are HTML-CSS, NativeMML (i.e. MathML) and 
 # SVG. The default value is HTML-CSS, which is slower, but has the best 
 # compatibility.
 
@@ -1737,7 +1737,7 @@ UML_LOOK               = NO
 # the class node. If there are many fields or methods and many nodes the 
 # graph may become too big to be useful. The UML_LIMIT_NUM_FIELDS 
 # threshold limits the number of items for each type to make the size more 
-# managable. Set this to 0 for no limit. Note that the threshold may be 
+# manageable. Set this to 0 for no limit. Note that the threshold may be 
 # exceeded by 50% before the limit is enforced.
 
 UML_LIMIT_NUM_FIELDS   = 10

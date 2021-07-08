@@ -169,7 +169,7 @@ v3.0: (11 March 2004)
 - new multi-api support by subclassing all apis and making rtaudio a controller class
 - added over/underload check to Mac OS X support
 - new scheme for blocking functionality in callback-based apis (CoreAudio, ASIO, and JACK)
-- removed multiple stream support (all stream indentifier arguments removed)
+- removed multiple stream support (all stream identifier arguments removed)
 - various style and name changes to conform with standard C++ practice
 
 v2.1.1: (24 October 2002)
