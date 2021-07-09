@@ -1027,8 +1027,6 @@ public:
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_WASAPI; }
   unsigned int getDeviceCount( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
-  unsigned int getDefaultOutputDevice( void ) override;
-  unsigned int getDefaultInputDevice( void ) override;
   void closeStream( void ) override;
   void startStream( void ) override;
   void stopStream( void ) override;
