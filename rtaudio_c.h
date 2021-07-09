@@ -119,12 +119,12 @@ typedef enum rtaudio_error {
   RTAUDIO_ERROR_UNSPECIFIED,       /*!< The default, unspecified error type. */
   RTAUDIO_ERROR_NO_DEVICES_FOUND,  /*!< No devices found on system. */
   RTAUDIO_ERROR_INVALID_DEVICE,    /*!< An invalid device ID was specified. */
-  RTAUDIO_ERROR_MEMORY_ERROR,      /*!< An error occured during memory allocation. */
+  RTAUDIO_ERROR_MEMORY_ERROR,      /*!< An error occurred during memory allocation. */
   RTAUDIO_ERROR_INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
   RTAUDIO_ERROR_INVALID_USE,       /*!< The function was called incorrectly. */
-  RTAUDIO_ERROR_DRIVER_ERROR,      /*!< A system driver error occured. */
-  RTAUDIO_ERROR_SYSTEM_ERROR,      /*!< A system error occured. */
-  RTAUDIO_ERROR_THREAD_ERROR,      /*!< A thread error occured. */
+  RTAUDIO_ERROR_DRIVER_ERROR,      /*!< A system driver error occurred. */
+  RTAUDIO_ERROR_SYSTEM_ERROR,      /*!< A system error occurred. */
+  RTAUDIO_ERROR_THREAD_ERROR,      /*!< A thread error occurred. */
 } rtaudio_error_t;
 
 //! RtAudio error callback function prototype.
@@ -173,7 +173,7 @@ typedef struct rtaudio_device_info {
   char name[MAX_NAME_LENGTH];
 } rtaudio_device_info_t;
 
-//! The structure for specifying input or ouput stream parameters.
+//! The structure for specifying input or output stream parameters.
 //! See \ref RtAudio::StreamParameters.
 typedef struct rtaudio_stream_parameters {
   unsigned int device_id;
