@@ -73,3 +73,12 @@ rtaudio = library('rtaudio', src, include_directories: incdir, cpp_args: defines
 rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
 meson.override_dependency('rtaudio', rtaudio_dep)
+
+summary({'ALSA': alsa_dep.found(),
+	'OSS': get_option('oss'),
+	'JACK': jack_dep.found(),
+	'PulseAudio': pulse_dep.found() and pulsesimple_dep.found(),
+	'CoreAudio': core_dep.found(),
+	'DirectAudio': dsound_dep.found(),
+	'WASAPI': get_option('wasapi'),
+	'ASIO': get_option('asio')}, bool_yn: true, section: 'Audio Backends')
