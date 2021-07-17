@@ -3,7 +3,7 @@ project('RtAudio', 'cpp', default_options: ['warning_level=3'])
 src = ['RtAudio.cpp', 'rtaudio_c.cpp']
 incdir = include_directories('include')
 
-install_headers('RtAudio.h', 'rtaudio_c.h')
+install_headers('RtAudio.h', 'rtaudio_c.h', subdir: 'rtaudio')
 
 compiler = meson.get_compiler('cpp')
 
