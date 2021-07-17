@@ -11,6 +11,10 @@ deps = []
 defines = []
 deps += dependency('threads')
 
+if compiler.has_function('gettimeofday', prefix: '#include <sys/time.h>')
+	defines += '-DHAVE_GETTIMEOFDAY'
+endif
+
 alsa_dep = dependency('alsa', required: get_option('alsa'))
 if alsa_dep.found()
 	defines += '-D__LINUX_ALSA__'
