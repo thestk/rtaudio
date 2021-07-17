@@ -9,11 +9,16 @@ compiler = meson.get_compiler('cpp')
 
 deps = []
 defines = []
-deps += dependency('threads')
 
 if compiler.has_function('gettimeofday', prefix: '#include <sys/time.h>')
 	defines += '-DHAVE_GETTIMEOFDAY'
 endif
+
+if get_option('debug') == true
+	defines += '-D__RTAUDIO_DEBUG__'
+endif
+
+deps += dependency('threads')
 
 alsa_dep = dependency('alsa', required: get_option('alsa'))
 if alsa_dep.found()
