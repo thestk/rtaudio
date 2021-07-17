@@ -1,9 +1,9 @@
 project('rtaudio', 'cpp')
 
-src = ['RtAudio.cpp']
+src = ['RtAudio.cpp', 'rtaudio_c.cpp']
 incdir = include_directories('include')
 
-install_headers('RtAudio.h')
+install_headers('RtAudio.h', 'rtaudio_c.h')
 
 compiler = meson.get_compiler('cpp')
 
