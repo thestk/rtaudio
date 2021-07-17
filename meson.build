@@ -8,7 +8,7 @@ install_headers('RtAudio.h', 'rtaudio_c.h')
 compiler = meson.get_compiler('cpp')
 
 deps = []
-defines = []
+defines = ['-DRTAUDIO_EXPORT']
 
 if compiler.has_function('gettimeofday', prefix: '#include <sys/time.h>')
 	defines += '-DHAVE_GETTIMEOFDAY'
