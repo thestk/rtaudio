@@ -1,14 +1,23 @@
-project('rtaudio', 'cpp')
+project('RtAudio', 'cpp', default_options: ['warning_level=3'])
 
-src = ['RtAudio.cpp']
+src = ['RtAudio.cpp', 'rtaudio_c.cpp']
 incdir = include_directories('include')
 
-install_headers('RtAudio.h')
+install_headers('RtAudio.h', 'rtaudio_c.h', subdir: 'rtaudio')
 
 compiler = meson.get_compiler('cpp')
 
 deps = []
-defines = []
+defines = ['-DRTAUDIO_EXPORT']
+
+if compiler.has_function('gettimeofday', prefix: '#include <sys/time.h>')
+	defines += '-DHAVE_GETTIMEOFDAY'
+endif
+
+if get_option('debug') == true
+	defines += '-D__RTAUDIO_DEBUG__'
+endif
+
 deps += dependency('threads')
 
 alsa_dep = dependency('alsa', required: get_option('alsa'))
@@ -73,3 +82,12 @@ rtaudio = library('rtaudio', src, include_directories: incdir, cpp_args: defines
 rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
 meson.override_dependency('rtaudio', rtaudio_dep)
+
+summary({'ALSA': alsa_dep.found(),
+	'OSS': get_option('oss'),
+	'JACK': jack_dep.found(),
+	'PulseAudio': pulse_dep.found() and pulsesimple_dep.found(),
+	'CoreAudio': core_dep.found(),
+	'DirectAudio': dsound_dep.found(),
+	'WASAPI': get_option('wasapi'),
+	'ASIO': get_option('asio')}, bool_yn: true, section: 'Audio Backends')
