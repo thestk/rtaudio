@@ -410,13 +410,25 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
 unsigned int RtApi :: getDefaultInputDevice( void )
 {
-  // Should be implemented in subclasses if possible.
+  // Should be reimplemented in subclasses if necessary.
+  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
+    if ( getDeviceInfo( i ).isDefaultInput ) {
+      return i;
+    }
+  }
+
   return 0;
 }
 
 unsigned int RtApi :: getDefaultOutputDevice( void )
 {
-  // Should be implemented in subclasses if possible.
+  // Should be reimplemented in subclasses if necessary.
+  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
+    if ( getDeviceInfo( i ).isDefaultOutput ) {
+      return i;
+    }
+  }
+
   return 0;
 }
 
@@ -4520,34 +4532,6 @@ Exit:
     error( errorType );
   return info;
 }
-
-//-----------------------------------------------------------------------------
-
-unsigned int RtApiWasapi::getDefaultOutputDevice( void )
-{
-  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
-    if ( getDeviceInfo( i ).isDefaultOutput ) {
-      return i;
-    }
-  }
-
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-
-unsigned int RtApiWasapi::getDefaultInputDevice( void )
-{
-  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
-    if ( getDeviceInfo( i ).isDefaultInput ) {
-      return i;
-    }
-  }
-
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
 
 void RtApiWasapi::closeStream( void )
 {
