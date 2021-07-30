@@ -411,7 +411,8 @@ void RtApi :: openStream( RtAudio::StreamParameters *oParams,
 unsigned int RtApi :: getDefaultInputDevice( void )
 {
   // Should be reimplemented in subclasses if necessary.
-  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
+  unsigned int nDevices = getDeviceCount();
+  for ( unsigned int i = 0; i < nDevices; i++ ) {
     if ( getDeviceInfo( i ).isDefaultInput ) {
       return i;
     }
@@ -423,7 +424,8 @@ unsigned int RtApi :: getDefaultInputDevice( void )
 unsigned int RtApi :: getDefaultOutputDevice( void )
 {
   // Should be reimplemented in subclasses if necessary.
-  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
+  unsigned int nDevices = getDeviceCount();
+  for ( unsigned int i = 0; i < nDevices; i++ ) {
     if ( getDeviceInfo( i ).isDefaultOutput ) {
       return i;
     }
