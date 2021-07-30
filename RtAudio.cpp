@@ -8504,8 +8504,10 @@ static void rt_pa_server_callback(pa_context *context, const pa_server_info *inf
   (void)data;
   pa_sample_spec ss;
 
-  if (!info)
+  if (!info) {
     rt_pa_mainloop_api_quit(1);
+    return;
+  }
 
   ss = info->sample_spec;
 
