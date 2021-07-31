@@ -8605,7 +8605,8 @@ static void rt_pa_set_source_info_and_quit(pa_context * /*c*/, const pa_source_i
 static void rt_pa_context_state_callback(pa_context *context, void *userdata) {
   (void)userdata;
 
-  switch (pa_context_get_state(context)) {
+  auto state = pa_context_get_state(context);
+  switch (state) {
     case PA_CONTEXT_CONNECTING:
     case PA_CONTEXT_AUTHORIZING:
     case PA_CONTEXT_SETTING_NAME:
