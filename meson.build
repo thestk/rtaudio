@@ -38,11 +38,9 @@ if get_option('oss') == true
 	defines += '-D__LINUX_OSS__'
 endif
 
-pulse_dep = dependency('libpulse', required: get_option('pulse'))
 pulsesimple_dep = dependency('libpulse-simple', required: get_option('pulse'))
-if pulse_dep.found() and pulsesimple_dep.found()
+if pulsesimple_dep.found()
 	defines += '-D__LINUX_PULSE__'
-	deps += pulse_dep
 	deps += pulsesimple_dep
 endif
 
@@ -92,7 +90,7 @@ pkg.generate(rtaudio,
 summary({'ALSA': alsa_dep.found(),
 	'OSS': get_option('oss'),
 	'JACK': jack_dep.found(),
-	'PulseAudio': pulse_dep.found() and pulsesimple_dep.found(),
+	'PulseAudio': pulsesimple_dep.found(),
 	'CoreAudio': core_dep.found(),
 	'DirectAudio': dsound_dep.found(),
 	'WASAPI': get_option('wasapi'),
