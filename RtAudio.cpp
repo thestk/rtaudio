@@ -8674,6 +8674,13 @@ void RtApiPulse::collectDeviceInfo( void )
     goto quit;
   }
 
+  if (ret != 0) {
+    errorStream_ << "could not get server info.";
+    errorText_ = errorStream_.str();
+    error( RtAudioError::WARNING );
+    goto quit;
+  }
+
 quit:
   if (context)
     pa_context_unref(context);
