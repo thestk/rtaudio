@@ -8499,7 +8499,7 @@ static void rt_pa_mainloop_api_quit(int ret) {
     rt_pa_mainloop_api->quit(rt_pa_mainloop_api, ret);
 }
 
-static void rt_pa_server_callback(pa_context *context, const pa_server_info *info, void *data){
+static void rt_pa_set_server_info(pa_context *context, const pa_server_info *info, void *data){
   (void)context;
   (void)data;
   pa_sample_spec ss;
@@ -8512,11 +8512,10 @@ static void rt_pa_server_callback(pa_context *context, const pa_server_info *inf
   rt_pa_info.default_rate = ss.rate;
   rt_pa_info.default_sink_name = info->default_sink_name;
   rt_pa_info.default_source_name = info->default_source_name;
-  rt_pa_mainloop_api_quit(0);
 }
 
-static void rt_pa_sink_info_cb(pa_context * /*c*/, const pa_sink_info *i,
-                               int eol, void * /*userdata*/)
+static void rt_pa_set_sink_info(pa_context * /*c*/, const pa_sink_info *i,
+                                int eol, void * /*userdata*/)
 {
   if (eol) return;
   PaDeviceInfo inf;
@@ -8556,10 +8555,13 @@ static void rt_pa_sink_info_cb(pa_context * /*c*/, const pa_sink_info *i,
     rt_pa_info.dev.push_back(inf);
 }
 
-static void rt_pa_source_info_cb(pa_context * /*c*/, const pa_source_info *i,
-                                 int eol, void * /*userdata*/)
+static void rt_pa_set_source_info_and_quit(pa_context * /*c*/, const pa_source_info *i,
+                                           int eol, void * /*userdata*/)
 {
-  if (eol) return;
+  if (eol) {
+    rt_pa_mainloop_api_quit(0);
+    return;
+  }
   PaDeviceInfo inf;
   inf.info.name = pa_proplist_gets(i->proplist, "device.description");
   inf.info.probed = true;
@@ -8611,9 +8613,9 @@ static void rt_pa_context_state_callback(pa_context *context, void *userdata) {
 
     case PA_CONTEXT_READY:
       rt_pa_info.dev.clear();
-      pa_context_get_server_info(context, rt_pa_server_callback, NULL);
-      pa_context_get_sink_info_list(context, rt_pa_sink_info_cb, NULL);
-      pa_context_get_source_info_list(context, rt_pa_source_info_cb, NULL);
+      pa_context_get_server_info(context, rt_pa_set_server_info, NULL);
+      pa_context_get_sink_info_list(context, rt_pa_set_sink_info, NULL);
+      pa_context_get_source_info_list(context, rt_pa_set_source_info_and_quit, NULL);
       break;
 
     case PA_CONTEXT_TERMINATED:
