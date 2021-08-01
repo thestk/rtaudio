@@ -78,7 +78,7 @@ if host_machine.system() == 'windows'
 	deps += compiler.find_library('winmm', required: true)
 endif
 
-rtaudio = library('rtaudio', src, include_directories: incdir, cpp_args: defines, dependencies: deps)
+rtaudio = library('rtaudio', src, include_directories: incdir, cpp_args: defines, dependencies: deps, install: true)
 rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
 meson.override_dependency('rtaudio', rtaudio_dep)
