@@ -1,4 +1,4 @@
-project('RtAudio', 'cpp', default_options: ['warning_level=3'])
+project('RtAudio', 'cpp', default_options: ['warning_level=3', 'c_std=c99', 'cpp_std=c++11'])
 
 src = ['RtAudio.cpp', 'rtaudio_c.cpp']
 incdir = include_directories('include')
