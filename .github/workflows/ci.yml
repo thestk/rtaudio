@@ -1,0 +1,91 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  Linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - api: jack
+            APIcmake: JACK
+            deps: libjack-dev
+          - api: alsa
+            APIcmake: ALSA
+            deps: libasound-dev
+          - api: pulse
+            APIcmake: PULSE
+            deps: libpulse-dev
+          - api: oss
+            APIcmake: OSS
+            deps: oss4-dev
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run:
+        sudo apt-get install g++-8 autoconf-archive cmake python3-pip ninja-build ${{matrix.deps}}
+        && sudo pip install meson>=0.55.0
+    - name: automake
+      run:
+        env NOCONFIGURE=1 ./autogen.sh && mkdir bld-automake && cd bld-automake
+        && (../configure --with-${{matrix.api}} || (cat config.log; false))
+        && make V=1 && make check
+    - name: CMake
+      run:
+        mkdir bld-cmake && cd bld-cmake
+        && cmake .. -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make
+    - name: Meson
+      run: meson bld-meson && cd bld-meson && ninja -j1 -v
+
+  MacOS:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run: brew install autoconf-archive automake cmake meson
+    - name: automake
+      run:
+        env NOCONFIGURE=1 ./autogen.sh && mkdir bld-automake && cd bld-automake
+        && (../configure || (cat config.log; false))
+        && make V=1 && make check
+    - name: CMake
+      run: mkdir bld-cmake && cd bld-cmake && cmake .. && make VERBOSE=1
+    - name: Meson
+      run: meson bld-meson && cd bld-meson && ninja -j1 -v
+
+  MinGW:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - host: i686-w64-mingw32
+            api: dsound
+          - host: x86_64-w64-mingw32
+            api: dsound
+          - host: i686-w64-mingw32
+            api: asio
+            cppflags: -Wno-unused-but-set-variable
+          - host: x86_64-w64-mingw32
+            api: asio
+            cppflags: -Wno-unused-but-set-variable
+          - host: i686-w64-mingw32
+            api: wasapi
+          - host: x86_64-w64-mingw32
+            api: wasapi
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run: sudo apt-get install g++-mingw-w64 autoconf-archive
+    - name: automake
+      run:
+        env NOCONFIGURE=1 ./autogen.sh
+        && mkdir bld-automake && cd bld-automake
+        && (../configure --host=${{matrix.host}} --with-${{matrix.api}} CPPFLAGS=${{matrix.cppflags}} || (cat config.log; false))
+        && make V=1

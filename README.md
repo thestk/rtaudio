@@ -1,6 +1,6 @@
 # RtAudio
 
-[![Build Status](https://travis-ci.org/thestk/rtaudio.svg?branch=master)](https://travis-ci.org/thestk/rtaudio)
+![Build Status](https://github.com/thestk/rtaudio/actions/workflows/ci.yml/badge.svg)
 
 A set of C++ classes that provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound, ASIO and WASAPI) operating systems.
 
