@@ -1,4 +1,9 @@
-project('RtAudio', 'cpp', version: '5.1.0', default_options: ['warning_level=3', 'c_std=c99', 'cpp_std=c++11'])
+project('RtAudio', 'cpp',
+	version: '5.1.0',
+	default_options: ['warning_level=3',
+			'c_std=c99',
+			'cpp_std=c++11',
+			'default_library=both'])
 
 fs = import('fs')
 pkg = import('pkgconfig')
