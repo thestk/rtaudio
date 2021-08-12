@@ -1,4 +1,25 @@
-project('RtAudio', 'cpp', default_options: ['warning_level=3', 'c_std=c99', 'cpp_std=c++11'])
+project('RtAudio', 'cpp',
+	version: '5.1.0',
+	default_options: ['warning_level=3',
+			'c_std=c99',
+			'cpp_std=c++11',
+			'default_library=both'])
+
+fs = import('fs')
+pkg = import('pkgconfig')
+
+ac_file = fs.read('configure.ac').strip().split('\n')
+foreach line : ac_file
+	if line.startswith('m4_define([lt_current],')
+		lt_current = line.substring(-2,-1)
+	elif line.startswith('m4_define([lt_revision],')
+		lt_revision = line.substring(-2,-1)
+	elif line.startswith('m4_define([lt_age],')
+		lt_age = line.substring(-2,-1)
+	endif
+endforeach
+
+so_version = '.'.join([lt_current,lt_revision,lt_age])
 
 src = ['RtAudio.cpp', 'rtaudio_c.cpp']
 incdir = include_directories('include')
@@ -36,11 +57,9 @@ if get_option('oss') == true
 	defines += '-D__LINUX_OSS__'
 endif
 
-pulse_dep = dependency('libpulse', required: get_option('pulse'))
 pulsesimple_dep = dependency('libpulse-simple', required: get_option('pulse'))
-if pulse_dep.found() and pulsesimple_dep.found()
+if pulsesimple_dep.found()
 	defines += '-D__LINUX_PULSE__'
-	deps += pulse_dep
 	deps += pulsesimple_dep
 endif
 
@@ -78,15 +97,24 @@ if host_machine.system() == 'windows'
 	deps += compiler.find_library('winmm', required: true)
 endif
 
-rtaudio = library('rtaudio', src, include_directories: incdir, cpp_args: defines, dependencies: deps)
+rtaudio = library('rtaudio', src,
+		soversion: so_version,
+		include_directories: incdir,
+		cpp_args: defines,
+		dependencies: deps,
+		install: true)
 rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
 meson.override_dependency('rtaudio', rtaudio_dep)
 
+pkg.generate(rtaudio,
+	description: 'RtAudio - a set of C++ classes that provide a common API for realtime audio input/output',
+	subdirs: 'rtaudio')
+
 summary({'ALSA': alsa_dep.found(),
 	'OSS': get_option('oss'),
 	'JACK': jack_dep.found(),
-	'PulseAudio': pulse_dep.found() and pulsesimple_dep.found(),
+	'PulseAudio': pulsesimple_dep.found(),
 	'CoreAudio': core_dep.found(),
 	'DirectAudio': dsound_dep.found(),
 	'WASAPI': get_option('wasapi'),
