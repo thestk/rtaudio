@@ -8,5 +8,5 @@ Description: RtAudio - a set of C++ classes that provide a common API for realti
 Version: @PACKAGE_VERSION@
 Requires.private: @req@
 Libs: -L${libdir} -lrtaudio
-Libs.private: -lpthread
+Libs.private: -lpthread @req_libs@
 Cflags: -pthread -I${includedir} @api@
