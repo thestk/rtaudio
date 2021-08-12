@@ -135,7 +135,7 @@ if (RTAUDIO_API_ALSA)
 endif()
 
 # OSS
-if (RTAUDIO_OSS)
+if (RTAUDIO_API_OSS)
   set(NEED_PTHREAD ON)
   find_library(OSSAUDIO_LIB ossaudio)
   if (OSSAUDIO_LIB)
