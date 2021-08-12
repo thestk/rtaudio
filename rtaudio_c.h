@@ -75,7 +75,7 @@ typedef unsigned int rtaudio_stream_flags_t;
 #define RTAUDIO_FLAGS_HOG_DEVICE 0x4
 #define RTAUDIO_FLAGS_SCHEDULE_REALTIME 0x8
 #define RTAUDIO_FLAGS_ALSA_USE_DEFAULT 0x10
-#define RTAUDIO_FLAGS_JACK_DONT_CONNECT = 0x20
+#define RTAUDIO_FLAGS_JACK_DONT_CONNECT 0x20
 
 /*! \typedef typedef unsigned long rtaudio_stream_status_t;
     \brief RtAudio stream status (over- or underflow) flags.
