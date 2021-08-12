@@ -29,10 +29,12 @@ SO_VERSION=lt_version_info
 AC_SUBST(SO_VERSION)
 AC_SUBST(api)
 AC_SUBST(req)
+AC_SUBST(req_libs)
 AC_SUBST(visibility)
 
 api=""
 req=""
+req_libs=""
 use_asio=""
 
 # standards version
@@ -248,6 +250,7 @@ AS_CASE(["$systems"], [*" jack "*], [
 AS_CASE(["$systems"], [*" core "*], [
   AC_CHECK_HEADER(CoreAudio/CoreAudio.h,
     [api="$api -D__MACOSX_CORE__"
+     req_libs="$req_libs -framework CoreAudio -framework CoreFoundation"
      need_pthread=yes
      found="$found CoreAudio",
      LIBS="$LIBS -framework CoreAudio -framework CoreFoundation"],
