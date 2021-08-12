@@ -35,14 +35,14 @@ jobs:
     - name: automake
       run:
         env NOCONFIGURE=1 ./autogen.sh && mkdir bld-automake && cd bld-automake
-        && (../configure --with-${{matrix.api}} || (cat config.log; false))
-        && make V=1 && make check
+        && (../configure --prefix=$PWD/inst --with-${{matrix.api}} || (cat config.log; false))
+        && make V=1 && make check && make install && find inst
     - name: CMake
       run:
         mkdir bld-cmake && cd bld-cmake
-        && cmake .. -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make
+        && cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/inst -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make VERBOSE=1 && make install && find inst
     - name: Meson
-      run: meson bld-meson -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v
+      run: meson bld-meson --prefix=$PWD/bld-meson/inst -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v install && find inst
 
   MacOS:
     runs-on: macOS-latest
@@ -55,12 +55,12 @@ jobs:
     - name: automake
       run:
         env NOCONFIGURE=1 ./autogen.sh && mkdir bld-automake && cd bld-automake
-        && (../configure || (cat config.log; false))
-        && make V=1 && make check
+        && (../configure --prefix=$PWD/inst || (cat config.log; false))
+        && make V=1 && make check && make install && find inst
     - name: CMake
-      run: mkdir bld-cmake && cd bld-cmake && cmake .. && make VERBOSE=1
+      run: mkdir bld-cmake && cd bld-cmake && cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/inst && make VERBOSE=1 && make install && find inst
     - name: Meson
-      run: meson bld-meson && cd bld-meson && ninja -j1 -v
+      run: meson bld-meson --prefix=$PWD/bld-meson/inst && cd bld-meson && ninja -j1 -v install && find inst
 
   MinGW:
     runs-on: ubuntu-latest
@@ -91,5 +91,5 @@ jobs:
       run:
         env NOCONFIGURE=1 ./autogen.sh
         && mkdir bld-automake && cd bld-automake
-        && (../configure --host=${{matrix.host}} --with-${{matrix.api}} CPPFLAGS=${{matrix.cppflags}} || (cat config.log; false))
-        && make V=1
+        && (../configure --prefix=$PWD/inst --host=${{matrix.host}} --with-${{matrix.api}} CPPFLAGS=${{matrix.cppflags}} || (cat config.log; false))
+        && make V=1 && make install && find inst
