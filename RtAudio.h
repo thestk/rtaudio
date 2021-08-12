@@ -622,11 +622,14 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   typedef pthread_t ThreadHandle;
   typedef pthread_mutex_t StreamMutex;
 
-#else // Setup for "dummy" behavior
+#endif
+
+// Setup for "dummy" behavior if no apis specified.
+#if !(defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) || defined(__WINDOWS_WASAPI__) \
+      || defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) \
+      || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__))
 
   #define __RTAUDIO_DUMMY__
-  typedef int ThreadHandle;
-  typedef int StreamMutex;
 
 #endif
 
