@@ -10,15 +10,19 @@ jobs:
         include:
           - api: jack
             APIcmake: JACK
+            mesonapi: jack=enabled
             deps: libjack-dev
           - api: alsa
             APIcmake: ALSA
+            mesonapi: alsa=enabled
             deps: libasound-dev
           - api: pulse
             APIcmake: PULSE
+            mesonapi: pulse=enabled
             deps: libpulse-dev
           - api: oss
             APIcmake: OSS
+            mesonapi: oss=true
             deps: oss4-dev
     steps:
     - uses: actions/checkout@v2
@@ -38,7 +42,7 @@ jobs:
         mkdir bld-cmake && cd bld-cmake
         && cmake .. -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make
     - name: Meson
-      run: meson bld-meson && cd bld-meson && ninja -j1 -v
+      run: meson bld-meson -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v
 
   MacOS:
     runs-on: macOS-latest
