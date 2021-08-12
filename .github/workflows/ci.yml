@@ -3,6 +3,25 @@ name: C/C++ CI
 on: [push, pull_request]
 
 jobs:
+  Tarball:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install dependencies
+      run:
+        sudo apt-get install g++-8 autoconf-archive libasound-dev doxygen
+    - name: automake
+      run:
+        (./autogen.sh || (cat config.log; false))
+        && make distcheck && make clean
+    - name: Archive dist tarball artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: rtaudio-dev-tarball
+        path: rtaudio-*.tar.gz
+
   Linux:
     runs-on: ubuntu-latest
     strategy:
