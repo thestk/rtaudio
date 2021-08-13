@@ -615,7 +615,8 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
 
-#elif defined(__unix__) || defined(__APPLE__)
+#else
+
   // Using pthread library for various flavors of unix.
   #include <pthread.h>
 
