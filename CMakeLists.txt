@@ -253,8 +253,6 @@ if(MSVC AND RTAUDIO_STATIC_MSVCRT)
   endforeach(flag_var)
 endif()
 
-# Add headers destination for install rule.
-set_property(TARGET rtaudio PROPERTY PUBLIC_HEADER RtAudio.h rtaudio_c.h)
 set_target_properties(rtaudio PROPERTIES
   SOVERSION ${SO_VER}
   VERSION ${FULL_VER})
@@ -264,10 +262,10 @@ include(GNUInstallDirs)
 
 # Set include paths, populate target interface.
 target_include_directories(rtaudio
-  INTERFACE
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/rtaudio>
-  PRIVATE
+  PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  PRIVATE
     ${INCDIRS}
 )
 
@@ -303,7 +301,11 @@ install(TARGETS ${LIB_TARGETS}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rtaudio)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rtaudio)
+
+# Install public header files
+install(FILES RtAudio.h rtaudio_c.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rtaudio)
 
 # Store the package in the user registry.
 export(PACKAGE RtAudio)
