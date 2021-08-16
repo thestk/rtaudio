@@ -5,4 +5,4 @@ option('oss', type : 'boolean', value : 'false', description: 'Build with OSS Ba
 option('core', type : 'feature', value : 'auto', description: 'Build with CoreAudio Backend')
 option('dsound', type : 'feature', value : 'auto', description: 'Build with DirectSound Backend')
 option('asio', type : 'boolean', value : 'false', description: 'Build with ASIO Backend')
-option('wasapi', type : 'boolean', value : 'false', description: 'Build with WASAPI Backend')
+option('wasapi', type : 'feature', value : 'auto', description: 'Build with WASAPI Backend')
