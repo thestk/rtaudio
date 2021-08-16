@@ -94,14 +94,14 @@ if wasapi_found
 	defines += '-D__WINDOWS_WASAPI__'
 endif
 
-if get_option('asio') == true
+asio_found = compiler.check_header('windows.h', required: get_option('asio'))
+if asio_found
 	src += ['include/asio.cpp',
 		'include/asiolist.cpp',
 		'include/asiodrivers.cpp',
 		'include/iasiothiscallresolver.cpp']
 	defines += '-D__WINDOWS_ASIO__'
 endif
-
 
 if host_machine.system() == 'windows'
 	deps += compiler.find_library('ole32', required: true)
@@ -130,4 +130,4 @@ summary({'ALSA': alsa_dep.found(),
 	'CoreAudio': core_dep.found(),
 	'DirectAudio': dsound_dep.found(),
 	'WASAPI': wasapi_found,
-	'ASIO': get_option('asio')}, bool_yn: true, section: 'Audio Backends')
+	'ASIO': asio_found}, bool_yn: true, section: 'Audio Backends')
