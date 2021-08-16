@@ -8,6 +8,15 @@ project('RtAudio', 'cpp',
 fs = import('fs')
 pkg = import('pkgconfig')
 
+rt_h = fs.read('RtAudio.h').strip().split('\n')
+foreach line : rt_h
+	if line.startswith('#define RTAUDIO_VERSION')
+		rt_version = line.substring(-6,-1)
+	endif
+endforeach
+
+assert(meson.project_version() == rt_version, 'Meson\'s RtAudio version does not match the version in header file.')
+
 ac_file = fs.read('configure.ac').strip().split('\n')
 foreach line : ac_file
 	if line.startswith('m4_define([lt_current],')
