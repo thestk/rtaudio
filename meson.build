@@ -102,6 +102,7 @@ rtaudio = library('rtaudio', src,
 		include_directories: incdir,
 		cpp_args: defines,
 		dependencies: deps,
+		gnu_symbol_visibility: 'hidden',
 		install: true)
 rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
