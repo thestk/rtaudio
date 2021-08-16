@@ -75,7 +75,9 @@ if dsound_dep.found()
 	deps += dsound_dep
 endif
 
-if get_option('wasapi') == true
+
+wasapi_found = compiler.check_header('audioclient.h', required: get_option('wasapi'))
+if wasapi_found
 	deps += compiler.find_library('mfplat', required: true)
 	deps += compiler.find_library('mfuuid', required: true)
 	deps += compiler.find_library('ksuser', required: true)
@@ -118,5 +120,5 @@ summary({'ALSA': alsa_dep.found(),
 	'PulseAudio': pulsesimple_dep.found(),
 	'CoreAudio': core_dep.found(),
 	'DirectAudio': dsound_dep.found(),
-	'WASAPI': get_option('wasapi'),
+	'WASAPI': wasapi_found,
 	'ASIO': get_option('asio')}, bool_yn: true, section: 'Audio Backends')
