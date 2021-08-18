@@ -119,6 +119,8 @@ rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
 meson.override_dependency('rtaudio', rtaudio_dep)
 
+subdir('tests')
+
 pkg.generate(rtaudio,
 	description: 'RtAudio - a set of C++ classes that provide a common API for realtime audio input/output',
 	subdirs: 'rtaudio')
