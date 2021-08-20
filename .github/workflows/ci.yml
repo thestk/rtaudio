@@ -49,7 +49,7 @@ jobs:
         fetch-depth: 0
     - name: install dependencies
       run:
-        sudo apt-get install g++-8 autoconf-archive cmake python3-pip ninja-build ${{matrix.deps}}
+        sudo apt-get install g++-8 autoconf-archive cmake python3-pip ninja-build doxygen ${{matrix.deps}}
         && sudo pip install meson>=0.55.0
     - name: automake
       run:
@@ -61,7 +61,7 @@ jobs:
         mkdir bld-cmake && cd bld-cmake
         && cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/inst -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make VERBOSE=1 && make install && find inst
     - name: Meson
-      run: meson bld-meson --prefix=$PWD/bld-meson/inst -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v install && find inst
+      run: meson bld-meson --prefix=$PWD/bld-meson/inst -Ddocs=true -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v install && find inst
 
   MacOS:
     runs-on: macOS-latest
