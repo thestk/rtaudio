@@ -8,6 +8,15 @@ project('RtAudio', 'cpp',
 fs = import('fs')
 pkg = import('pkgconfig')
 
+rt_h = fs.read('RtAudio.h').strip().split('\n')
+foreach line : rt_h
+	if line.startswith('#define RTAUDIO_VERSION')
+		rt_version = line.substring(-6,-1)
+	endif
+endforeach
+
+assert(meson.project_version() == rt_version, 'Meson\'s RtAudio version does not match the version in header file.')
+
 ac_file = fs.read('configure.ac').strip().split('\n')
 foreach line : ac_file
 	if line.startswith('m4_define([lt_current],')
@@ -75,7 +84,9 @@ if dsound_dep.found()
 	deps += dsound_dep
 endif
 
-if get_option('wasapi') == true
+
+wasapi_found = compiler.check_header('audioclient.h', required: get_option('wasapi'))
+if wasapi_found
 	deps += compiler.find_library('mfplat', required: true)
 	deps += compiler.find_library('mfuuid', required: true)
 	deps += compiler.find_library('ksuser', required: true)
@@ -83,14 +94,14 @@ if get_option('wasapi') == true
 	defines += '-D__WINDOWS_WASAPI__'
 endif
 
-if get_option('asio') == true
+asio_found = compiler.check_header('windows.h', required: get_option('asio'))
+if asio_found
 	src += ['include/asio.cpp',
 		'include/asiolist.cpp',
 		'include/asiodrivers.cpp',
 		'include/iasiothiscallresolver.cpp']
 	defines += '-D__WINDOWS_ASIO__'
 endif
-
 
 if host_machine.system() == 'windows'
 	deps += compiler.find_library('ole32', required: true)
@@ -102,10 +113,14 @@ rtaudio = library('rtaudio', src,
 		include_directories: incdir,
 		cpp_args: defines,
 		dependencies: deps,
+		gnu_symbol_visibility: 'hidden',
 		install: true)
 rtaudio_dep = declare_dependency(include_directories : '.',
   link_with : rtaudio)
 meson.override_dependency('rtaudio', rtaudio_dep)
+
+subdir('tests')
+subdir('doc')
 
 pkg.generate(rtaudio,
 	description: 'RtAudio - a set of C++ classes that provide a common API for realtime audio input/output',
@@ -117,5 +132,5 @@ summary({'ALSA': alsa_dep.found(),
 	'PulseAudio': pulsesimple_dep.found(),
 	'CoreAudio': core_dep.found(),
 	'DirectAudio': dsound_dep.found(),
-	'WASAPI': get_option('wasapi'),
-	'ASIO': get_option('asio')}, bool_yn: true, section: 'Audio Backends')
+	'WASAPI': wasapi_found,
+	'ASIO': asio_found}, bool_yn: true, section: 'Audio Backends')
