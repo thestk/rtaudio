@@ -56,7 +56,7 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   32000, 44100, 48000, 88200, 96000, 176400, 192000
 };
 
-#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) || defined(__WINDOWS_WASAPI__)
+#if defined(_WIN32) || defined(__CYGWIN__)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
   #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
@@ -64,12 +64,17 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 
   #include "tchar.h"
 
-  static std::string convertCharPointerToStdString(const char *text)
+  template<typename T> inline
+  std::string convertCharPointerToStdString(const T *text);
+
+  template<> inline
+  std::string convertCharPointerToStdString(const char *text)
   {
     return std::string(text);
   }
 
-  static std::string convertCharPointerToStdString(const wchar_t *text)
+  template<> inline
+  std::string convertCharPointerToStdString(const wchar_t *text)
   {
     int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
     std::string s( length-1, '\0' );
@@ -77,15 +82,12 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
     return s;
   }
 
-#elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
+#elif defined(__unix__) || defined(__APPLE__)
   // pthread API
   #define MUTEX_INITIALIZE(A) pthread_mutex_init(A, NULL)
   #define MUTEX_DESTROY(A)    pthread_mutex_destroy(A)
   #define MUTEX_LOCK(A)       pthread_mutex_lock(A)
   #define MUTEX_UNLOCK(A)     pthread_mutex_unlock(A)
-#else
-  #define MUTEX_INITIALIZE(A) abs(*A) // dummy definitions
-  #define MUTEX_DESTROY(A)    abs(*A) // dummy definitions
 #endif
 
 // *************************************************** //
@@ -407,13 +409,27 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
 unsigned int RtApi :: getDefaultInputDevice( void )
 {
-  // Should be implemented in subclasses if possible.
+  // Should be reimplemented in subclasses if necessary.
+  unsigned int nDevices = getDeviceCount();
+  for ( unsigned int i = 0; i < nDevices; i++ ) {
+    if ( getDeviceInfo( i ).isDefaultInput ) {
+      return i;
+    }
+  }
+
   return 0;
 }
 
 unsigned int RtApi :: getDefaultOutputDevice( void )
 {
-  // Should be implemented in subclasses if possible.
+  // Should be reimplemented in subclasses if necessary.
+  unsigned int nDevices = getDeviceCount();
+  for ( unsigned int i = 0; i < nDevices; i++ ) {
+    if ( getDeviceInfo( i ).isDefaultOutput ) {
+      return i;
+    }
+  }
+
   return 0;
 }
 
@@ -506,6 +522,8 @@ unsigned int RtApi :: getStreamSampleRate( void )
 // *************************************************** //
 
 #if defined(__MACOSX_CORE__)
+
+#include <unistd.h>
 
 // The OS X CoreAudio API is designed to use a separate callback
 // procedure for each of its audio devices.  A single RtAudio duplex
@@ -2864,8 +2882,8 @@ static long asioMessages( long selector, long value, void* message, double* opt 
 
 RtApiAsio :: RtApiAsio()
 {
-  // ASIO cannot run on a multi-threaded appartment. You can call
-  // CoInitialize beforehand, but it must be for appartment threading
+  // ASIO cannot run on a multi-threaded apartment. You can call
+  // CoInitialize beforehand, but it must be for apartment threading
   // (in which case, CoInitilialize will return S_FALSE here).
   coInitialized_ = false;
   HRESULT hr = CoInitialize( NULL ); 
@@ -4560,34 +4578,6 @@ Exit:
   return info;
 }
 
-//-----------------------------------------------------------------------------
-
-unsigned int RtApiWasapi::getDefaultOutputDevice( void )
-{
-  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
-    if ( getDeviceInfo( i ).isDefaultOutput ) {
-      return i;
-    }
-  }
-
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-
-unsigned int RtApiWasapi::getDefaultInputDevice( void )
-{
-  for ( unsigned int i = 0; i < getDeviceCount(); i++ ) {
-    if ( getDeviceInfo( i ).isDefaultInput ) {
-      return i;
-    }
-  }
-
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-
 void RtApiWasapi::closeStream( void )
 {
   if ( stream_.state == STREAM_CLOSED ) {
@@ -5026,7 +5016,7 @@ void RtApiWasapi::wasapiThread()
   RtAudioErrorType errorType = RTAUDIO_DRIVER_ERROR;
 
   // Attempt to assign "Pro Audio" characteristic to thread
-  HMODULE AvrtDll = LoadLibrary( (LPCTSTR) "AVRT.dll" );
+  HMODULE AvrtDll = LoadLibraryW( L"AVRT.dll" );
   if ( AvrtDll ) {
     DWORD taskIndex = 0;
     TAvSetMmThreadCharacteristicsPtr AvSetMmThreadCharacteristicsPtr =
@@ -6922,7 +6912,7 @@ void RtApiDs :: callbackEvent()
     if ( stream_.mode == DUPLEX ) {
       if ( safeReadPointer < endRead ) {
         if ( duplexPrerollBytes <= 0 ) {
-          // Pre-roll time over. Be more agressive.
+          // Pre-roll time over. Be more aggressive.
           int adjustment = endRead-safeReadPointer;
 
           handle->xrun[1] = true;
@@ -7077,19 +7067,18 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
 
   // If good device, then save its name and guid.
   std::string name = convertCharPointerToStdString( description );
-  //if ( name == "Primary Sound Driver" || name == "Primary Sound Capture Driver" )
-  if ( lpguid == NULL )
-    name = "Default Device";
+
   if ( validDevice ) {
     for ( unsigned int i=0; i<dsDevices.size(); i++ ) {
       if ( dsDevices[i].name == name ) {
-        dsDevices[i].found = true;
-        if ( probeInfo.isInput ) {
-          dsDevices[i].id[1] = lpguid;
+        if ( probeInfo.isInput && dsDevices[i].id[1] == lpguid)
+        {
+          dsDevices[i].found = true;
           dsDevices[i].validId[1] = true;
         }
-        else {
-          dsDevices[i].id[0] = lpguid;
+        else if (dsDevices[i].id[0] == lpguid)
+        {
+          dsDevices[i].found = true;
           dsDevices[i].validId[0] = true;
         }
         return TRUE;
@@ -7270,6 +7259,8 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       goto foundDevice;
     }
   }
+  if ( chandle )
+    snd_ctl_close( chandle );
 
   // Count cards and devices
   snd_card_next( &card );
@@ -8348,7 +8339,7 @@ void RtApiAlsa :: callbackEvent()
     }
 
     if ( result < (int) stream_.bufferSize ) {
-      // Either an error or overrun occured.
+      // Either an error or overrun occurred.
       if ( result == -EPIPE ) {
         snd_pcm_state_t state = snd_pcm_state( handle[1] );
         if ( state == SND_PCM_STATE_XRUN ) {
@@ -8418,7 +8409,7 @@ void RtApiAlsa :: callbackEvent()
     }
 
     if ( result < (int) stream_.bufferSize ) {
-      // Either an error or underrun occured.
+      // Either an error or underrun occurred.
       if ( result == -EPIPE ) {
         snd_pcm_state_t state = snd_pcm_state( handle[0] );
         if ( state == SND_PCM_STATE_XRUN ) {
@@ -8508,7 +8499,7 @@ static struct {
 } rt_pa_info;
 
 static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
-                                                      44100, 48000, 96000, 0};
+                                                      44100, 48000, 96000, 192000, 0};
 
 struct rtaudio_pa_format_mapping_t {
   RtAudioFormat rtaudio_format;
@@ -8535,24 +8526,25 @@ static void rt_pa_mainloop_api_quit(int ret) {
     rt_pa_mainloop_api->quit(rt_pa_mainloop_api, ret);
 }
 
-static void rt_pa_server_callback(pa_context *context, const pa_server_info *info, void *data){
+static void rt_pa_set_server_info(pa_context *context, const pa_server_info *info, void *data){
   (void)context;
   (void)data;
   pa_sample_spec ss;
 
-  if (!info)
+  if (!info) {
     rt_pa_mainloop_api_quit(1);
+    return;
+  }
 
   ss = info->sample_spec;
 
   rt_pa_info.default_rate = ss.rate;
   rt_pa_info.default_sink_name = info->default_sink_name;
   rt_pa_info.default_source_name = info->default_source_name;
-  rt_pa_mainloop_api_quit(0);
 }
 
-static void rt_pa_sink_info_cb(pa_context * /*c*/, const pa_sink_info *i,
-                               int eol, void * /*userdata*/)
+static void rt_pa_set_sink_info(pa_context * /*c*/, const pa_sink_info *i,
+                                int eol, void * /*userdata*/)
 {
   if (eol) return;
   PaDeviceInfo inf;
@@ -8592,10 +8584,13 @@ static void rt_pa_sink_info_cb(pa_context * /*c*/, const pa_sink_info *i,
     rt_pa_info.dev.push_back(inf);
 }
 
-static void rt_pa_source_info_cb(pa_context * /*c*/, const pa_source_info *i,
-                                 int eol, void * /*userdata*/)
+static void rt_pa_set_source_info_and_quit(pa_context * /*c*/, const pa_source_info *i,
+                                           int eol, void * /*userdata*/)
 {
-  if (eol) return;
+  if (eol) {
+    rt_pa_mainloop_api_quit(0);
+    return;
+  }
   PaDeviceInfo inf;
   inf.info.name = pa_proplist_gets(i->proplist, "device.description");
   inf.info.probed = true;
@@ -8639,7 +8634,8 @@ static void rt_pa_source_info_cb(pa_context * /*c*/, const pa_source_info *i,
 static void rt_pa_context_state_callback(pa_context *context, void *userdata) {
   (void)userdata;
 
-  switch (pa_context_get_state(context)) {
+  auto state = pa_context_get_state(context);
+  switch (state) {
     case PA_CONTEXT_CONNECTING:
     case PA_CONTEXT_AUTHORIZING:
     case PA_CONTEXT_SETTING_NAME:
@@ -8647,9 +8643,9 @@ static void rt_pa_context_state_callback(pa_context *context, void *userdata) {
 
     case PA_CONTEXT_READY:
       rt_pa_info.dev.clear();
-      pa_context_get_server_info(context, rt_pa_server_callback, NULL);
-      pa_context_get_sink_info_list(context, rt_pa_sink_info_cb, NULL);
-      pa_context_get_source_info_list(context, rt_pa_source_info_cb, NULL);
+      pa_context_get_server_info(context, rt_pa_set_server_info, NULL);
+      pa_context_get_sink_info_list(context, rt_pa_set_sink_info, NULL);
+      pa_context_get_source_info_list(context, rt_pa_set_source_info_and_quit, NULL);
       break;
 
     case PA_CONTEXT_TERMINATED:
@@ -8703,6 +8699,13 @@ void RtApiPulse::collectDeviceInfo( void )
 
   if (pa_mainloop_run(m, &ret) < 0) {
     errorStream_ << "pa_mainloop_run() failed.";
+    errorText_ = errorStream_.str();
+    error( RTAUDIO_WARNING );
+    goto quit;
+  }
+
+  if (ret != 0) {
+    errorStream_ << "could not get server info.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
     goto quit;
@@ -9049,8 +9052,8 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     }
   }
   if ( !sr_found ) {
-    errorText_ = "RtApiPulse::probeDeviceOpen: unsupported sample rate.";
-    return false;
+    stream_.sampleRate = sampleRate;
+    ss.rate = sampleRate;
   }
 
   bool sf_found = 0;
@@ -9074,7 +9077,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
   if ( options && options->flags & RTAUDIO_NONINTERLEAVED ) stream_.userInterleaved = false;
   else stream_.userInterleaved = true;
   stream_.deviceInterleaved[mode] = true;
-  stream_.nBuffers = 1;
+  stream_.nBuffers = options ? options->numberOfBuffers : 1;
   stream_.doByteSwap[mode] = false;
   stream_.nUserChannels[mode] = channels;
   stream_.nDeviceChannels[mode] = channels + firstChannel;
@@ -9144,8 +9147,8 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
   int error;
   if ( options && !options->streamName.empty() ) streamName = options->streamName;
   switch ( mode ) {
-  case INPUT:
     pa_buffer_attr buffer_attr;
+  case INPUT:
     buffer_attr.fragsize = bufferBytes;
     buffer_attr.maxlength = -1;
 
@@ -9156,14 +9159,29 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
       goto error;
     }
     break;
-  case OUTPUT:
+  case OUTPUT: {
+    pa_buffer_attr * attr_ptr;
+
+    if ( options && options->numberOfBuffers > 0 ) {
+      // pa_buffer_attr::fragsize is recording-only.
+      // Hopefully PortAudio won't access uninitialized fields.
+      buffer_attr.maxlength = bufferBytes * options->numberOfBuffers;
+      buffer_attr.minreq = -1;
+      buffer_attr.prebuf = -1;
+      buffer_attr.tlength = -1;
+      attr_ptr = &buffer_attr;
+    } else {
+      attr_ptr = nullptr;
+    }
+
     pah->s_play = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_PLAYBACK,
-                                 dev_output, "Playback", &ss, NULL, NULL, &error );
+                                 dev_output, "Playback", &ss, NULL, attr_ptr, &error );
     if ( !pah->s_play ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error connecting output to PulseAudio server.";
       goto error;
     }
     break;
+  }
   case DUPLEX:
     /* Note: We could add DUPLEX by synchronizing multiple streams,
        but it would mean moving from Simple API to Asynchronous API:
@@ -10401,9 +10419,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
   // data interleaving/deinterleaving.  24-bit integers are assumed to occupy
   // the lower three bytes of a 32-bit integer.
 
-  // Clear our device buffer when in/out duplex device channels are different
-  if ( outBuffer == stream_.deviceBuffer && stream_.mode == DUPLEX &&
-       ( stream_.nDeviceChannels[0] < stream_.nDeviceChannels[1] ) )
+  // Clear our duplex device output buffer if there are more device outputs than user outputs
+  if ( outBuffer == stream_.deviceBuffer && stream_.mode == DUPLEX && info.outJump > info.inJump )
     memset( outBuffer, 0, stream_.bufferSize * info.outJump * formatBytes( info.outFormat ) );
 
   int j;
@@ -10587,7 +10604,8 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 2147483648.f), 2147483647L);
+          // Use llround() which returns `long long` which is guaranteed to be at least 64 bits.
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 2147483648.f), 2147483647LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10597,7 +10615,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 2147483648.0), 2147483647L);
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 2147483648.0), 2147483647LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10654,7 +10672,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 8388608.f), 8388607L);
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 8388608.f), 8388607LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10664,7 +10682,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::lround(in[info.inOffset[j]] * 8388608.0), 8388607L);
+          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 8388608.0), 8388607LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10719,7 +10737,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) std::min(std::lround(in[info.inOffset[j]] * 32768.f), 32767L);
+          out[info.outOffset[j]] = (Int16) std::min(std::llround(in[info.inOffset[j]] * 32768.f), 32767LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10729,7 +10747,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) std::min(std::lround(in[info.inOffset[j]] * 32768.0), 32767L);
+          out[info.outOffset[j]] = (Int16) std::min(std::llround(in[info.inOffset[j]] * 32768.0), 32767LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10783,7 +10801,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) std::min(std::lround(in[info.inOffset[j]] * 128.f), 127L);
+          out[info.outOffset[j]] = (signed char) std::min(std::llround(in[info.inOffset[j]] * 128.f), 127LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -10793,7 +10811,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) std::min(std::lround(in[info.inOffset[j]] * 128.0), 127L);
+          out[info.outOffset[j]] = (signed char) std::min(std::llround(in[info.inOffset[j]] * 128.0), 127LL);
         }
         in += info.inJump;
         out += info.outJump;

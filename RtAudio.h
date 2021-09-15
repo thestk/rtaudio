@@ -268,31 +268,22 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   struct DeviceInfo {
     bool probed;                  /*!< true if the device capabilities were successfully probed. */
     std::string name;             /*!< Character string device identifier. */
-    unsigned int outputChannels;  /*!< Maximum output channels supported by device. */
-    unsigned int inputChannels;   /*!< Maximum input channels supported by device. */
-    unsigned int duplexChannels;  /*!< Maximum simultaneous input/output channels supported by device. */
-    bool isDefaultOutput;         /*!< true if this is the default output device. */
-    bool isDefaultInput;          /*!< true if this is the default input device. */
+    unsigned int outputChannels{};  /*!< Maximum output channels supported by device. */
+    unsigned int inputChannels{};   /*!< Maximum input channels supported by device. */
+    unsigned int duplexChannels{};  /*!< Maximum simultaneous input/output channels supported by device. */
+    bool isDefaultOutput{false};         /*!< true if this is the default output device. */
+    bool isDefaultInput{false};          /*!< true if this is the default input device. */
     std::vector<unsigned int> sampleRates; /*!< Supported sample rates (queried from list of standard rates). */
-    unsigned int currentSampleRate;   /*!< Current sample rate, system sample rate as currently configured. */
-    unsigned int preferredSampleRate; /*!< Preferred sample rate, e.g. for WASAPI the system sample rate. */
-    RtAudioFormat nativeFormats;  /*!< Bit mask of supported data formats. */
-
-    // Default constructor.
-    DeviceInfo()
-      :probed(false), outputChannels(0), inputChannels(0), duplexChannels(0),
-      isDefaultOutput(false), isDefaultInput(false), currentSampleRate(0), preferredSampleRate(0), nativeFormats(0) {}
+    unsigned int currentSampleRate{};   /*!< Current sample rate, system sample rate as currently configured. */
+    unsigned int preferredSampleRate{}; /*!< Preferred sample rate, e.g. for WASAPI the system sample rate. */
+    RtAudioFormat nativeFormats{};  /*!< Bit mask of supported data formats. */
   };
 
-  //! The structure for specifying input or ouput stream parameters.
+  //! The structure for specifying input or output stream parameters.
   struct StreamParameters {
-    unsigned int deviceId;     /*!< Device index (0 to getDeviceCount() - 1). */
-    unsigned int nChannels;    /*!< Number of channels. */
-    unsigned int firstChannel; /*!< First channel index on device (default = 0). */
-
-    // Default constructor.
-    StreamParameters()
-      : deviceId(0), nChannels(0), firstChannel(0) {}
+    unsigned int deviceId{};     /*!< Device index (0 to getDeviceCount() - 1). */
+    unsigned int nChannels{};    /*!< Number of channels. */
+    unsigned int firstChannel{}; /*!< First channel index on device (default = 0). */
   };
 
   //! The structure for specifying stream options.
@@ -353,14 +344,10 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     RtAudio with Jack, each instance must have a unique client name.
   */
   struct StreamOptions {
-    RtAudioStreamFlags flags;      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */
-    unsigned int numberOfBuffers;  /*!< Number of stream buffers. */
+    RtAudioStreamFlags flags{};      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */
+    unsigned int numberOfBuffers{};  /*!< Number of stream buffers. */
     std::string streamName;        /*!< A stream name (currently used only in Jack). */
-    int priority;                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
-
-    // Default constructor.
-    StreamOptions()
-    : flags(0), numberOfBuffers(0), priority(0) {}
+    int priority{};                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
   };
 
   //! A static function to determine the current RtAudio version.
@@ -600,7 +587,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 };
 
 // Operating system dependent thread functionality.
-#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) || defined(__WINDOWS_WASAPI__)
+#if defined(_WIN32) || defined(__CYGWIN__)
 
   #ifndef NOMINMAX
     #define NOMINMAX
@@ -612,18 +599,22 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
 
-#elif defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__)
+#else
+
   // Using pthread library for various flavors of unix.
   #include <pthread.h>
 
   typedef pthread_t ThreadHandle;
   typedef pthread_mutex_t StreamMutex;
 
-#else // Setup for "dummy" behavior
+#endif
+
+// Setup for "dummy" behavior if no apis specified.
+#if !(defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) || defined(__WINDOWS_WASAPI__) \
+      || defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) \
+      || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__))
 
   #define __RTAUDIO_DUMMY__
-  typedef int ThreadHandle;
-  typedef int StreamMutex;
 
 #endif
 
@@ -631,19 +622,15 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 // between the private RtAudio stream structure and global callback
 // handling functions.
 struct CallbackInfo {
-  void *object;    // Used as a "this" pointer.
-  ThreadHandle thread;
-  void *callback;
-  void *userData;
-  void *apiInfo;   // void pointer for API specific callback information
-  bool isRunning;
-  bool doRealtime;
-  int priority;
-  bool deviceDisconnected;
-
-  // Default constructor.
-  CallbackInfo()
-  :object(0), thread(0), callback(0), userData(0), apiInfo(0), isRunning(false), doRealtime(false), priority(0), deviceDisconnected(false) {}
+  void *object{};    // Used as a "this" pointer.
+  ThreadHandle thread{};
+  void *callback{};
+  void *userData{};
+  void *apiInfo{};   // void pointer for API specific callback information
+  bool isRunning{false};
+  bool doRealtime{false};
+  int priority{};
+  bool deviceDisconnected{false};
 };
 
 // **************************************************************** //
@@ -670,9 +657,9 @@ class S24 {
   S24() {}
 
   S24& operator = ( const int& i ) {
-    c3[0] = (i & 0x000000ff);
-    c3[1] = (i & 0x0000ff00) >> 8;
-    c3[2] = (i & 0x00ff0000) >> 16;
+    c3[0] = (unsigned char)(i & 0x000000ff);
+    c3[1] = (unsigned char)((i & 0x0000ff00) >> 8);
+    c3[2] = (unsigned char)((i & 0x00ff0000) >> 16);
     return *this;
   }
 
@@ -887,7 +874,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   bool callbackEvent( AudioDeviceID deviceId,
                       const AudioBufferList *inBufferList,
                       const AudioBufferList *outBufferList );
@@ -922,7 +909,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   bool callbackEvent( unsigned long nframes );
 
   private:
@@ -956,7 +943,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   bool callbackEvent( long bufferIndex );
 
   private:
@@ -993,7 +980,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   void callbackEvent( void );
 
   private:
@@ -1023,8 +1010,6 @@ public:
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_WASAPI; }
   unsigned int getDeviceCount( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
-  unsigned int getDefaultOutputDevice( void ) override;
-  unsigned int getDefaultInputDevice( void ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1066,7 +1051,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   void callbackEvent( void );
 
   private:
@@ -1098,7 +1083,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   void callbackEvent( void );
 
   private:
@@ -1131,7 +1116,7 @@ public:
   // This function is intended for internal use only.  It must be
   // public because it is called by the internal callback handler,
   // which is not a member of RtAudio.  External use of this function
-  // will most likely produce highly undesireable results!
+  // will most likely produce highly undesirable results!
   void callbackEvent( void );
 
   private:

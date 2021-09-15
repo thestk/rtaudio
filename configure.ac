@@ -2,7 +2,7 @@
 AC_INIT(RtAudio, 6.0.0beta1, gary@music.mcgill.ca, rtaudio)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
-AC_CONFIG_FILES([rtaudio.pc Makefile tests/Makefile doc/Makefile doc/doxygen/Doxyfile])
+AC_CONFIG_FILES([rtaudio.pc Makefile tests/Makefile doc/Makefile doc/Doxyfile])
 AM_INIT_AUTOMAKE([1.14 -Wall -Werror foreign subdir-objects])
 
 # libtool version: current:revision:age
@@ -29,10 +29,12 @@ SO_VERSION=lt_version_info
 AC_SUBST(SO_VERSION)
 AC_SUBST(api)
 AC_SUBST(req)
+AC_SUBST(req_libs)
 AC_SUBST(visibility)
 
 api=""
 req=""
+req_libs=""
 use_asio=""
 
 # standards version
@@ -89,8 +91,8 @@ AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 AS_IF([test "x${GXX}" = "xyes" ], [
   CXXFLAGS="-Wall -Wextra ${CXXFLAGS}"
   AS_IF([ test "x${enable_debug}" = "xyes" ], [
-    # Add -Werror in debug mode (except unused-function)
-    CXXFLAGS="-Werror -Wno-error=unused-function ${CXXFLAGS}"
+    # Add -Werror in debug mode
+    CXXFLAGS="-Werror ${CXXFLAGS}"
   ], [
     # hide private symbols in non-debug mode
     visibility="-fvisibility=hidden"
@@ -207,6 +209,7 @@ AS_CASE(["$systems"], [*" pulse "*], [
      req="$req libpulse-simple"
      need_pthread=yes
      found="$found PulseAudio"
+     AC_CHECK_LIB(pulse, pa_strerror, [LIBS="$LIBS -lpulse"])
      LIBS="-lpulse-simple $LIBS"],
     AS_CASE(["$required"], [*" pulse "*],
       AC_MSG_ERROR([PulseAudio support requires the pulse-simple library!])))
@@ -248,6 +251,7 @@ AS_CASE(["$systems"], [*" jack "*], [
 AS_CASE(["$systems"], [*" core "*], [
   AC_CHECK_HEADER(CoreAudio/CoreAudio.h,
     [api="$api -D__MACOSX_CORE__"
+     req_libs="$req_libs -framework CoreAudio -framework CoreFoundation"
      need_pthread=yes
      found="$found CoreAudio",
      LIBS="$LIBS -framework CoreAudio -framework CoreFoundation"],
