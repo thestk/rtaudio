@@ -673,9 +673,9 @@ class S24 {
   S24() {}
 
   S24& operator = ( const int& i ) {
-    c3[0] = (i & 0x000000ff);
-    c3[1] = (i & 0x0000ff00) >> 8;
-    c3[2] = (i & 0x00ff0000) >> 16;
+    c3[0] = (unsigned char)(i & 0x000000ff);
+    c3[1] = (unsigned char)((i & 0x0000ff00) >> 8);
+    c3[2] = (unsigned char)((i & 0x00ff0000) >> 16);
     return *this;
   }
 
