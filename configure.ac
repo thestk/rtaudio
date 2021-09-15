@@ -209,6 +209,7 @@ AS_CASE(["$systems"], [*" pulse "*], [
      req="$req libpulse-simple"
      need_pthread=yes
      found="$found PulseAudio"
+     AC_CHECK_LIB(pulse, pa_strerror, [LIBS="$LIBS -lpulse"])
      LIBS="-lpulse-simple $LIBS"],
     AS_CASE(["$required"], [*" pulse "*],
       AC_MSG_ERROR([PulseAudio support requires the pulse-simple library!])))
