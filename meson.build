@@ -1,5 +1,5 @@
 project('RtAudio', 'cpp',
-	version: '5.1.0',
+	version: '6.0.0beta1',
 	default_options: ['warning_level=3',
 			'c_std=c99',
 			'cpp_std=c++11',
@@ -11,7 +11,7 @@ pkg = import('pkgconfig')
 rt_h = fs.read('RtAudio.h').strip().split('\n')
 foreach line : rt_h
 	if line.startswith('#define RTAUDIO_VERSION')
-		rt_version = line.substring(-6,-1)
+		rt_version = line.split('"')[1]
 	endif
 endforeach
 
