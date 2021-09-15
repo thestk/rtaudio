@@ -44,6 +44,14 @@ RtAudio is designed as a single `.cpp` and `.h` file so that it is easy to copy 
 into a project.  In that case you need to define the appropriate flags for the desired
 backend APIs.
 
+## FAQ
+
+### Why does audio only come to one ear when I choose 1-channel output?
+
+RtAudio doesn't automatically turn 1-channel output into stereo output with copied values
+to each channel, it really only opens one channel.  So, if this is the behaviour you want,
+you have to do this copying in your audio stream callback.
+
 ## Further Reading
 
 For complete documentation on RtAudio, see the doc directory of the distribution or surf to http://www.music.mcgill.ca/~gary/rtaudio/.
