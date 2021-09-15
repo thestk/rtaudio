@@ -7032,19 +7032,18 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
 
   // If good device, then save its name and guid.
   std::string name = convertCharPointerToStdString( description );
-  //if ( name == "Primary Sound Driver" || name == "Primary Sound Capture Driver" )
-  if ( lpguid == NULL )
-    name = "Default Device";
+
   if ( validDevice ) {
     for ( unsigned int i=0; i<dsDevices.size(); i++ ) {
       if ( dsDevices[i].name == name ) {
-        dsDevices[i].found = true;
-        if ( probeInfo.isInput ) {
-          dsDevices[i].id[1] = lpguid;
+        if ( probeInfo.isInput && dsDevices[i].id[1] == lpguid)
+        {
+          dsDevices[i].found = true;
           dsDevices[i].validId[1] = true;
         }
-        else {
-          dsDevices[i].id[0] = lpguid;
+        else if (dsDevices[i].id[0] == lpguid)
+        {
+          dsDevices[i].found = true;
           dsDevices[i].validId[0] = true;
         }
         return TRUE;
@@ -8471,7 +8470,7 @@ static struct {
 } rt_pa_info;
 
 static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
-                                                      44100, 48000, 96000, 0};
+                                                      44100, 48000, 96000, 192000, 0};
 
 struct rtaudio_pa_format_mapping_t {
   RtAudioFormat rtaudio_format;
@@ -9029,8 +9028,8 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     }
   }
   if ( !sr_found ) {
-    errorText_ = "RtApiPulse::probeDeviceOpen: unsupported sample rate.";
-    return false;
+    stream_.sampleRate = sampleRate;
+    ss.rate = sampleRate;
   }
 
   bool sf_found = 0;
