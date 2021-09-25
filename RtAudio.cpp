@@ -5040,12 +5040,43 @@ void RtApiWasapi::wasapiThread()
     captureSrRatio = ( ( float ) captureFormat->nSamplesPerSec / stream_.sampleRate );
 
     if ( !captureClient ) {
+#ifdef __IAudioClient3_INTERFACE_DEFINED__
+      if ( !loopbackEnabled )
+      {
+        UINT32 Ignore;
+        UINT32 MinPeriodInFrames;
+        hr = captureAudioClient->GetSharedModeEnginePeriod( captureFormat,
+                                                            &Ignore,
+                                                            &Ignore,
+                                                            &MinPeriodInFrames,
+                                                            &Ignore );
+        if ( FAILED( hr ) ) {
+          errorText = "RtApiWasapi::wasapiThread: Unable to initialize capture audio client.";
+          goto Exit;
+        }
+        
+        hr = captureAudioClient->InitializeSharedAudioStream( AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                                              MinPeriodInFrames,
+                                                              captureFormat,
+                                                              NULL );
+      }
+      else
+      {
+        hr = captureAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
+                                             AUDCLNT_STREAMFLAGS_LOOPBACK,
+                                             0,
+                                             0,
+                                             captureFormat,
+                                             NULL );
+      }
+#else
       hr = captureAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
                                            loopbackEnabled ? AUDCLNT_STREAMFLAGS_LOOPBACK : AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                                            0,
                                            0,
                                            captureFormat,
                                            NULL );
+#endif
       if ( FAILED( hr ) ) {
         errorText = "RtApiWasapi::wasapiThread: Unable to initialize capture audio client.";
         goto Exit;
