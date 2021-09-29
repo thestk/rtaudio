@@ -4631,6 +4631,11 @@ void RtApiWasapi::stopStream( void )
     error( RtAudioError::WARNING );
     return;
   }
+  if ( stream_.state == STREAM_STOPPING ) {
+    errorText_ = "RtApiWasapi::stopStream: The stream is already stopping.";
+    error( RtAudioError::WARNING );
+    return;
+  }
 
   // inform stream thread by setting stream state to STREAM_STOPPING
   stream_.state = STREAM_STOPPING;
@@ -4655,6 +4660,11 @@ void RtApiWasapi::abortStream( void )
 
   if ( stream_.state == STREAM_STOPPED ) {
     errorText_ = "RtApiWasapi::abortStream: The stream is already stopped.";
+    error( RtAudioError::WARNING );
+    return;
+  }
+  if ( stream_.state == STREAM_STOPPING ) {
+    errorText_ = "RtApiWasapi::abortStream: The stream is already stopping.";
     error( RtAudioError::WARNING );
     return;
   }
