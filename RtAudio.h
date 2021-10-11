@@ -1077,8 +1077,8 @@ public:
 
   private:
 
-  std::vector<RtAudio::DeviceInfo> devices_;
-  void saveDeviceInfo( void );
+  std::pair<int, RtAudio::DeviceInfo> scanDeviceInfo( int to_index = -1 );
+  std::pair<bool, RtAudio::DeviceInfo> getDeviceInfoByName(const char *name);
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
