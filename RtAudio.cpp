@@ -48,6 +48,7 @@
 #include <climits>
 #include <cmath>
 #include <algorithm>
+#include <unordered_map>
 
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
@@ -7226,6 +7227,10 @@ static const char* getErrorString( int code )
 #include <alsa/asoundlib.h>
 #include <unistd.h>
 
+static std::unordered_map<std::string, void*> alsa_ignore_list = {
+  {"plughw", 0}, {"dsnoop", 0}, {"dmix", 0}, {"null", 0}, {"upmix", 0}, {"vdownmix", 0}
+};
+
   // A structure to hold various information related to the ALSA API
   // implementation.
 struct AlsaHandle {
@@ -7257,133 +7262,44 @@ RtApiAlsa :: ~RtApiAlsa()
 
 unsigned int RtApiAlsa :: getDeviceCount( void )
 {
-  unsigned nDevices = 0;
-  int result, subdevice, card;
-  char name[64];
-  snd_ctl_t *handle = 0;
-
-  strcpy(name, "default");
-  result = snd_ctl_open( &handle, "default", 0 );
-  if (result == 0) {
-    nDevices++;
-    snd_ctl_close( handle );
-  }
-
-  // Count cards and devices
-  card = -1;
-  snd_card_next( &card );
-  while ( card >= 0 ) {
-    sprintf( name, "hw:%d", card );
-    result = snd_ctl_open( &handle, name, 0 );
-    if ( result < 0 ) {
-      handle = 0;
-      errorStream_ << "RtApiAlsa::getDeviceCount: control open, card = " << card << ", " << snd_strerror( result ) << ".";
-      errorText_ = errorStream_.str();
-      error( RtAudioError::WARNING );
-      goto nextcard;
-    }
-    subdevice = -1;
-    while( 1 ) {
-      result = snd_ctl_pcm_next_device( handle, &subdevice );
-      if ( result < 0 ) {
-        errorStream_ << "RtApiAlsa::getDeviceCount: control next device, card = " << card << ", " << snd_strerror( result ) << ".";
-        errorText_ = errorStream_.str();
-        error( RtAudioError::WARNING );
-        break;
-      }
-      if ( subdevice < 0 )
-        break;
-      nDevices++;
-    }
-  nextcard:
-    if ( handle )
-        snd_ctl_close( handle );
-    snd_card_next( &card );
-  }
-
-  return nDevices;
+  this->saveDeviceInfo();
+  return this->devices_.size();
 }
 
 RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 {
-  RtAudio::DeviceInfo info;
-  info.probed = false;
-
-  unsigned nDevices = 0;
-  int result=-1, subdevice=-1, card=-1;
-  char name[64];
-  snd_ctl_t *chandle = 0;
-
-  result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
-  if ( result == 0 ) {
-    if ( nDevices++ == device ) {
-      strcpy( name, "default" );
-      goto foundDevice;
-    }
-  }
-  if ( chandle )
-    snd_ctl_close( chandle );
-
-  // Count cards and devices
-  snd_card_next( &card );
-  while ( card >= 0 ) {
-    sprintf( name, "hw:%d", card );
-    result = snd_ctl_open( &chandle, name, SND_CTL_NONBLOCK );
-    if ( result < 0 ) {
-      chandle = 0;
-      errorStream_ << "RtApiAlsa::getDeviceInfo: control open, card = " << card << ", " << snd_strerror( result ) << ".";
-      errorText_ = errorStream_.str();
-      error( RtAudioError::WARNING );
-      goto nextcard;
-    }
-    subdevice = -1;
-    while( 1 ) {
-      result = snd_ctl_pcm_next_device( chandle, &subdevice );
-      if ( result < 0 ) {
-        errorStream_ << "RtApiAlsa::getDeviceInfo: control next device, card = " << card << ", " << snd_strerror( result ) << ".";
-        errorText_ = errorStream_.str();
-        error( RtAudioError::WARNING );
-        break;
-      }
-      if ( subdevice < 0 ) break;
-      if ( nDevices == device ) {
-        sprintf( name, "hw:%d,%d", card, subdevice );
-        goto foundDevice;
-      }
-      nDevices++;
-    }
-  nextcard:
-    if ( chandle )
-        snd_ctl_close( chandle );
-    snd_card_next( &card );
-  }
-
-  if ( nDevices == 0 ) {
-    errorText_ = "RtApiAlsa::getDeviceInfo: no devices found!";
-    error( RtAudioError::INVALID_USE );
-    return info;
-  }
-
-  if ( device >= nDevices ) {
-    errorText_ = "RtApiAlsa::getDeviceInfo: device ID is invalid!";
-    error( RtAudioError::INVALID_USE );
-    return info;
-  }
-
- foundDevice:
-
   // If a stream is already open, we cannot probe the stream devices.
   // Thus, use the saved results.
   if ( stream_.state != STREAM_CLOSED &&
        ( stream_.device[0] == device || stream_.device[1] == device ) ) {
-    snd_ctl_close( chandle );
     if ( device >= devices_.size() ) {
       errorText_ = "RtApiAlsa::getDeviceInfo: device ID was not present before stream was opened.";
       error( RtAudioError::WARNING );
-      return info;
+      return RtAudio::DeviceInfo();
     }
-    return devices_[ device ];
+    else
+      return devices_[ device ];
   }
+  else if (devices_.size() == 0) {
+    // getDeviceCount() is usually called first, but if not, save the device list now.
+    saveDeviceInfo();
+  }
+
+  if (device < devices_.size())
+    return devices_[device];
+  else {
+    errorText_ = "RtApiAlsa::getDeviceInfo: device ID is out of available range.";
+    error( RtAudioError::WARNING );
+    return RtAudio::DeviceInfo();
+  }
+}
+
+bool RtApiAlsa :: pushDeviceInfo(const char *name, std::vector<RtAudio::DeviceInfo>& devices)
+{
+  RtAudio::DeviceInfo info;
+  info.probed = false;
+
+  int result=-1;
 
   int openMode = SND_PCM_ASYNC;
   snd_pcm_stream_t stream;
@@ -7395,23 +7311,10 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 
   // First try for playback unless default device (which has subdev -1)
   stream = SND_PCM_STREAM_PLAYBACK;
-  snd_pcm_info_set_stream( pcminfo, stream );
-  if ( subdevice != -1 ) {
-    snd_pcm_info_set_device( pcminfo, subdevice );
-    snd_pcm_info_set_subdevice( pcminfo, 0 );
-
-    result = snd_ctl_pcm_info( chandle, pcminfo );
-    if ( result < 0 ) {
-      // Device probably doesn't support playback.
-      goto captureProbe;
-    }
-  }
 
   result = snd_pcm_open( &phandle, name, stream, openMode | SND_PCM_NONBLOCK );
   if ( result < 0 ) {
-    errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_open error for device (" << name << "), " << snd_strerror( result ) << ".";
-    errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
+    // Unable to open the device, it is simply unavailable, so do not give an error message.
     goto captureProbe;
   }
 
@@ -7440,27 +7343,11 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
 
  captureProbe:
   stream = SND_PCM_STREAM_CAPTURE;
-  snd_pcm_info_set_stream( pcminfo, stream );
-
-  // Now try for capture unless default device (with subdev = -1)
-  if ( subdevice != -1 ) {
-    result = snd_ctl_pcm_info( chandle, pcminfo );
-    snd_ctl_close( chandle );
-    if ( result < 0 ) {
-      // Device probably doesn't support capture.
-      if ( info.outputChannels == 0 ) return info;
-      goto probeParameters;
-    }
-  }
-  else
-    snd_ctl_close( chandle );
 
   result = snd_pcm_open( &phandle, name, stream, openMode | SND_PCM_NONBLOCK);
   if ( result < 0 ) {
-    errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_open error for device (" << name << "), " << snd_strerror( result ) << ".";
-    errorText_ = errorStream_.str();
-    error( RtAudioError::WARNING );
-    if ( info.outputChannels == 0 ) return info;
+    // Unable to open the device, it is simply unavailable, so do not give an error message.
+    if ( info.outputChannels == 0 ) return false;
     goto probeParameters;
   }
 
@@ -7471,7 +7358,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
-    if ( info.outputChannels == 0 ) return info;
+    if ( info.outputChannels == 0 ) return false;
     goto probeParameters;
   }
 
@@ -7481,7 +7368,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiAlsa::getDeviceInfo: error getting device (" << name << ") input channels, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
-    if ( info.outputChannels == 0 ) return info;
+    if ( info.outputChannels == 0 ) return false;
     goto probeParameters;
   }
   info.inputChannels = value;
@@ -7491,11 +7378,9 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   if ( info.outputChannels > 0 && info.inputChannels > 0 )
     info.duplexChannels = (info.outputChannels > info.inputChannels) ? info.inputChannels : info.outputChannels;
 
-  // ALSA doesn't provide default devices so we'll use the first available one.
-  if ( device == 0 && info.outputChannels > 0 )
-    info.isDefaultOutput = true;
-  if ( device == 0 && info.inputChannels > 0 )
-    info.isDefaultInput = true;
+  // ALSA recognizes the default device by name
+  info.isDefaultOutput = strcmp(name, "default") == 0;
+  info.isDefaultInput = strcmp(name, "default") == 0;
 
  probeParameters:
   // At this point, we just need to figure out the supported data
@@ -7515,7 +7400,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_open error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
-    return info;
+    return false;
   }
 
   // The device is open ... fill the parameter structure.
@@ -7525,7 +7410,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiAlsa::getDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
-    return info;
+    return false;
   }
 
   // Test our discrete set of sample rate values.
@@ -7543,7 +7428,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiAlsa::getDeviceInfo: no supported sample rates found for device (" << name << ").";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
-    return info;
+    return false;
   }
 
   // Probe the supported data formats ... we don't care about endian-ness just yet
@@ -7574,34 +7459,79 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiAlsa::getDeviceInfo: pcm device (" << name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
     error( RtAudioError::WARNING );
-    return info;
+    return false;
   }
 
-  // Get the device name
-  if (strncmp(name, "default", 7)!=0) {
-    char *cardname;
-    result = snd_card_get_name( card, &cardname );
-    if ( result >= 0 ) {
-      sprintf( name, "hw:%s,%d", cardname, subdevice );
-      free( cardname );
-    }
-  }
+  // Store the device name
   info.name = name;
 
-  // That's all ... close the device and return
+  // That's all ... close the device, push it onto the list, and return
   snd_pcm_close( phandle );
   info.probed = true;
-  return info;
+
+  devices.push_back(info);
+  return true;
+}
+
+static void alsa_error_handler(const char */*file*/, int /*line*/, const char */*function*/,
+                               int /*err*/, const char */*fmt*/, ...)
+{
 }
 
 void RtApiAlsa :: saveDeviceInfo( void )
 {
   devices_.clear();
 
-  unsigned int nDevices = getDeviceCount();
-  devices_.resize( nDevices );
-  for ( unsigned int i=0; i<nDevices; i++ )
-    devices_[i] = getDeviceInfo( i );
+	void **hints, **n;
+	char *name, *descr, *io;
+  int name_len;
+
+  // Device probing produces a lot of errors that we want to suppress because we probe
+  // devices that can't be opened.
+  snd_lib_error_set_handler(alsa_error_handler);
+
+	if (snd_device_name_hint(-1, "pcm", &hints) < 0)
+		goto done;
+
+	n = hints;
+	while (*n != NULL) {
+		name = snd_device_name_get_hint(*n, "NAME");
+		descr = snd_device_name_get_hint(*n, "DESC");
+		io = snd_device_name_get_hint(*n, "IOID");
+
+		if (io)
+			free(io);
+    else if (name) {
+      // Filter out certain device names (by name prefix before ":" character)
+      name_len = strlen(name);
+      strtok(name, ":");
+      if (alsa_ignore_list.find(name) != alsa_ignore_list.end()) {
+        if (name) free(name);
+        if (descr) free(descr);
+        n++;
+        continue;
+      }
+      name[strlen(name)] = ':';
+      name[name_len] = '\0';
+      pushDeviceInfo(name, devices_);
+    }
+
+    if (name) {
+      free(name);
+      name = nullptr;
+    }
+		if (*descr) {
+			free(descr);
+      descr = nullptr;
+    }
+		n++;
+	}
+	snd_device_name_free_hint(hints);
+
+done:
+  // Set the error handler back to default: we do want to know about future errors outside
+  // of this function.
+  snd_lib_error_set_handler(snd_lib_error);
 }
 
 bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
@@ -7619,77 +7549,18 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   } out;
 #endif
 
-  // I'm not using the "plug" interface ... too much inconsistent behavior.
+  int result;
 
-  unsigned nDevices = 0;
-  int result, subdevice, card;
-  char name[64];
-  snd_ctl_t *chandle;
+  if (devices_.size() == 0)
+    saveDeviceInfo();
 
-  if ( device == 0
-       || (options && options->flags & RTAUDIO_ALSA_USE_DEFAULT) )
-  {
-    strcpy(name, "default");
-    result = snd_ctl_open( &chandle, "default", SND_CTL_NONBLOCK );
-    if ( result == 0 ) {
-      if ( nDevices == device ) {
-        strcpy( name, "default" );
-        snd_ctl_close( chandle );
-        goto foundDevice;
-      }
-      nDevices++;
-    }
+  if (device >= devices_.size()) {
+    errorStream_ << "RtApiAlsa::probeDeviceOpen: device out of range.";
+    errorText_ = errorStream_.str();
+    return FAILURE;
   }
 
-  else {
-    nDevices++;
-    // Count cards and devices
-    card = -1;
-    snd_card_next( &card );
-    while ( card >= 0 ) {
-      sprintf( name, "hw:%d", card );
-      result = snd_ctl_open( &chandle, name, SND_CTL_NONBLOCK );
-      if ( result < 0 ) {
-        errorStream_ << "RtApiAlsa::probeDeviceOpen: control open, card = " << card << ", " << snd_strerror( result ) << ".";
-        errorText_ = errorStream_.str();
-        return FAILURE;
-      }
-      subdevice = -1;
-      while( 1 ) {
-        result = snd_ctl_pcm_next_device( chandle, &subdevice );
-        if ( result < 0 ) break;
-        if ( subdevice < 0 ) break;
-        if ( nDevices == device ) {
-          sprintf( name, "hw:%d,%d", card, subdevice );
-          snd_ctl_close( chandle );
-          goto foundDevice;
-        }
-        nDevices++;
-      }
-      snd_ctl_close( chandle );
-      snd_card_next( &card );
-    }
-
-    if ( nDevices == 0 ) {
-      // This should not happen because a check is made before this function is called.
-      errorText_ = "RtApiAlsa::probeDeviceOpen: no devices found!";
-      return FAILURE;
-    }
-
-    if ( device >= nDevices ) {
-      // This should not happen because a check is made before this function is called.
-      errorText_ = "RtApiAlsa::probeDeviceOpen: device ID is invalid!";
-      return FAILURE;
-    }
-  }
-
- foundDevice:
-
-  // The getDeviceInfo() function will not work for a device that is
-  // already open.  Thus, we'll probe the system before opening a
-  // stream and save the results for use by getDeviceInfo().
-  if ( mode == OUTPUT || ( mode == INPUT && stream_.mode != OUTPUT ) ) // only do once
-    this->saveDeviceInfo();
+  const char *name = devices_[device].name.c_str();
 
   snd_pcm_stream_t stream;
   if ( mode == OUTPUT )

@@ -1079,6 +1079,7 @@ public:
 
   std::vector<RtAudio::DeviceInfo> devices_;
   void saveDeviceInfo( void );
+  bool pushDeviceInfo(const char *name, std::vector<RtAudio::DeviceInfo>& devices);
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
