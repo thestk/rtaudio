@@ -237,6 +237,10 @@ else()
 endif()
 list(APPEND LIB_TARGETS rtaudio)
 
+# Windows: If RTAUDIO_STATIC_MSVCRT is not set, it defaults to ON when building as a
+# static library and OFF when building as a DLL.  If you want to have more control, you
+# can explicitly override RTAUDIO_STATIC_MSVCRT to turn it off/on.  It controls the flags
+# related to MSVC runtime linkage in the next clause, below.
 if (NOT DEFINED RTAUDIO_STATIC_MSVCRT)
   set(RTAUDIO_STATIC_MSVCRT ${RTAUDIO_IS_STATIC})
 endif()
