@@ -2857,6 +2857,18 @@ unsigned int RtApiAsio :: getDeviceCount( void )
   return (unsigned int) drivers.asioGetNumDev();
 }
 
+// We can only load one ASIO driver, so the default output is always the first device.
+unsigned int RtApiAsio :: getDefaultOutputDevice( void )
+{
+  return 0;
+}
+
+// We can only load one ASIO driver, so the default input is always the first device.
+unsigned int RtApiAsio :: getDefaultInputDevice( void )
+{
+  return 0;
+}
+
 RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
 {
   RtAudio::DeviceInfo info;

@@ -955,6 +955,8 @@ public:
   ~RtApiAsio();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_ASIO; }
   unsigned int getDeviceCount( void ) override;
+  unsigned int getDefaultOutputDevice( void ) override;
+  unsigned int getDefaultInputDevice( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   void startStream( void ) override;
