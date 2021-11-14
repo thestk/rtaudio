@@ -20,15 +20,15 @@ assert(meson.project_version() == rt_version, 'Meson\'s RtAudio version does not
 ac_file = fs.read('configure.ac').strip().split('\n')
 foreach line : ac_file
 	if line.startswith('m4_define([lt_current],')
-		lt_current = line.substring(-2,-1)
+		lt_current = line.substring(-2,-1).to_int()
 	elif line.startswith('m4_define([lt_revision],')
-		lt_revision = line.substring(-2,-1)
+		lt_revision = line.substring(-2,-1).to_int()
 	elif line.startswith('m4_define([lt_age],')
-		lt_age = line.substring(-2,-1)
+		lt_age = line.substring(-2,-1).to_int()
 	endif
 endforeach
 
-so_version = '.'.join([lt_current,lt_revision,lt_age])
+so_version = '@0@.@1@.@2@'.format(lt_current - lt_age, lt_age, lt_revision)
 
 src = ['RtAudio.cpp', 'rtaudio_c.cpp']
 incdir = include_directories('include')
@@ -109,7 +109,7 @@ if host_machine.system() == 'windows'
 endif
 
 rtaudio = library('rtaudio', src,
-		soversion: so_version,
+		version: so_version,
 		include_directories: incdir,
 		cpp_args: defines,
 		dependencies: deps,
