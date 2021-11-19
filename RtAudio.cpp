@@ -1703,7 +1703,6 @@ RtAudioErrorType RtApiCore :: abortStream( void )
     else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiCore::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
-    //return;
   }
 
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
@@ -3487,8 +3486,11 @@ bool stopThreadCalled = false;
 
 RtAudioErrorType RtApiAsio :: startStream()
 {
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiAsio::startStream(): the stream is already running!";
+    if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiAsio::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiAsio::startStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -3519,8 +3521,11 @@ RtAudioErrorType RtApiAsio :: startStream()
 
 RtAudioErrorType RtApiAsio :: stopStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiAsio::stopStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiAsio::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiAsio::stopStream(): the stream is closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -3546,8 +3551,11 @@ RtAudioErrorType RtApiAsio :: stopStream()
 
 RtAudioErrorType RtApiAsio :: abortStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiAsio::abortStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiAsio::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiAsio::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -4648,8 +4656,11 @@ void RtApiWasapi::closeStream( void )
 
 RtAudioErrorType RtApiWasapi::startStream( void )
 {
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiWasapi::startStream: The stream is already running.";
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiWasapi::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiWasapi::startStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -4678,14 +4689,12 @@ RtAudioErrorType RtApiWasapi::startStream( void )
 
 RtAudioErrorType RtApiWasapi::stopStream( void )
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiWasapi::stopStream: The stream is already stopped.";
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiWasapi::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiWasapi::stopStream(): the stream is closed!";
     return error( RTAUDIO_WARNING );
-  }
-  if ( stream_.state == STREAM_STOPPING ) {
-    errorText_ = "RtApiWasapi::stopStream: The stream is already stopping.";
-    error( RtAudioError::WARNING );
-    return;
   }
 
   // inform stream thread by setting stream state to STREAM_STOPPING
@@ -4707,16 +4716,14 @@ RtAudioErrorType RtApiWasapi::stopStream( void )
 
 RtAudioErrorType RtApiWasapi::abortStream( void )
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiWasapi::abortStream: The stream is already stopped.";
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiWasapi::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiWasapi::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
-  if ( stream_.state == STREAM_STOPPING ) {
-    errorText_ = "RtApiWasapi::abortStream: The stream is already stopping.";
-    error( RtAudioError::WARNING );
-    return;
-  }
-
+    
   // inform stream thread by setting stream state to STREAM_STOPPING
   stream_.state = STREAM_STOPPING;
 
@@ -6664,8 +6671,7 @@ RtAudioErrorType RtApiDs :: abortStream()
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
   handle->drainCounter = 2;
 
-  stopStream();
-  return RTAUDIO_NO_ERROR;
+  return stopStream();
 }
 
 void RtApiDs :: callbackEvent()
