@@ -3478,8 +3478,9 @@ void RtApiAsio :: closeStream()
     stream_.deviceBuffer = 0;
   }
 
-  stream_.mode = UNINITIALIZED;
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.mode = UNINITIALIZED;
+  //stream_.state = STREAM_CLOSED;
 }
 
 bool stopThreadCalled = false;
@@ -3494,9 +3495,11 @@ RtAudioErrorType RtApiAsio :: startStream()
     return error( RTAUDIO_WARNING );
   }
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
+  */
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   ASIOError result = ASIOStart();
@@ -4648,8 +4651,8 @@ void RtApiWasapi::closeStream( void )
     stream_.deviceBuffer = 0;
   }
 
-  // update stream state
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.state = STREAM_CLOSED;
 }
 
 //-----------------------------------------------------------------------------
@@ -4664,10 +4667,12 @@ RtAudioErrorType RtApiWasapi::startStream( void )
     return error( RTAUDIO_WARNING );
   }
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
-
+  */
+  
   // update stream state
   stream_.state = STREAM_RUNNING;
 
@@ -6495,21 +6500,27 @@ void RtApiDs :: closeStream()
     stream_.deviceBuffer = 0;
   }
 
-  stream_.mode = UNINITIALIZED;
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.mode = UNINITIALIZED;
+  //stream_.state = STREAM_CLOSED;
 }
 
 RtAudioErrorType RtApiDs :: startStream()
 {
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiDs::startStream(): the stream is already running!";
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiDs::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiDs::startStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
-
+  */
+  
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
 
   // Increase scheduler frequency on lesser windows (a side-effect of
@@ -6560,8 +6571,11 @@ RtAudioErrorType RtApiDs :: startStream()
 
 RtAudioErrorType RtApiDs :: stopStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiDs::stopStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiDs::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiDs::stopStream(): the stream is closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -6663,8 +6677,11 @@ RtAudioErrorType RtApiDs :: stopStream()
 
 RtAudioErrorType RtApiDs :: abortStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiDs::abortStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiDs::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiDs::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -8199,25 +8216,31 @@ void RtApiAlsa :: closeStream()
     stream_.deviceBuffer = 0;
   }
 
-  stream_.mode = UNINITIALIZED;
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.mode = UNINITIALIZED;
+  //stream_.state = STREAM_CLOSED;
 }
 
 RtAudioErrorType RtApiAlsa :: startStream()
 {
   // This method calls snd_pcm_prepare if the device isn't already in that state.
 
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiAlsa::startStream(): the stream is already running!";
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiAlsa::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiAlsa::startStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
-
+  */
+  
   int result = 0;
   snd_pcm_state_t state;
   AlsaHandle *apiInfo = (AlsaHandle *) stream_.apiHandle;
@@ -8260,8 +8283,11 @@ RtAudioErrorType RtApiAlsa :: startStream()
 
 RtAudioErrorType RtApiAlsa :: stopStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiAlsa::stopStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiAlsa::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiAlsa::stopStream(): the stream is closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -8302,8 +8328,11 @@ RtAudioErrorType RtApiAlsa :: stopStream()
 
 RtAudioErrorType RtApiAlsa :: abortStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiAlsa::abortStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiAlsa::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiAlsa::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -8874,8 +8903,9 @@ void RtApiPulse::closeStream( void )
     stream_.userBuffer[1] = 0;
   }
 
-  stream_.state = STREAM_CLOSED;
-  stream_.mode = UNINITIALIZED;
+  clearStreamInfo();
+  //stream_.state = STREAM_CLOSED;
+  //stream_.mode = UNINITIALIZED;
 }
 
 void RtApiPulse::callbackEvent( void )
@@ -8972,23 +9002,24 @@ void RtApiPulse::callbackEvent( void )
 
 RtAudioErrorType RtApiPulse::startStream( void )
 {
-  PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
-
-  if ( stream_.state == STREAM_CLOSED ) {
-    errorText_ = "RtApiPulse::startStream(): the stream is not open!";
-    return error( RTAUDIO_INVALID_USE );
-  }
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiPulse::startStream(): the stream is already running!";
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiPulse::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiPulse::startStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
+  
+  PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
 
   MUTEX_LOCK( &stream_.mutex );
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
-
+  */
+  
   stream_.state = STREAM_RUNNING;
 
   pah->runnable = true;
@@ -8999,16 +9030,15 @@ RtAudioErrorType RtApiPulse::startStream( void )
 
 RtAudioErrorType RtApiPulse::stopStream( void )
 {
-  PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
-
-  if ( stream_.state == STREAM_CLOSED ) {
-    errorText_ = "RtApiPulse::stopStream(): the stream is not open!";
-    return error( RTAUDIO_INVALID_USE );
-  }
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiPulse::stopStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiPulse::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiPulse::stopStream(): the stream is closed!";
     return error( RTAUDIO_WARNING );
   }
+    
+  PulseAudioHandle *pah = static_cast<PulseAudioHandle *>( stream_.apiHandle );
 
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
@@ -9034,16 +9064,15 @@ RtAudioErrorType RtApiPulse::stopStream( void )
 
 RtAudioErrorType RtApiPulse::abortStream( void )
 {
-  PulseAudioHandle *pah = static_cast<PulseAudioHandle*>( stream_.apiHandle );
-
-  if ( stream_.state == STREAM_CLOSED ) {
-    errorText_ = "RtApiPulse::abortStream(): the stream is not open!";
-    return error( RTAUDIO_INVALID_USE );
-  }
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiPulse::abortStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiPulse::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiPulse::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
+  
+  PulseAudioHandle *pah = static_cast<PulseAudioHandle*>( stream_.apiHandle );
 
   stream_.state = STREAM_STOPPED;
   MUTEX_LOCK( &stream_.mutex );
@@ -10022,22 +10051,28 @@ void RtApiOss :: closeStream()
     stream_.deviceBuffer = 0;
   }
 
-  stream_.mode = UNINITIALIZED;
-  stream_.state = STREAM_CLOSED;
+  clearStreamInfo();
+  //stream_.mode = UNINITIALIZED;
+  //stream_.state = STREAM_CLOSED;
 }
 
 RtAudioErrorType RtApiOss :: startStream()
 {
-  if ( stream_.state == STREAM_RUNNING ) {
-    errorText_ = "RtApiOss::startStream(): the stream is already running!";
+  if ( stream_.state != STREAM_STOPPED ) {
+    if ( stream_.state == STREAM_RUNNING )
+      errorText_ = "RtApiOss::startStream(): the stream is already running!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiOss::startStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
   MUTEX_LOCK( &stream_.mutex );
 
+  /*
   #if defined( HAVE_GETTIMEOFDAY )
   gettimeofday( &stream_.lastTickTimestamp, NULL );
   #endif
+  */
 
   stream_.state = STREAM_RUNNING;
 
@@ -10053,8 +10088,11 @@ RtAudioErrorType RtApiOss :: startStream()
 
 RtAudioErrorType RtApiOss :: stopStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiOss::stopStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiOss::stopStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiOss::stopStream(): the stream is closed!";
     return error( RTAUDIO_WARNING );
   }
 
@@ -10123,8 +10161,11 @@ RtAudioErrorType RtApiOss :: stopStream()
 
 RtAudioErrorType RtApiOss :: abortStream()
 {
-  if ( stream_.state == STREAM_STOPPED ) {
-    errorText_ = "RtApiOss::abortStream(): the stream is already stopped!";
+  if ( stream_.state != STREAM_RUNNING ) {
+    if ( stream_.state == STREAM_STOPPED )
+      errorText_ = "RtApiOss::abortStream(): the stream is already stopped!";
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+      errorText_ = "RtApiOss::abortStream(): the stream is stopping or closed!";
     return error( RTAUDIO_WARNING );
   }
 
