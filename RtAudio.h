@@ -11,7 +11,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2019 Gary P. Scavone
+    Copyright (c) 2001-2021 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -934,6 +934,8 @@ public:
   ~RtApiAsio();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_ASIO; }
   unsigned int getDeviceCount( void ) override;
+  unsigned int getDefaultOutputDevice( void ) override;
+  unsigned int getDefaultInputDevice( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;

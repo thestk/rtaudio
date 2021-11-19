@@ -11,7 +11,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2019 Gary P. Scavone
+    Copyright (c) 2001-2021 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -2911,6 +2911,18 @@ unsigned int RtApiAsio :: getDeviceCount( void )
   return (unsigned int) drivers.asioGetNumDev();
 }
 
+// We can only load one ASIO driver, so the default output is always the first device.
+unsigned int RtApiAsio :: getDefaultOutputDevice( void )
+{
+  return 0;
+}
+
+// We can only load one ASIO driver, so the default input is always the first device.
+unsigned int RtApiAsio :: getDefaultInputDevice( void )
+{
+  return 0;
+}
+
 RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
 {
   RtAudio::DeviceInfo info;
@@ -3883,6 +3895,17 @@ if ( objectPtr )\
 
 typedef HANDLE ( __stdcall *TAvSetMmThreadCharacteristicsPtr )( LPCWSTR TaskName, LPDWORD TaskIndex );
 
+#ifndef __IAudioClient3_INTERFACE_DEFINED__
+MIDL_INTERFACE( "00000000-0000-0000-0000-000000000000" ) IAudioClient3
+{
+  virtual HRESULT GetSharedModeEnginePeriod( WAVEFORMATEX*, UINT32*, UINT32*, UINT32*, UINT32* ) = 0;
+  virtual HRESULT InitializeSharedAudioStream( DWORD, UINT32, WAVEFORMATEX*, LPCGUID ) = 0;
+};
+#ifdef __CRT_UUID_DECL
+__CRT_UUID_DECL( IAudioClient3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
+#endif
+#endif
+
 //-----------------------------------------------------------------------------
 
 // WASAPI dictates stream sample rate, format, channel count, and in some cases, buffer size.
@@ -4659,17 +4682,16 @@ RtAudioErrorType RtApiWasapi::stopStream( void )
     errorText_ = "RtApiWasapi::stopStream: The stream is already stopped.";
     return error( RTAUDIO_WARNING );
   }
+  if ( stream_.state == STREAM_STOPPING ) {
+    errorText_ = "RtApiWasapi::stopStream: The stream is already stopping.";
+    error( RtAudioError::WARNING );
+    return;
+  }
 
   // inform stream thread by setting stream state to STREAM_STOPPING
   stream_.state = STREAM_STOPPING;
 
-  // wait until stream thread is stopped
-  while( stream_.state != STREAM_STOPPED ) {
-    Sleep( 1 );
-  }
-
-  // Wait for the last buffer to play before stopping.
-  Sleep( 1000 * stream_.bufferSize / stream_.sampleRate );
+  WaitForSingleObject( ( void* ) stream_.callbackInfo.thread, INFINITE );
 
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
@@ -4689,14 +4711,16 @@ RtAudioErrorType RtApiWasapi::abortStream( void )
     errorText_ = "RtApiWasapi::abortStream: The stream is already stopped.";
     return error( RTAUDIO_WARNING );
   }
+  if ( stream_.state == STREAM_STOPPING ) {
+    errorText_ = "RtApiWasapi::abortStream: The stream is already stopping.";
+    error( RtAudioError::WARNING );
+    return;
+  }
 
   // inform stream thread by setting stream state to STREAM_STOPPING
   stream_.state = STREAM_STOPPING;
 
-  // wait until stream thread is stopped
-  while ( stream_.state != STREAM_STOPPED ) {
-    Sleep( 1 );
-  }
+  WaitForSingleObject( ( void* ) stream_.callbackInfo.thread, INFINITE );
 
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
@@ -5041,12 +5065,37 @@ void RtApiWasapi::wasapiThread()
     captureSrRatio = ( ( float ) captureFormat->nSamplesPerSec / stream_.sampleRate );
 
     if ( !captureClient ) {
-      hr = captureAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
-                                           loopbackEnabled ? AUDCLNT_STREAMFLAGS_LOOPBACK : AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                           0,
-                                           0,
-                                           captureFormat,
-                                           NULL );
+      IAudioClient3* captureAudioClient3 = nullptr;
+      captureAudioClient->QueryInterface( __uuidof( IAudioClient3 ), ( void** ) &captureAudioClient3 );
+      if ( captureAudioClient3 && !loopbackEnabled )
+      {
+        UINT32 Ignore;
+        UINT32 MinPeriodInFrames;
+        hr = captureAudioClient3->GetSharedModeEnginePeriod( captureFormat,
+                                                             &Ignore,
+                                                             &Ignore,
+                                                             &MinPeriodInFrames,
+                                                             &Ignore );
+        if ( FAILED( hr ) ) {
+          errorText = "RtApiWasapi::wasapiThread: Unable to initialize capture audio client.";
+          goto Exit;
+        }
+        
+        hr = captureAudioClient3->InitializeSharedAudioStream( AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                                               MinPeriodInFrames,
+                                                               captureFormat,
+                                                               NULL );
+      }
+      else
+      {
+        hr = captureAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
+                                             loopbackEnabled ? AUDCLNT_STREAMFLAGS_LOOPBACK : AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                             0,
+                                             0,
+                                             captureFormat,
+                                             NULL );
+      }
+
       if ( FAILED( hr ) ) {
         errorText = "RtApiWasapi::wasapiThread: Unable to initialize capture audio client.";
         goto Exit;
@@ -5127,12 +5176,37 @@ void RtApiWasapi::wasapiThread()
     renderSrRatio = ( ( float ) renderFormat->nSamplesPerSec / stream_.sampleRate );
 
     if ( !renderClient ) {
-      hr = renderAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
-                                          AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                          0,
-                                          0,
-                                          renderFormat,
-                                          NULL );
+      IAudioClient3* renderAudioClient3 = nullptr;
+      renderAudioClient->QueryInterface( __uuidof( IAudioClient3 ), ( void** ) &renderAudioClient3 );
+      if ( renderAudioClient3 )
+      {
+        UINT32 Ignore;
+        UINT32 MinPeriodInFrames;
+        hr = renderAudioClient3->GetSharedModeEnginePeriod( renderFormat,
+                                                            &Ignore,
+                                                            &Ignore,
+                                                            &MinPeriodInFrames,
+                                                            &Ignore );
+        if ( FAILED( hr ) ) {
+          errorText = "RtApiWasapi::wasapiThread: Unable to initialize render audio client.";
+          goto Exit;
+        }
+        
+        hr = renderAudioClient3->InitializeSharedAudioStream( AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                                              MinPeriodInFrames,
+                                                              renderFormat,
+                                                              NULL );
+      }
+      else
+      {
+        hr = renderAudioClient->Initialize( AUDCLNT_SHAREMODE_SHARED,
+                                            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                            0,
+                                            0,
+                                            renderFormat,
+                                            NULL );
+      }
+
       if ( FAILED( hr ) ) {
         errorText = "RtApiWasapi::wasapiThread: Unable to initialize render audio client.";
         goto Exit;
@@ -5196,18 +5270,18 @@ void RtApiWasapi::wasapiThread()
   if ( stream_.mode == INPUT )
   {
     using namespace std; // for ceilf
-    convBuffSize = ( size_t ) ( ceilf( stream_.bufferSize * captureSrRatio ) ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
+    convBuffSize = ( unsigned int ) ( ceilf( stream_.bufferSize * captureSrRatio ) ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
     deviceBuffSize = stream_.bufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] );
   }
   else if ( stream_.mode == OUTPUT )
   {
-    convBuffSize = ( size_t ) ( ceilf( stream_.bufferSize * renderSrRatio ) ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
+    convBuffSize = ( unsigned int ) ( ceilf( stream_.bufferSize * renderSrRatio ) ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
     deviceBuffSize = stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] );
   }
   else if ( stream_.mode == DUPLEX )
   {
-    convBuffSize = std::max( ( size_t ) ( ceilf( stream_.bufferSize * captureSrRatio ) ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
-                             ( size_t ) ( ceilf( stream_.bufferSize * renderSrRatio ) ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
+    convBuffSize = std::max( ( unsigned int ) ( ceilf( stream_.bufferSize * captureSrRatio ) ) * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
+                             ( unsigned int ) ( ceilf( stream_.bufferSize * renderSrRatio ) ) * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
     deviceBuffSize = std::max( stream_.bufferSize * stream_.nDeviceChannels[INPUT] * formatBytes( stream_.deviceFormat[INPUT] ),
                                stream_.bufferSize * stream_.nDeviceChannels[OUTPUT] * formatBytes( stream_.deviceFormat[OUTPUT] ) );
   }
@@ -5523,14 +5597,14 @@ Exit:
 
   CoUninitialize();
 
-  // update stream state
-  stream_.state = STREAM_STOPPED;
-
   if ( !errorText.empty() )
   {
     errorText_ = errorText;
     error( errorType );
   }
+
+  // update stream state
+  stream_.state = STREAM_STOPPED;
 }
 
 //******************** End of __WINDOWS_WASAPI__ *********************//

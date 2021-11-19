@@ -11,7 +11,8 @@ jobs:
         fetch-depth: 0
     - name: install dependencies
       run:
-        sudo apt-get install g++-8 autoconf-archive libasound-dev doxygen
+        sudo apt-get update
+        && sudo apt-get install g++-8 autoconf-archive libasound-dev doxygen
     - name: automake
       run:
         (./autogen.sh || (cat config.log; false))
@@ -49,7 +50,8 @@ jobs:
         fetch-depth: 0
     - name: install dependencies
       run:
-        sudo apt-get install g++-8 autoconf-archive cmake python3-pip ninja-build doxygen ${{matrix.deps}}
+        sudo apt-get update
+        && sudo apt-get install g++-8 autoconf-archive cmake python3-pip ninja-build doxygen ${{matrix.deps}}
         && sudo pip install meson>=0.55.0
     - name: automake
       run:
@@ -105,7 +107,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: install dependencies
-      run: sudo apt-get install g++-mingw-w64 autoconf-archive
+      run: sudo apt-get update && sudo apt-get install g++-mingw-w64 autoconf-archive
     - name: automake
       run:
         env NOCONFIGURE=1 ./autogen.sh

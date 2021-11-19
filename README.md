@@ -4,7 +4,7 @@
 
 A set of C++ classes that provide a common API for realtime audio input/output across Linux (native ALSA, JACK, PulseAudio and OSS), Macintosh OS X (CoreAudio and JACK), and Windows (DirectSound, ASIO and WASAPI) operating systems.
 
-By Gary P. Scavone, 2001-2019 (and many other developers!)
+By Gary P. Scavone, 2001-2021 (and many other developers!)
 
 This distribution of RtAudio contains the following:
 

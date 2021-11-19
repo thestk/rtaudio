@@ -11,33 +11,25 @@
 #include <iostream>
 #include <map>
 
-int main()
+std::vector< RtAudio::Api > listApis()
 {
-  // Create an api map.
-  std::map<int, std::string> apiMap;
-  apiMap[RtAudio::MACOSX_CORE] = "OS-X Core Audio";
-  apiMap[RtAudio::WINDOWS_ASIO] = "Windows ASIO";
-  apiMap[RtAudio::WINDOWS_DS] = "Windows DirectSound";
-  apiMap[RtAudio::WINDOWS_WASAPI] = "Windows WASAPI";
-  apiMap[RtAudio::UNIX_JACK] = "Jack Client";
-  apiMap[RtAudio::LINUX_ALSA] = "Linux ALSA";
-  apiMap[RtAudio::LINUX_PULSE] = "Linux PulseAudio";
-  apiMap[RtAudio::LINUX_OSS] = "Linux OSS";
-  apiMap[RtAudio::RTAUDIO_DUMMY] = "RtAudio Dummy";
-
   std::vector< RtAudio::Api > apis;
   RtAudio :: getCompiledApi( apis );
 
-  std::cout << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
-
   std::cout << "\nCompiled APIs:\n";
-  for ( unsigned int i=0; i<apis.size(); i++ )
-    std::cout << "  " << apiMap[ apis[i] ] << std::endl;
+  for ( size_t i=0; i<apis.size(); i++ )
+    std::cout << i << ". " << RtAudio::getApiDisplayName(apis[i])
+              << " (" << RtAudio::getApiName(apis[i]) << ")" << std::endl;
 
-  RtAudio audio;
+  return apis;
+}
+
+void listDevices(RtAudio::Api api)
+{
+  RtAudio audio(api);
   RtAudio::DeviceInfo info;
 
-  std::cout << "\nCurrent API: " << apiMap[ audio.getCurrentApi() ] << std::endl;
+  std::cout << "\nAPI: " << RtAudio::getApiDisplayName(audio.getCurrentApi()) << std::endl;
 
   unsigned int devices = audio.getDeviceCount();
   std::cout << "\nFound " << devices << " device(s) ...\n";
@@ -88,6 +80,23 @@ int main()
       else
         std::cout << "Preferred sample rate = " << info.preferredSampleRate << std::endl;
     }
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  std::cout << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
+
+  std::vector< RtAudio::Api > apis = listApis();
+
+  for ( size_t api=0; api < apis.size(); api++ )
+  {
+    errno = 0;
+    char *s;
+    if (argc < 2
+        || apis[api] == RtAudio::getCompiledApiByName(argv[1])
+        || (api == std::strtoul(argv[1], &s, 10) && argv[1] != s && !errno))
+      listDevices(apis[api]);
   }
   std::cout << std::endl;
 
