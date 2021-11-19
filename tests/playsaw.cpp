@@ -1,7 +1,7 @@
 /******************************************/
 /*
   playsaw.cpp
-  by Gary P. Scavone, 2006
+  by Gary P. Scavone, 2006-2019.
 
   This program will output sawtooth waveforms
   of different frequencies on each channel.
@@ -11,6 +11,7 @@
 #include "RtAudio.h"
 #include <iostream>
 #include <cstdlib>
+#include <signal.h>
 
 /*
 typedef char MY_TYPE;
@@ -49,6 +50,10 @@ typedef double MY_TYPE;
   #define SLEEP( milliseconds ) usleep( (unsigned long) (milliseconds * 1000.0) )
 #endif
 
+// Interrupt handler function
+bool done;
+static void finish( int /*ignore*/ ){ done = true; }
+
 #define BASE_RATE 0.005
 #define TIME   1.0
 
@@ -64,15 +69,10 @@ void usage( void ) {
   exit( 0 );
 }
 
-void errorCallback( RtAudioError::Type type, const std::string &errorText )
+void errorCallback( RtAudioErrorType /*type*/, const std::string &errorText )
 {
-  // This example error handling function does exactly the same thing
-  // as the embedded RtAudio::error() function.
-  std::cout << "in errorCallback" << std::endl;
-  if ( type == RtAudioError::WARNING )
-    std::cerr << '\n' << errorText << "\n\n";
-  else if ( type != RtAudioError::WARNING )
-    throw( RtAudioError( errorText, type ) );
+  // This example error handling function simply outputs the error message to stderr.
+  std::cerr << "\nerrorCallback: " << errorText << "\n\n";
 }
 
 unsigned int channels;
@@ -80,13 +80,15 @@ RtAudio::StreamOptions options;
 unsigned int frameCounter = 0;
 bool checkCount = false;
 unsigned int nFrames = 0;
-const unsigned int callbackReturnValue = 1;
+const unsigned int callbackReturnValue = 1; // 1 = stop and drain, 2 = abort
+double streamTimePrintIncrement = 1.0; // seconds
+double streamTimePrintTime = 1.0; // seconds
 
-//#define USE_INTERLEAVED
+#define USE_INTERLEAVED
 #if defined( USE_INTERLEAVED )
 
 // Interleaved buffers
-int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
+int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
          double streamTime, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
@@ -96,6 +98,11 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
   if ( status )
     std::cout << "Stream underflow detected!" << std::endl;
+
+  if ( streamTime >= streamTimePrintTime ) {
+    std::cout << "streamTime = " << streamTime << std::endl;
+    streamTimePrintTime += streamTimePrintIncrement;
+  }
 
   for ( i=0; i<nBufferFrames; i++ ) {
     for ( j=0; j<channels; j++ ) {
@@ -113,7 +120,7 @@ int saw( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 #else // Use non-interleaved buffers
 
 int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
-         double /*streamTime*/, RtAudioStreamStatus status, void *data )
+         double streamTime, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
   extern unsigned int channels;
@@ -123,6 +130,11 @@ int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
   if ( status )
     std::cout << "Stream underflow detected!" << std::endl;
 
+  if ( streamTime >= streamTimePrintTime ) {
+    std::cout << "streamTime = " << streamTime << std::endl;
+    streamTimePrintTime += streamTimePrintIncrement;
+  }
+  
   double increment;
   for ( j=0; j<channels; j++ ) {
     increment = BASE_RATE * (j+1+(j*0.1));
@@ -146,7 +158,9 @@ int main( int argc, char *argv[] )
   // minimal command-line checking
   if (argc < 3 || argc > 6 ) usage();
 
-  RtAudio dac;
+  // Specify our own error callback function.
+  RtAudio dac( RtAudio::UNSPECIFIED, &errorCallback );
+  
   if ( dac.getDeviceCount() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
     exit( 1 );
@@ -164,7 +178,9 @@ int main( int argc, char *argv[] )
 
   double *data = (double *) calloc( channels, sizeof( double ) );
 
-  // Let RtAudio print messages to stderr.
+  //dac.setErrorCallback( &errorCallback ); // could use if not set via constructor
+
+  // Tell RtAudio to output all messages, even warnings.
   dac.showWarnings( true );
 
   // Set our stream parameters for output only.
@@ -182,31 +198,34 @@ int main( int argc, char *argv[] )
 #if !defined( USE_INTERLEAVED )
   options.flags |= RTAUDIO_NONINTERLEAVED;
 #endif
-  try {
-    dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options, &errorCallback );
-    dac.startStream();
-  }
-  catch ( RtAudioError& e ) {
-    e.printMessage();
+
+  // An error in the openStream() function can be detected either by
+  // checking for a non-zero return value OR by a subsequent call to
+  // isStreamOpen().
+  if ( dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options ) )
     goto cleanup;
-  }
+  if ( dac.isStreamOpen() == false ) goto cleanup;
+
+  //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
+  
+  // Stream is open ... now start it.
+  if ( dac.startStream() ) goto cleanup;
 
   if ( checkCount ) {
     while ( dac.isStreamRunning() == true ) SLEEP( 100 );
   }
   else {
-    char input;
-    //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
-    std::cout << "\nPlaying ... press <enter> to quit (buffer size = " << bufferFrames << ").\n";
-    std::cin.get( input );
+    std::cout << "\nPlaying ... quit with Ctrl-C (buffer size = " << bufferFrames << ").\n";
 
-    try {
-      // Stop the stream
-      dac.stopStream();
-    }
-    catch ( RtAudioError& e ) {
-      e.printMessage();
-    }
+    // Install an interrupt handler function.
+    done = false;
+    (void) signal(SIGINT, finish);
+
+    while ( !done && dac.isStreamRunning() ) SLEEP( 100 );
+
+    // Block released ... stop the stream
+    if ( dac.isStreamRunning() )
+      dac.stopStream();  // or could call dac.abortStream();
   }
 
  cleanup:

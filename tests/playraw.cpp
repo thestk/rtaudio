@@ -129,14 +129,13 @@ int main( int argc, char *argv[] )
     oParams.deviceId = dac.getDefaultOutputDevice();
 
   data.channels = channels;
-  try {
-    dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &output, (void *)&data );
-    dac.startStream();
-  }
-  catch ( RtAudioError& e ) {
-    std::cout << '\n' << e.getMessage() << '\n' << std::endl;
-    goto cleanup;
-  }
+
+  if ( dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &output, (void *)&data ) )
+      goto cleanup;
+
+  if ( dac.isStreamOpen() == false ) goto cleanup;
+
+  if ( dac.startStream() ) goto cleanup;
 
   std::cout << "\nPlaying raw file " << file << " (buffer frames = " << bufferFrames << ")." << std::endl;
   while ( 1 ) {
