@@ -66,6 +66,8 @@
 #include <vector>
 #include <iostream>
 #include <functional>
+#include <future>
+#include <atomic>
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -707,7 +709,7 @@ public:
   virtual double getStreamTime( void ) const { return stream_.streamTime; }
   virtual void setStreamTime( double time );
   bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; }
-  bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }
+  virtual bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }
   void setErrorCallback( RtAudioErrorCallback errorCallback ) { errorCallback_ = errorCallback; }
   void showWarnings( bool value ) { showWarnings_ = value; }
 
@@ -1016,19 +1018,19 @@ public:
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
   RtAudioErrorType abortStream( void ) override;
+  bool isStreamRunning() const override;
 
 private:
   bool coInitialized_;
   IMMDeviceEnumerator* deviceEnumerator_;
+  std::future<RtAudioErrorType> wasapiThreadResult_;
+  std::atomic_bool wasapiThreadRun_;
 
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int* bufferSize,
                         RtAudio::StreamOptions* options ) override;
 
-  static DWORD WINAPI runWasapiThread( void* wasapiPtr );
-  static DWORD WINAPI stopWasapiThread( void* wasapiPtr );
-  static DWORD WINAPI abortWasapiThread( void* wasapiPtr );
   void wasapiThread();
 };
 

@@ -4302,7 +4302,7 @@ struct WasapiHandle
 //=============================================================================
 
 RtApiWasapi::RtApiWasapi()
-  : coInitialized_( false ), deviceEnumerator_( NULL )
+  : coInitialized_( false ), deviceEnumerator_( NULL ), wasapiThreadRun_( false )
 {
   // WASAPI can run either apartment or multi-threaded
   HRESULT hr = CoInitialize( NULL );
@@ -4659,12 +4659,13 @@ void RtApiWasapi::closeStream( void )
 
 RtAudioErrorType RtApiWasapi::startStream( void )
 {
-  if ( stream_.state != STREAM_STOPPED ) {
-    if ( stream_.state == STREAM_RUNNING )
-      errorText_ = "RtApiWasapi::startStream(): the stream is already running!";
-    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
-      errorText_ = "RtApiWasapi::startStream(): the stream is stopping or closed!";
-    return error( RTAUDIO_WARNING );
+  if ( !isStreamOpen() ) {
+    errorText_ = "RtApiWasapi::startStream(): the stream is closed!";
+    return error(RTAUDIO_WARNING);
+  }
+  if ( isStreamRunning() ) {
+    errorText_ = "RtApiWasapi::startStream(): the stream is already running!";
+    return error(RTAUDIO_WARNING);
   }
 
   /*
@@ -4677,16 +4678,14 @@ RtAudioErrorType RtApiWasapi::startStream( void )
   stream_.state = STREAM_RUNNING;
 
   // create WASAPI stream thread
-  stream_.callbackInfo.thread = ( ThreadHandle ) CreateThread( NULL, 0, runWasapiThread, this, CREATE_SUSPENDED, NULL );
-
-  if ( !stream_.callbackInfo.thread ) {
-    errorText_ = "RtApiWasapi::startStream: Unable to instantiate callback thread.";
-    return error( RTAUDIO_THREAD_ERROR );
-  }
-  else {
-    SetThreadPriority( ( void* ) stream_.callbackInfo.thread, stream_.callbackInfo.priority );
-    ResumeThread( ( void* ) stream_.callbackInfo.thread );
-  }
+  wasapiThreadRun_ = true;
+  wasapiThreadResult_ = std::async(std::launch::async, [this] {
+    const auto threadHandle = GetCurrentThread();
+    SetThreadPriority(threadHandle, stream_.callbackInfo.priority);
+    wasapiThread();
+    return RTAUDIO_NO_ERROR;
+  });
+  
   return RTAUDIO_NO_ERROR;
 }
 
@@ -4694,26 +4693,20 @@ RtAudioErrorType RtApiWasapi::startStream( void )
 
 RtAudioErrorType RtApiWasapi::stopStream( void )
 {
-  if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
-    if ( stream_.state == STREAM_STOPPED )
-      errorText_ = "RtApiWasapi::stopStream(): the stream is already stopped!";
-    else if ( stream_.state == STREAM_CLOSED )
-      errorText_ = "RtApiWasapi::stopStream(): the stream is closed!";
-    return error( RTAUDIO_WARNING );
+  if ( !isStreamOpen() ) {
+    errorText_ = "RtApiWasapi::stopStream(): the stream is closed!";
+    return error(RTAUDIO_WARNING);
+  }
+  if ( !isStreamRunning() ) {
+    errorText_ = "RtApiWasapi::stopStream(): the stream is already stopped!";
+    return error(RTAUDIO_WARNING);
   }
 
-  // inform stream thread by setting stream state to STREAM_STOPPING
-  stream_.state = STREAM_STOPPING;
-
-  WaitForSingleObject( ( void* ) stream_.callbackInfo.thread, INFINITE );
-
-  // close thread handle
-  if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
-    errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
-    return error( RTAUDIO_THREAD_ERROR );
-  }
-
-  stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  // signal thread to stop
+  wasapiThreadRun_ = false;
+  wasapiThreadResult_.get();
+  wasapiThreadResult_ = {};
+  
   return RTAUDIO_NO_ERROR;
 }
 
@@ -4721,27 +4714,26 @@ RtAudioErrorType RtApiWasapi::stopStream( void )
 
 RtAudioErrorType RtApiWasapi::abortStream( void )
 {
-  if ( stream_.state != STREAM_RUNNING ) {
-    if ( stream_.state == STREAM_STOPPED )
+  if (!isStreamOpen()) {
+      errorText_ = "RtApiWasapi::abortStream(): the stream is closed!";
+      return error(RTAUDIO_WARNING);
+  }
+  if (!isStreamRunning()) {
       errorText_ = "RtApiWasapi::abortStream(): the stream is already stopped!";
-    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
-      errorText_ = "RtApiWasapi::abortStream(): the stream is stopping or closed!";
-    return error( RTAUDIO_WARNING );
-  }
-    
-  // inform stream thread by setting stream state to STREAM_STOPPING
-  stream_.state = STREAM_STOPPING;
-
-  WaitForSingleObject( ( void* ) stream_.callbackInfo.thread, INFINITE );
-
-  // close thread handle
-  if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
-    errorText_ = "RtApiWasapi::abortStream: Unable to close callback thread.";
-    return error( RTAUDIO_THREAD_ERROR );
+      return error(RTAUDIO_WARNING);
   }
 
-  stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  // signal thread to stop
+  wasapiThreadRun_ = false;
+  wasapiThreadResult_.get();
+  wasapiThreadResult_ = {};
+
   return RTAUDIO_NO_ERROR;
+}
+
+bool RtApiWasapi::isStreamRunning() const
+{
+  return isStreamOpen() && wasapiThreadResult_.valid() && wasapiThreadResult_.wait_for(std::chrono::seconds(0)) != std::future_status::ready;
 }
 
 //-----------------------------------------------------------------------------
@@ -4977,32 +4969,6 @@ Exit:
   if ( !errorText_.empty() )
     error( errorType );
   return methodResult;
-}
-
-//=============================================================================
-
-DWORD WINAPI RtApiWasapi::runWasapiThread( void* wasapiPtr )
-{
-  if ( wasapiPtr )
-    ( ( RtApiWasapi* ) wasapiPtr )->wasapiThread();
-
-  return 0;
-}
-
-DWORD WINAPI RtApiWasapi::stopWasapiThread( void* wasapiPtr )
-{
-  if ( wasapiPtr )
-    ( ( RtApiWasapi* ) wasapiPtr )->stopStream();
-
-  return 0;
-}
-
-DWORD WINAPI RtApiWasapi::abortWasapiThread( void* wasapiPtr )
-{
-  if ( wasapiPtr )
-    ( ( RtApiWasapi* ) wasapiPtr )->abortStream();
-
-  return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -5308,7 +5274,7 @@ void RtApiWasapi::wasapiThread()
   }
 
   // stream process loop
-  while ( stream_.state != STREAM_STOPPING ) {
+  while ( wasapiThreadRun_ ) {
     if ( !callbackPulled ) {
       // Callback Input
       // ==============
@@ -5388,35 +5354,11 @@ void RtApiWasapi::wasapiThread()
 
         // Handle return value from callback
         if ( callbackResult == 1 ) {
-          // instantiate a thread to stop this thread
-          HANDLE threadHandle = CreateThread( NULL, 0, stopWasapiThread, this, 0, NULL );
-          if ( !threadHandle ) {
-            errorType = RTAUDIO_THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream stop thread.";
-            goto Exit;
-          }
-          else if ( !CloseHandle( threadHandle ) ) {
-            errorType = RTAUDIO_THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to close stream stop thread handle.";
-            goto Exit;
-          }
-
+          wasapiThreadRun_ = false;
           callbackStopped = true;
         }
         else if ( callbackResult == 2 ) {
-          // instantiate a thread to stop this thread
-          HANDLE threadHandle = CreateThread( NULL, 0, abortWasapiThread, this, 0, NULL );
-          if ( !threadHandle ) {
-            errorType = RTAUDIO_THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to instantiate stream abort thread.";
-            goto Exit;
-          }
-          else if ( !CloseHandle( threadHandle ) ) {
-            errorType = RTAUDIO_THREAD_ERROR;
-            errorText = "RtApiWasapi::wasapiThread: Unable to close stream abort thread handle.";
-            goto Exit;
-          }
-
+          wasapiThreadRun_ = false;
           callbackStopped = true;
         }
       }
