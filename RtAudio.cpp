@@ -267,7 +267,8 @@ RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
   getCompiledApi( apis );
   for ( unsigned int i=0; i<apis.size(); i++ ) {
     openRtApi( apis[i] );
-    if ( rtapi_ && rtapi_->getDeviceCount() ) break;
+    if ( rtapi_ && (rtapi_->getDeviceNames()).size() > 0 )
+      break;
   }
 
   if ( rtapi_ ) {
@@ -318,6 +319,7 @@ RtApi :: RtApi()
   MUTEX_INITIALIZE( &stream_.mutex );
   errorCallback_ = 0;
   showWarnings_ = true;
+  currentDeviceId_ = 129;
 }
 
 RtApi :: ~RtApi()
@@ -342,40 +344,46 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
   if ( oParams && oParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL output StreamParameters structure cannot have an nChannels value less than one.";
-    return error( RTAUDIO_INVALID_USE );
+    return error( RTAUDIO_INVALID_PARAMETER );
   }
 
   if ( iParams && iParams->nChannels < 1 ) {
     errorText_ = "RtApi::openStream: a non-NULL input StreamParameters structure cannot have an nChannels value less than one.";
-    return error( RTAUDIO_INVALID_USE );
+    return error( RTAUDIO_INVALID_PARAMETER );
   }
 
   if ( oParams == NULL && iParams == NULL ) {
     errorText_ = "RtApi::openStream: input and output StreamParameters structures are both NULL!";
-    return error( RTAUDIO_INVALID_USE );
+    return error( RTAUDIO_INVALID_PARAMETER );
   }
 
   if ( formatBytes(format) == 0 ) {
     errorText_ = "RtApi::openStream: 'format' parameter value is undefined.";
-    return error( RTAUDIO_INVALID_USE );
+    return error( RTAUDIO_INVALID_PARAMETER );
   }
 
-  unsigned int nDevices = getDeviceCount();
-  unsigned int oChannels = 0;
+  unsigned int m, oChannels = 0;
   if ( oParams ) {
     oChannels = oParams->nChannels;
-    if ( oParams->deviceId >= nDevices ) {
-      errorText_ = "RtApi::openStream: output device parameter value is invalid.";
-      return error( RTAUDIO_INVALID_USE );
+    // Verify that the oParams->deviceId is found in our list
+    for ( m=0; m<deviceList_.size(); m++ ) {
+      if ( deviceList_[m].ID == oParams->deviceId ) break;
+    }
+    if ( m == deviceList_.size() ) {
+      errorText_ = "RtApi::openStream: output device ID is invalid.";
+      return error( RTAUDIO_INVALID_PARAMETER );
     }
   }
 
   unsigned int iChannels = 0;
   if ( iParams ) {
     iChannels = iParams->nChannels;
-    if ( iParams->deviceId >= nDevices ) {
-      errorText_ = "RtApi::openStream: input device parameter value is invalid.";
-      return error( RTAUDIO_INVALID_USE );
+    for ( m=0; m<deviceList_.size(); m++ ) {
+      if ( deviceList_[m].ID == iParams->deviceId ) break;
+    }
+    if ( m == deviceList_.size() ) {
+      errorText_ = "RtApi::openStream: input device ID is invalid.";
+      return error( RTAUDIO_INVALID_PARAMETER );
     }
   }
 
@@ -385,18 +393,16 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
     result = probeDeviceOpen( oParams->deviceId, OUTPUT, oChannels, oParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
-    if ( result == false ) {
+    if ( result == false )
       return error( RTAUDIO_SYSTEM_ERROR );
-    }
   }
 
   if ( iChannels > 0 ) {
 
     result = probeDeviceOpen( iParams->deviceId, INPUT, iChannels, iParams->firstChannel,
                               sampleRate, format, bufferFrames, options );
-    if ( result == false ) {
+    if ( result == false )
       return error( RTAUDIO_SYSTEM_ERROR );
-    }
   }
 
   stream_.callbackInfo.callback = (void *) callback;
@@ -407,13 +413,57 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
   return RTAUDIO_NO_ERROR;
 }
 
+void RtApi :: probeDevices( void )
+{
+  // MUST be implemented in subclasses!
+  return;
+}
+
+unsigned int RtApi :: getDeviceCount( void )
+{
+  probeDevices();
+  return deviceList_.size();
+}
+
+std::vector<unsigned int> RtApi :: getDeviceIds( void )
+{
+  probeDevices();
+
+  // Copy device IDs into output vector.
+  std::vector<unsigned int> deviceIds;
+  for ( unsigned int m=0; m<deviceList_.size(); m++ )
+    deviceIds.push_back( deviceList_[m].ID );
+
+  return deviceIds;
+}
+
+std::vector<std::string> RtApi :: getDeviceNames( void )
+{
+  probeDevices();
+
+  // Copy device names into output vector.
+  std::vector<std::string> deviceNames;
+  for ( unsigned int m=0; m<deviceList_.size(); m++ )
+    deviceNames.push_back( deviceList_[m].name );
+
+  return deviceNames;
+}
+
 unsigned int RtApi :: getDefaultInputDevice( void )
 {
   // Should be reimplemented in subclasses if necessary.
-  unsigned int nDevices = getDeviceCount();
-  for ( unsigned int i = 0; i < nDevices; i++ ) {
-    if ( getDeviceInfo( i ).isDefaultInput ) {
-      return i;
+  if ( deviceList_.size() == 0 ) probeDevices();
+  for ( unsigned int i = 0; i < deviceList_.size(); i++ ) {
+    if ( deviceList_[i].isDefaultInput )
+      return deviceList_[i].ID;
+  }
+
+  // If not found, find the first device with input channels, set it
+  // as the default, and return the ID.
+  for ( unsigned int i = 0; i < deviceList_.size(); i++ ) {
+    if ( deviceList_[i].inputChannels > 0 ) {
+      deviceList_[i].isDefaultInput = true;
+      return deviceList_[i].ID;
     }
   }
 
@@ -423,14 +473,34 @@ unsigned int RtApi :: getDefaultInputDevice( void )
 unsigned int RtApi :: getDefaultOutputDevice( void )
 {
   // Should be reimplemented in subclasses if necessary.
-  unsigned int nDevices = getDeviceCount();
-  for ( unsigned int i = 0; i < nDevices; i++ ) {
-    if ( getDeviceInfo( i ).isDefaultOutput ) {
-      return i;
+  if ( deviceList_.size() == 0 ) probeDevices();
+  for ( unsigned int i = 0; i < deviceList_.size(); i++ ) {
+    if ( deviceList_[i].isDefaultOutput )
+      return deviceList_[i].ID;
+  }
+
+  // If not found, find the first device with output channels, set it
+  // as the default, and return the ID.
+  for ( unsigned int i = 0; i < deviceList_.size(); i++ ) {
+    if ( deviceList_[i].outputChannels > 0 ) {
+      deviceList_[i].isDefaultOutput = true;
+      return deviceList_[i].ID;
     }
   }
 
   return 0;
+}
+
+RtAudio::DeviceInfo RtApi :: getDeviceInfo( unsigned int deviceId )
+{
+  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
+    if ( deviceList_[m].ID == deviceId )
+      return deviceList_[m];
+  }
+
+  errorText_ = "RtApi::getDeviceInfo: deviceId argument not found.";
+  error( RTAUDIO_INVALID_PARAMETER );
+  return RtAudio::DeviceInfo();
 }
 
 void RtApi :: closeStream( void )
@@ -439,7 +509,7 @@ void RtApi :: closeStream( void )
   return;
 }
 
-bool RtApi :: probeDeviceOpen( unsigned int /*device*/, StreamMode /*mode*/, unsigned int /*channels*/,
+bool RtApi :: probeDeviceOpen( unsigned int /*deviceId*/, StreamMode /*mode*/, unsigned int /*channels*/,
                                unsigned int /*firstChannel*/, unsigned int /*sampleRate*/,
                                RtAudioFormat /*format*/, unsigned int * /*bufferSize*/,
                                RtAudio::StreamOptions * /*options*/ )
@@ -588,59 +658,8 @@ RtApiCore :: ~RtApiCore()
   if ( stream_.state != STREAM_CLOSED ) closeStream();
 }
 
-unsigned int RtApiCore :: getDeviceCount( void )
-{
-  // Find out how many audio devices there are, if any.
-  UInt32 dataSize;
-  AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-  OSStatus result = AudioObjectGetPropertyDataSize( kAudioObjectSystemObject, &propertyAddress, 0, NULL, &dataSize );
-  if ( result != noErr ) {
-    errorText_ = "RtApiCore::getDeviceCount: OS-X error getting device info!";
-    error( RTAUDIO_SYSTEM_ERROR );
-    return 0;
-  }
-
-  return dataSize / sizeof( AudioDeviceID );
-}
-
-unsigned int RtApiCore :: getDefaultInputDevice( void )
-{
-  unsigned int nDevices = getDeviceCount();
-  if ( nDevices <= 1 ) return 0;
-
-  AudioDeviceID id;
-  UInt32 dataSize = sizeof( AudioDeviceID );
-  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-  OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, &id );
-  if ( result != noErr ) {
-    errorText_ = "RtApiCore::getDefaultInputDevice: OS-X system error getting device.";
-    error( RTAUDIO_SYSTEM_ERROR );
-    return 0;
-  }
-
-  dataSize *= nDevices;
-  AudioDeviceID deviceList[ nDevices ];
-  property.mSelector = kAudioHardwarePropertyDevices;
-  result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, (void *) &deviceList );
-  if ( result != noErr ) {
-    errorText_ = "RtApiCore::getDefaultInputDevice: OS-X system error getting device IDs.";
-    error( RTAUDIO_SYSTEM_ERROR );
-    return 0;
-  }
-
-  for ( unsigned int i=0; i<nDevices; i++ )
-    if ( id == deviceList[i] ) return i;
-
-  errorText_ = "RtApiCore::getDefaultInputDevice: No default device found!";
-  error( RTAUDIO_WARNING );
-  return 0;
-}
-
 unsigned int RtApiCore :: getDefaultOutputDevice( void )
 {
-  unsigned int nDevices = getDeviceCount();
-  if ( nDevices <= 1 ) return 0;
-
   AudioDeviceID id;
   UInt32 dataSize = sizeof( AudioDeviceID );
   AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
@@ -651,72 +670,161 @@ unsigned int RtApiCore :: getDefaultOutputDevice( void )
     return 0;
   }
 
-  dataSize = sizeof( AudioDeviceID ) * nDevices;
-  AudioDeviceID deviceList[ nDevices ];
-  property.mSelector = kAudioHardwarePropertyDevices;
-  result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, (void *) &deviceList );
+  for ( unsigned int m=0; m<deviceIds_.size(); m++ ) {
+    if ( deviceIds_[m] == id ) {
+      if ( deviceList_[m].isDefaultOutput == false ) {
+        deviceList_[m].isDefaultOutput = true;
+        for ( unsigned int j=m+1; j<deviceIds_.size(); j++ ) {
+          // make sure any remaining devices are not listed as the default
+          deviceList_[j].isDefaultOutput = false;
+        }
+      }
+      return deviceList_[m].ID;
+    }
+    deviceList_[m].isDefaultOutput = false;
+  }
+
+  // If not found above, then do system probe of devices and try again.
+  probeDevices();
+  for ( unsigned int m=0; m<deviceIds_.size(); m++ ) {
+    if ( deviceIds_[m] == id ) return deviceList_[m].ID;
+  }
+  return 0;
+}
+
+unsigned int RtApiCore :: getDefaultInputDevice( void )
+{
+  AudioDeviceID id;
+  UInt32 dataSize = sizeof( AudioDeviceID );
+  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+  OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, &id );
   if ( result != noErr ) {
-    errorText_ = "RtApiCore::getDefaultOutputDevice: OS-X system error getting device IDs.";
+    errorText_ = "RtApiCore::getDefaultInputDevice: OS-X system error getting device.";
     error( RTAUDIO_SYSTEM_ERROR );
     return 0;
   }
 
-  for ( unsigned int i=0; i<nDevices; i++ )
-    if ( id == deviceList[i] ) return i;
+  for ( unsigned int m=0; m<deviceIds_.size(); m++ ) {
+    if ( deviceIds_[m] == id ) {
+      if ( deviceList_[m].isDefaultInput == false ) {
+        deviceList_[m].isDefaultInput = true;
+        for ( unsigned int j=m+1; j<deviceIds_.size(); j++ ) {
+          // make sure any remaining devices are not listed as the default
+          deviceList_[j].isDefaultInput = false;
+        }
+      }
+      return deviceList_[m].ID;
+    }
+    deviceList_[m].isDefaultInput = false;
+  }
 
-  errorText_ = "RtApiCore::getDefaultOutputDevice: No default device found!";
-  error( RTAUDIO_WARNING );
+  // If not found above, then do system probe of devices and try again.
+  probeDevices();
+  for ( unsigned int m=0; m<deviceIds_.size(); m++ ) {
+    if ( deviceIds_[m] == id ) return deviceList_[m].ID;
+  }
   return 0;
 }
 
-RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
+// If a device used in an open stream is disconnected, close the stream.
+static OSStatus streamDisconnectListener( AudioObjectID /*id*/,
+                                          UInt32 nAddresses,
+                                          const AudioObjectPropertyAddress properties[],
+                                          void* infoPointer )
 {
-  RtAudio::DeviceInfo info;
-  info.probed = false;
-
-  // Get device ID
-  unsigned int nDevices = getDeviceCount();
-  if ( nDevices == 0 ) {
-    errorText_ = "RtApiCore::getDeviceInfo: no devices found!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
+  for ( UInt32 i=0; i<nAddresses; i++ ) {
+    if ( properties[i].mSelector == kAudioDevicePropertyDeviceIsAlive ) {
+      CallbackInfo *info = (CallbackInfo *) infoPointer;
+      RtApiCore *object = (RtApiCore *) info->object;
+      info->deviceDisconnected = true;
+      object->closeStream();
+      return kAudioHardwareUnspecifiedError;
+    }
   }
+  
+  return kAudioHardwareNoError;
+}
 
-  if ( device >= nDevices ) {
-    errorText_ = "RtApiCore::getDeviceInfo: device ID is invalid!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
-  }
-
-  AudioDeviceID deviceList[ nDevices ];
-  UInt32 dataSize = sizeof( AudioDeviceID ) * nDevices;
-  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
-                                          kAudioObjectPropertyScopeGlobal,
-                                          kAudioObjectPropertyElementMaster };
-  OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property,
-                                                0, NULL, &dataSize, (void *) &deviceList );
+void RtApiCore :: probeDevices( void )
+{
+  // This function will be used to probe the devices, both initially
+  // and subsequently as other functions are called.  Thus, it should
+  // be able to fill a new deviceList_ or update an existing
+  // one. Devices that are already found in the deviceList_ will not
+  // be reprobed for capabilities.
+  
+  // Find out how many audio devices there are.
+  UInt32 dataSize;
+  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+  OSStatus result = AudioObjectGetPropertyDataSize( kAudioObjectSystemObject, &property, 0, NULL, &dataSize );
   if ( result != noErr ) {
-    errorText_ = "RtApiCore::getDeviceInfo: OS-X system error getting device IDs.";
-    error( RTAUDIO_WARNING );
-    return info;
+    errorText_ = "RtApiCore::probeDevices: OS-X system error getting device info!";
+    error( RTAUDIO_SYSTEM_ERROR );
+    return;
   }
 
-  AudioDeviceID id = deviceList[ device ];
+  unsigned int nDevices = dataSize / sizeof( AudioDeviceID );
+  if ( nDevices == 0 ) return;
 
+  AudioDeviceID ids[ nDevices ];
+  property.mSelector = kAudioHardwarePropertyDevices;
+  result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, (void *) &ids );
+  if ( result != noErr ) {
+    errorText_ = "RtApiCore::probeDevices: OS-X system error getting device IDs.";
+    error( RTAUDIO_SYSTEM_ERROR );
+    return;
+  }
+
+  for ( unsigned int n=0; n<nDevices; n++ ) {
+    if ( std::find( deviceIds_.begin(), deviceIds_.end(), ids[n] ) != deviceIds_.end() ) {
+      continue; // We already have this device.
+    }
+    else { // There is a new device to probe.
+      RtAudio::DeviceInfo info;
+      if ( probeDeviceInfo( ids[n], info ) == false ) continue; // ignore if probe fails
+      deviceIds_.push_back( ids[n] );
+      info.ID = currentDeviceId_++;  // arbitrary internal device ID
+      deviceList_.push_back( info );
+      // We could set a property listener here for each device to know
+      // if it is removed. However, we cannot detect (AFAIK) when a new
+      // device is plugged in. If we cannot detect BOTH cases, I'm not
+      // going to bother with only the one.
+    }
+  }
+
+  // Remove any devices left in the list that are no longer available.
+  unsigned int m;
+  for ( std::vector<AudioDeviceID>::iterator it=deviceIds_.begin(); it!=deviceIds_.end(); ) {
+    for ( m=0; m<nDevices; m++ ) {
+      if ( ids[m] == *it ) {
+        ++it;
+        break;
+      }
+    }
+    if ( m == nDevices ) { // not found so remove it from our two lists
+      it = deviceIds_.erase(it);
+      deviceList_.erase( deviceList_.begin() + distance(deviceIds_.begin(), it ) );
+    }
+  }
+}
+
+bool RtApiCore :: probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo& info )
+{
   // Get the device name.
   info.name.erase();
   CFStringRef cfname;
-  dataSize = sizeof( CFStringRef );
-  property.mSelector = kAudioObjectPropertyManufacturer;
-  result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &cfname );
+  UInt32 dataSize = sizeof( CFStringRef );
+  AudioObjectPropertyAddress property = { kAudioObjectPropertyManufacturer,
+                                          kAudioObjectPropertyScopeGlobal,
+                                          kAudioObjectPropertyElementMaster };
+  OSStatus result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &cfname );
   if ( result != noErr ) {
     errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting device manufacturer.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
-  //const char *mname = CFStringGetCStringPtr( cfname, CFStringGetSystemEncoding() );
   long length = CFStringGetLength(cfname);
   char *mname = (char *)malloc(length * 3 + 1);
 #if defined( UNICODE ) || defined( _UNICODE )
@@ -735,10 +843,9 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting device name.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
-  //const char *name = CFStringGetCStringPtr( cfname, CFStringGetSystemEncoding() );
   length = CFStringGetLength(cfname);
   char *name = (char *)malloc(length * 3 + 1);
 #if defined( UNICODE ) || defined( _UNICODE )
@@ -754,31 +861,30 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   AudioBufferList	*bufferList = nil;
   property.mSelector = kAudioDevicePropertyStreamConfiguration;
   property.mScope = kAudioDevicePropertyScopeOutput;
-  //  property.mElement = kAudioObjectPropertyElementWildcard;
   dataSize = 0;
   result = AudioObjectGetPropertyDataSize( id, &property, 0, NULL, &dataSize );
   if ( result != noErr || dataSize == 0 ) {
-    errorStream_ << "RtApiCore::getDeviceInfo: system error (" << getErrorCode( result ) << ") getting output stream configuration info for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting output stream configuration info for device (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Allocate the AudioBufferList.
   bufferList = (AudioBufferList *) malloc( dataSize );
   if ( bufferList == NULL ) {
-    errorText_ = "RtApiCore::getDeviceInfo: memory error allocating output AudioBufferList.";
+    errorText_ = "RtApiCore::probeDeviceInfo: memory error allocating output AudioBufferList.";
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, bufferList );
   if ( result != noErr || dataSize == 0 ) {
     free( bufferList );
-    errorStream_ << "RtApiCore::getDeviceInfo: system error (" << getErrorCode( result ) << ") getting output stream configuration for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting output stream configuration for device (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Get output channel information.
@@ -791,27 +897,27 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   property.mScope = kAudioDevicePropertyScopeInput;
   result = AudioObjectGetPropertyDataSize( id, &property, 0, NULL, &dataSize );
   if ( result != noErr || dataSize == 0 ) {
-    errorStream_ << "RtApiCore::getDeviceInfo: system error (" << getErrorCode( result ) << ") getting input stream configuration info for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting input stream configuration info for device (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Allocate the AudioBufferList.
   bufferList = (AudioBufferList *) malloc( dataSize );
   if ( bufferList == NULL ) {
-    errorText_ = "RtApiCore::getDeviceInfo: memory error allocating input AudioBufferList.";
+    errorText_ = "RtApiCore::probeDeviceInfo: memory error allocating input AudioBufferList.";
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, bufferList );
   if (result != noErr || dataSize == 0) {
     free( bufferList );
-    errorStream_ << "RtApiCore::getDeviceInfo: system error (" << getErrorCode( result ) << ") getting input stream configuration for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting input stream configuration for device (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Get input channel information.
@@ -833,20 +939,20 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   if ( isInput == false ) property.mScope = kAudioDevicePropertyScopeOutput;
   result = AudioObjectGetPropertyDataSize( id, &property, 0, NULL, &dataSize );
   if ( result != kAudioHardwareNoError || dataSize == 0 ) {
-    errorStream_ << "RtApiCore::getDeviceInfo: system error (" << getErrorCode( result ) << ") getting sample rate info.";
+    errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting sample rate info.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   UInt32 nRanges = dataSize / sizeof( AudioValueRange );
   AudioValueRange rangeList[ nRanges ];
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &rangeList );
   if ( result != kAudioHardwareNoError ) {
-    errorStream_ << "RtApiCore::getDeviceInfo: system error (" << getErrorCode( result ) << ") getting sample rates.";
+    errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting sample rates.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // The sample rate reporting mechanism is a bit of a mystery.  It
@@ -890,10 +996,10 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   info.sampleRates.erase( unique( info.sampleRates.begin(), info.sampleRates.end() ), info.sampleRates.end() );
 
   if ( info.sampleRates.size() == 0 ) {
-    errorStream_ << "RtApiCore::probeDeviceInfo: No supported sample rates found for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceInfo: No supported sample rates found for device (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Probe the currently configured sample rate
@@ -908,13 +1014,31 @@ RtAudio::DeviceInfo RtApiCore :: getDeviceInfo( unsigned int device )
   // no interest to the client.
   info.nativeFormats = RTAUDIO_FLOAT32;
 
-  if ( info.outputChannels > 0 )
-    if ( getDefaultOutputDevice() == device ) info.isDefaultOutput = true;
-  if ( info.inputChannels > 0 )
-    if ( getDefaultInputDevice() == device ) info.isDefaultInput = true;
+  AudioDeviceID defaultId;
+  property.mScope = kAudioObjectPropertyScopeGlobal;
+  dataSize = sizeof( AudioDeviceID );
+  if ( info.outputChannels > 0 ) {
+    property.mSelector = kAudioHardwarePropertyDefaultOutputDevice;
+    OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, &defaultId );
+    if ( result != noErr ) {
+      errorText_ = "RtApiCore::probeDeviceInfo: OS-X system error getting default output device.";
+      error( RTAUDIO_WARNING );
+      return false;
+    }
+    if ( defaultId == id ) info.isDefaultOutput = true;
+  }
+  if ( info.inputChannels > 0 ) {
+    property.mSelector = kAudioHardwarePropertyDefaultInputDevice;
+    OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, &defaultId );
+    if ( result != noErr ) {
+      errorText_ = "RtApiCore::probeDeviceInfo: OS-X system error getting default input device.";
+      error( RTAUDIO_WARNING );
+      return false;
+    }
+    if ( defaultId == id ) info.isDefaultInput = true;
+  }
 
-  info.probed = true;
-  return info;
+  return true;
 }
 
 static OSStatus callbackHandler( AudioDeviceID inDevice,
@@ -932,24 +1056,6 @@ static OSStatus callbackHandler( AudioDeviceID inDevice,
     return kAudioHardwareUnspecifiedError;
   else
     return kAudioHardwareNoError;
-}
-
-static OSStatus disconnectListener( AudioObjectID /*inDevice*/,
-                                    UInt32 nAddresses,
-                                    const AudioObjectPropertyAddress properties[],
-                                    void* infoPointer )
-{
-  for ( UInt32 i=0; i<nAddresses; i++ ) {
-    if ( properties[i].mSelector == kAudioDevicePropertyDeviceIsAlive ) {
-      CallbackInfo *info = (CallbackInfo *) infoPointer;
-      RtApiCore *object = (RtApiCore *) info->object;
-      info->deviceDisconnected = true;
-      object->closeStream();
-      return kAudioHardwareUnspecifiedError;
-    }
-  }
-  
-  return kAudioHardwareNoError;
 }
 
 static OSStatus xrunListener( AudioObjectID /*inDevice*/,
@@ -970,38 +1076,27 @@ static OSStatus xrunListener( AudioObjectID /*inDevice*/,
   return kAudioHardwareNoError;
 }
 
-bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
                                    RtAudioFormat format, unsigned int *bufferSize,
                                    RtAudio::StreamOptions *options )
 {
-  // Get device ID
-  unsigned int nDevices = getDeviceCount();
-  if ( nDevices == 0 ) {
-    // This should not happen because a check is made before this function is called.
-    errorText_ = "RtApiCore::probeDeviceOpen: no devices found!";
+  AudioDeviceID id = 0;
+  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
+    if ( deviceList_[m].ID == deviceId ) {
+      id = deviceIds_[m];
+      break;
+    }
+  }
+
+  if ( id == 0 ) {
+    errorText_ = "RtApiCore::probeDeviceOpen: the device ID was not found!";
     return FAILURE;
   }
 
-  if ( device >= nDevices ) {
-    // This should not happen because a check is made before this function is called.
-    errorText_ = "RtApiCore::probeDeviceOpen: device ID is invalid!";
-    return FAILURE;
-  }
-
-  AudioDeviceID deviceList[ nDevices ];
-  UInt32 dataSize = sizeof( AudioDeviceID ) * nDevices;
   AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
-                                          kAudioObjectPropertyScopeGlobal,
+                                          kAudioDevicePropertyScopeOutput,
                                           kAudioObjectPropertyElementMaster };
-  OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property,
-                                                0, NULL, &dataSize, (void *) &deviceList );
-  if ( result != noErr ) {
-    errorText_ = "RtApiCore::probeDeviceOpen: OS-X system error getting device IDs.";
-    return FAILURE;
-  }
-
-  AudioDeviceID id = deviceList[ device ];
 
   // Setup for stream mode.
   bool isInput = false;
@@ -1009,16 +1104,14 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     isInput = true;
     property.mScope = kAudioDevicePropertyScopeInput;
   }
-  else
-    property.mScope = kAudioDevicePropertyScopeOutput;
 
   // Get the stream "configuration".
   AudioBufferList	*bufferList = nil;
-  dataSize = 0;
+  UInt32 dataSize = 0;
   property.mSelector = kAudioDevicePropertyStreamConfiguration;
-  result = AudioObjectGetPropertyDataSize( id, &property, 0, NULL, &dataSize );
+  OSStatus result = AudioObjectGetPropertyDataSize( id, &property, 0, NULL, &dataSize );
   if ( result != noErr || dataSize == 0 ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream configuration info for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream configuration info for device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1033,7 +1126,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, bufferList );
   if (result != noErr || dataSize == 0) {
     free( bufferList );
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream configuration for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream configuration for device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1059,7 +1152,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   if ( deviceChannels < ( channels + firstChannel ) ) {
     free( bufferList );
-    errorStream_ << "RtApiCore::probeDeviceOpen: the device (" << device << ") does not support the requested channel count.";
+    errorStream_ << "RtApiCore::probeDeviceOpen: the device (" << deviceId << ") does not support the requested channel count.";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1111,7 +1204,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &bufferRange );
 
   if ( result != noErr ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting buffer size range for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting buffer size range for device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1128,7 +1221,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   result = AudioObjectSetPropertyData( id, &property, 0, NULL, dataSize, &theSize );
 
   if ( result != noErr ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting the buffer size for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting the buffer size for device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1137,7 +1230,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   // MUST be the same in both directions!
   *bufferSize = theSize;
   if ( stream_.mode == OUTPUT && mode == INPUT && *bufferSize != stream_.bufferSize ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error setting buffer size for duplex stream on device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error setting buffer size for duplex stream on device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1185,7 +1278,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     nominalRate = (Float64) sampleRate;
     result = AudioObjectSetPropertyData( id, &property, 0, NULL, dataSize, &nominalRate );
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -1201,7 +1294,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
 
     if ( microCounter > 2000000 ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: timeout waiting for sample rate update for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: timeout waiting for sample rate update for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -1214,7 +1307,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   property.mSelector = kAudioStreamPropertyVirtualFormat;
   result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &description );
   if ( result != noErr ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream format for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream format for device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1236,7 +1329,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   if ( updateFormat ) {
     result = AudioObjectSetPropertyData( id, &property, 0, NULL, dataSize, &description );
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate or data format for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting sample rate or data format for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -1246,7 +1339,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   property.mSelector = kAudioStreamPropertyPhysicalFormat;
   result = AudioObjectGetPropertyData( id, &property, 0, NULL,  &dataSize, &description );
   if ( result != noErr ) {
-    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream physical format for device (" << device << ").";
+    errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting stream physical format for device (" << deviceId << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
   }
@@ -1301,7 +1394,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
 
     if ( !setPhysicalFormat ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting physical data format for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") setting physical data format for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -1315,7 +1408,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &latency );
     if ( result == kAudioHardwareNoError ) stream_.latency[ mode ] = latency;
     else {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting device latency for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error (" << getErrorCode( result ) << ") getting device latency for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       error( RTAUDIO_WARNING );
     }
@@ -1414,7 +1507,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   stream_.sampleRate = sampleRate;
-  stream_.device[mode] = device;
+  stream_.deviceId[mode] = deviceId;
   stream_.state = STREAM_STOPPED;
   stream_.callbackInfo.object = (void *) this;
 
@@ -1424,7 +1517,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     else setConvertInfo( mode, channelOffset );
   }
 
-  if ( mode == INPUT && stream_.mode == OUTPUT && stream_.device[0] == device )
+  if ( mode == INPUT && stream_.mode == OUTPUT && stream_.deviceId[0] == deviceId )
     // Only one callback procedure and property listener per device.
     stream_.mode = DUPLEX;
   else {
@@ -1435,7 +1528,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     result = AudioDeviceAddIOProc( id, callbackHandler, (void *) &stream_.callbackInfo );
 #endif
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting callback for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting callback for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       goto error;
     }
@@ -1449,7 +1542,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     property.mScope = kAudioObjectPropertyScopeGlobal;
     result = AudioObjectAddPropertyListener( id, &property, xrunListener, (void *) handle );
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting xrun listener for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting xrun listener for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       goto error;
     }
@@ -1457,10 +1550,10 @@ bool RtApiCore :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
     // Setup a listener to detect a possible device disconnect.
     property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-    result = AudioObjectAddPropertyListener( id , &property, disconnectListener, (void *) &stream_.callbackInfo );
+    result = AudioObjectAddPropertyListener( id , &property, streamDisconnectListener, (void *) &stream_.callbackInfo );
     if ( result != noErr ) {
       AudioObjectRemovePropertyListener( id, &property, xrunListener, (void *) handle );
-      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << device << ").";
+      errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << deviceId << ").";
       errorText_ = errorStream_.str();
       goto error;
     }
@@ -1486,8 +1579,8 @@ void RtApiCore :: closeStream( void )
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     if ( handle ) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
-        kAudioObjectPropertyScopeGlobal,
-        kAudioObjectPropertyElementMaster };
+                                              kAudioObjectPropertyScopeGlobal,
+                                              kAudioObjectPropertyElementMaster };
 
       if ( handle->xrunListenerAdded[0] ) {
         property.mSelector = kAudioDeviceProcessorOverload;
@@ -1498,7 +1591,7 @@ void RtApiCore :: closeStream( void )
       }
       if ( handle->disconnectListenerAdded[0] ) {
         property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-        if (AudioObjectRemovePropertyListener( handle->id[0], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+        if (AudioObjectRemovePropertyListener( handle->id[0], &property, streamDisconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
           errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
           error( RTAUDIO_WARNING );
         }
@@ -1518,7 +1611,7 @@ void RtApiCore :: closeStream( void )
     }
   }
 
-  if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
+  if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.deviceId[0] != stream_.deviceId[1] ) ) {
     if ( handle ) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
         kAudioObjectPropertyScopeGlobal,
@@ -1534,7 +1627,7 @@ void RtApiCore :: closeStream( void )
 
       if ( handle->disconnectListenerAdded[0] ) {
         property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-        if (AudioObjectRemovePropertyListener( handle->id[1], &property, disconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+        if (AudioObjectRemovePropertyListener( handle->id[1], &property, streamDisconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
           errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
           error( RTAUDIO_WARNING );
         }
@@ -1579,8 +1672,6 @@ void RtApiCore :: closeStream( void )
   }
   
   clearStreamInfo();
-  //stream_.mode = UNINITIALIZED;
-  //stream_.state = STREAM_CLOSED;
 }
 
 RtAudioErrorType RtApiCore :: startStream( void )
@@ -1609,14 +1700,14 @@ RtAudioErrorType RtApiCore :: startStream( void )
     result = AudioDeviceStart( handle->id[0], callbackHandler );
 #endif
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::startStream: system error (" << getErrorCode( result ) << ") starting callback procedure on device (" << stream_.device[0] << ").";
+      errorStream_ << "RtApiCore::startStream: system error (" << getErrorCode( result ) << ") starting callback procedure on device (" << stream_.deviceId[0] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
   }
 
   if ( stream_.mode == INPUT ||
-       ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
+       ( stream_.mode == DUPLEX && stream_.deviceId[0] != stream_.deviceId[1] ) ) {
 
     // Clear user input buffer
     unsigned long bufferBytes;
@@ -1629,7 +1720,7 @@ RtAudioErrorType RtApiCore :: startStream( void )
     result = AudioDeviceStart( handle->id[1], callbackHandler );
 #endif
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::startStream: system error starting input callback procedure on device (" << stream_.device[1] << ").";
+      errorStream_ << "RtApiCore::startStream: system error starting input callback procedure on device (" << stream_.deviceId[1] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -1669,20 +1760,20 @@ RtAudioErrorType RtApiCore :: stopStream( void )
     result = AudioDeviceStop( handle->id[0], callbackHandler );
 #endif
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping callback procedure on device (" << stream_.device[0] << ").";
+      errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping callback procedure on device (" << stream_.deviceId[0] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
   }
 
-  if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.device[0] != stream_.device[1] ) ) {
+  if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && stream_.deviceId[0] != stream_.deviceId[1] ) ) {
 #if defined( MAC_OS_X_VERSION_10_5 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5 )
     result = AudioDeviceStop( handle->id[1], handle->procId[1] );
 #else  // deprecated behaviour
     result = AudioDeviceStop( handle->id[1], callbackHandler );
 #endif
     if ( result != noErr ) {
-      errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping input callback procedure on device (" << stream_.device[1] << ").";
+      errorStream_ << "RtApiCore::stopStream: system error (" << getErrorCode( result ) << ") stopping input callback procedure on device (" << stream_.deviceId[1] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -1715,8 +1806,8 @@ RtAudioErrorType RtApiCore :: abortStream( void )
 // This function will be called by a spawned thread when the user
 // callback function signals that the stream should be stopped or
 // aborted.  It is better to handle it this way because the
-// callbackEvent() function probably should return before the AudioDeviceStop()
-// function is called.
+// callbackEvent() function probably should return before the
+// AudioDeviceStop() function is called.
 static void *coreStopStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
@@ -2045,8 +2136,9 @@ const char* RtApiCore :: getErrorCode( OSStatus code )
 // themselves.
 //
 // When using JACK with RtAudio, "devices" refer to JACK clients that
-// have ports connected to the server.  The JACK server is typically
-// started in a terminal as follows:
+// have ports connected to the server, while ports correspond to device
+// channels.  The JACK server is typically started  in a terminal as
+// follows:
 //
 // .jackd -d alsa -d hw:0
 //
@@ -2068,7 +2160,6 @@ const char* RtApiCore :: getErrorCode( OSStatus code )
 // devices are available (i.e., the JACK server is not running), a
 // stream cannot be opened.
 
-#include <jack/jack.h>
 #include <unistd.h>
 #include <cstdio>
 
@@ -2105,17 +2196,29 @@ RtApiJack :: ~RtApiJack()
   if ( stream_.state != STREAM_CLOSED ) closeStream();
 }
 
-unsigned int RtApiJack :: getDeviceCount( void )
+void RtApiJack :: probeDevices( void )
 {
+  // This function will be used to probe the devices, both initially
+  // and subsequently as other functions are called.  Thus, it should
+  // be able to fill a new deviceList_ or update an existing
+  // one. Devices that are already found in the deviceList_ will not
+  // be reprobed for capabilities.
+
   // See if we can become a jack client.
   jack_options_t options = (jack_options_t) ( JackNoStartServer ); //JackNullOption;
   jack_status_t *status = NULL;
-  jack_client_t *client = jack_client_open( "RtApiJackCount", options, status );
-  if ( client == 0 ) return 0;
+  jack_client_t *client = jack_client_open( "RtApiJackProbe", options, status );
+  if ( client == 0 ) {
+    deviceList_.clear(); // in case the server is shutdown after a previous successful probe
+    errorText_ = "RtApiJack::probeDevices: Jack server not found or connection error!";
+    error( RTAUDIO_SYSTEM_ERROR );
+    return;
+  }
 
   const char **ports;
   std::string port, previousPort;
   unsigned int nChannels = 0, nDevices = 0;
+  std::vector<std::string> portNames;
   ports = jack_get_ports( client, NULL, JACK_DEFAULT_AUDIO_TYPE, 0 );
   if ( ports ) {
     // Parse the port names up to the first colon (:).
@@ -2124,8 +2227,9 @@ unsigned int RtApiJack :: getDeviceCount( void )
       port = (char *) ports[ nChannels ];
       iColon = port.find(":");
       if ( iColon != std::string::npos ) {
-        port = port.substr( 0, iColon + 1 );
+        port = port.substr( 0, iColon );
         if ( port != previousPort ) {
+          portNames.push_back( port );
           nDevices++;
           previousPort = port;
         }
@@ -2134,53 +2238,47 @@ unsigned int RtApiJack :: getDeviceCount( void )
     free( ports );
   }
 
+  unsigned int m, n;
+  for ( n=0; n<nDevices; n++ ) {
+    for ( m=0; m<deviceList_.size(); m++ ) {
+      if ( deviceList_[m].name == portNames[n] )
+        break; // We already have this device.
+    }
+    if ( m == deviceList_.size() ) { // new device
+      RtAudio::DeviceInfo info;
+      info.name = portNames[n];
+      if ( probeDeviceInfo( info, client ) == false ) continue; // ignore if probe fails
+      info.ID = currentDeviceId_++;  // arbitrary internal device ID
+      deviceList_.push_back( info );
+      // A callback can be registered in Jack to be notified about client
+      // (dis)connections. However, this can only be done with an open client,
+      // so unless we want to keep a special client open all the time, this
+      // would only report (dis)connections when a stream is open. I'm not
+      // going to bother for the moment.
+    }
+  }
+
+  // Remove any devices left in the list that are no longer available.
+  for ( m=0; m<deviceList_.size(); m++ ) {
+    for ( n=0; n<portNames.size(); n++ ) {
+      if ( deviceList_[m].name == portNames[n] )
+        break;
+    }
+    if ( n == portNames.size() ) // not found so remove it from our list
+      deviceList_.erase( deviceList_.begin() + m );
+  }
+
   jack_client_close( client );
-  return nDevices;
+  
+  // Jack doesn't provide default devices so call the getDefault
+  // functions, which will set the first available devices as the
+  // defaults.
+  getDefaultInputDevice();
+  getDefaultOutputDevice();
 }
 
-RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
+bool RtApiJack :: probeDeviceInfo( RtAudio::DeviceInfo& info, jack_client_t *client )
 {
-  RtAudio::DeviceInfo info;
-  info.probed = false;
-
-  jack_options_t options = (jack_options_t) ( JackNoStartServer ); //JackNullOption
-  jack_status_t *status = NULL;
-  jack_client_t *client = jack_client_open( "RtApiJackInfo", options, status );
-  if ( client == 0 ) {
-    errorText_ = "RtApiJack::getDeviceInfo: Jack server not found or connection error!";
-    error( RTAUDIO_WARNING );
-    return info;
-  }
-
-  const char **ports;
-  std::string port, previousPort;
-  unsigned int nPorts = 0, nDevices = 0;
-  ports = jack_get_ports( client, NULL, JACK_DEFAULT_AUDIO_TYPE, 0 );
-  if ( ports ) {
-    // Parse the port names up to the first colon (:).
-    size_t iColon = 0;
-    do {
-      port = (char *) ports[ nPorts ];
-      iColon = port.find(":");
-      if ( iColon != std::string::npos ) {
-        port = port.substr( 0, iColon );
-        if ( port != previousPort ) {
-          if ( nDevices == device ) info.name = port;
-          nDevices++;
-          previousPort = port;
-        }
-      }
-    } while ( ports[++nPorts] );
-    free( ports );
-  }
-
-  if ( device >= nDevices ) {
-    jack_client_close( client );
-    errorText_ = "RtApiJack::getDeviceInfo: device ID is invalid!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
-  }
-
   // Get the current jack server sample rate.
   info.sampleRates.clear();
 
@@ -2190,7 +2288,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   // Count the available ports containing the client name as device
   // channels.  Jack "input ports" equal RtAudio output channels.
   unsigned int nChannels = 0;
-  ports = jack_get_ports( client, info.name.c_str(), JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput );
+  const char **ports = jack_get_ports( client, info.name.c_str(), JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput );
   if ( ports ) {
     while ( ports[ nChannels ] ) nChannels++;
     free( ports );
@@ -2210,7 +2308,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
     jack_client_close(client);
     errorText_ = "RtApiJack::getDeviceInfo: error determining Jack input/output channels!";
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // If device opens for both playback and capture, we determine the channels.
@@ -2220,15 +2318,7 @@ RtAudio::DeviceInfo RtApiJack :: getDeviceInfo( unsigned int device )
   // Jack always uses 32-bit floats.
   info.nativeFormats = RTAUDIO_FLOAT32;
 
-  // Jack doesn't provide default devices so we'll use the first available one.
-  if ( device == 0 && info.outputChannels > 0 )
-    info.isDefaultOutput = true;
-  if ( device == 0 && info.inputChannels > 0 )
-    info.isDefaultInput = true;
-
-  jack_client_close(client);
-  info.probed = true;
-  return info;
+  return true;
 }
 
 static int jackCallbackHandler( jack_nframes_t nframes, void *infoPointer )
@@ -2254,6 +2344,14 @@ static void *jackCloseStream( void *ptr )
   object->closeStream();
   pthread_exit( NULL );
 }
+
+/*
+// Could be used to catch client connections but requires open client.
+static void jackClientChange( const char *name, int registered, void *infoPointer )
+{
+  std::cout << "in jackClientChange, name = " << name << ", registered = " << registered << std::endl;
+}
+*/
 
 static void jackShutdown( void *infoPointer )
 {
@@ -2281,7 +2379,7 @@ static int jackXrun( void *infoPointer )
   return 0;
 }
 
-bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+bool RtApiJack :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
                                    RtAudioFormat format, unsigned int *bufferSize,
                                    RtAudio::StreamOptions *options )
@@ -2308,29 +2406,15 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     client = handle->client;
   }
 
-  const char **ports;
-  std::string port, previousPort, deviceName;
-  unsigned int nPorts = 0, nDevices = 0;
-  ports = jack_get_ports( client, NULL, JACK_DEFAULT_AUDIO_TYPE, 0 );
-  if ( ports ) {
-    // Parse the port names up to the first colon (:).
-    size_t iColon = 0;
-    do {
-      port = (char *) ports[ nPorts ];
-      iColon = port.find(":");
-      if ( iColon != std::string::npos ) {
-        port = port.substr( 0, iColon );
-        if ( port != previousPort ) {
-          if ( nDevices == device ) deviceName = port;
-          nDevices++;
-          previousPort = port;
-        }
-      }
-    } while ( ports[++nPorts] );
-    free( ports );
+  std::string deviceName;
+  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
+    if ( deviceList_[m].ID == deviceId ) {
+      deviceName = deviceList_[m].name;
+      break;
+    }
   }
 
-  if ( device >= nDevices ) {
+  if ( deviceName.empty() ) {
     errorText_ = "RtApiJack::probeDeviceOpen: device ID is invalid!";
     return FAILURE;
   }
@@ -2338,6 +2422,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   unsigned long flag = JackPortIsInput;
   if ( mode == INPUT ) flag = JackPortIsOutput;
 
+  const char **ports;
   if ( ! (options && (options->flags & RTAUDIO_JACK_DONT_CONNECT)) ) {
     // Count the available ports containing the client name as device
     // channels.  Jack "input ports" equal RtAudio output channels.
@@ -2349,7 +2434,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
     // Compare the jack ports for specified client to the requested number of channels.
     if ( nChannels < (channels + firstChannel) ) {
-      errorStream_ << "RtApiJack::probeDeviceOpen: requested number of channels (" << channels << ") + offset (" << firstChannel << ") not found for specified device (" << device << ":" << deviceName << ").";
+      errorStream_ << "RtApiJack::probeDeviceOpen: requested number of channels (" << channels << ") + offset (" << firstChannel << ") not found for specified device (" << deviceName << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -2468,7 +2553,6 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     goto error;
   }
 
-  stream_.device[mode] = device;
   stream_.channelOffset[mode] = firstChannel;
   stream_.state = STREAM_STOPPED;
   stream_.callbackInfo.object = (void *) this;
@@ -2481,6 +2565,7 @@ bool RtApiJack :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     jack_set_process_callback( handle->client, jackCallbackHandler, (void *) &stream_.callbackInfo );
     jack_set_xrun_callback( handle->client, jackXrun, (void *) &stream_.apiHandle );
     jack_on_shutdown( handle->client, jackShutdown, (void *) &stream_.callbackInfo );
+    //jack_set_client_registration_callback( handle->client, jackClientChange, (void *) &stream_.callbackInfo );
   }
 
   // Register our ports.
@@ -2549,10 +2634,16 @@ void RtApiJack :: closeStream( void )
     if ( stream_.state == STREAM_RUNNING )
       jack_deactivate( handle->client );
 
+    if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
+      for ( unsigned int i=0; i<stream_.nUserChannels[0]; i++ )
+        jack_port_unregister( handle->client, handle->ports[0][i] );
+    }
+    if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
+      for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ )
+        jack_port_unregister( handle->client, handle->ports[1][i] );
+    }
     jack_client_close( handle->client );
-  }
-
-  if ( handle ) {
+    
     if ( handle->ports[0] ) free( handle->ports[0] );
     if ( handle->ports[1] ) free( handle->ports[1] );
     pthread_cond_destroy( &handle->condition );
@@ -2579,8 +2670,6 @@ void RtApiJack :: closeStream( void )
   }
 
   clearStreamInfo();
-  //stream_.mode = UNINITIALIZED;
-  //stream_.state = STREAM_CLOSED;
 }
 
 RtAudioErrorType RtApiJack :: startStream( void )
@@ -2610,7 +2699,6 @@ RtAudioErrorType RtApiJack :: startStream( void )
 
   // Get the list of available ports.
   if ( shouldAutoconnect_ && (stream_.mode == OUTPUT || stream_.mode == DUPLEX) ) {
-    result = 1;
     ports = jack_get_ports( handle->client, handle->deviceName[0].c_str(), JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput);
     if ( ports == NULL) {
       errorText_ = "RtApiJack::startStream(): error determining available JACK input ports!";
@@ -2634,7 +2722,6 @@ RtAudioErrorType RtApiJack :: startStream( void )
   }
 
   if ( shouldAutoconnect_ && (stream_.mode == INPUT || stream_.mode == DUPLEX) ) {
-    result = 1;
     ports = jack_get_ports( handle->client, handle->deviceName[1].c_str(), JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput );
     if ( ports == NULL) {
       errorText_ = "RtApiJack::startStream(): error determining available JACK output ports!";
@@ -10415,7 +10502,7 @@ void RtApi :: clearStreamInfo()
   stream_.callbackInfo.isRunning = false;
   stream_.callbackInfo.deviceDisconnected = false;
   for ( int i=0; i<2; i++ ) {
-    stream_.device[i] = 11111;
+    stream_.deviceId[i] = 11111;
     stream_.doConvertBuffer[i] = false;
     stream_.deviceInterleaved[i] = true;
     stream_.doByteSwap[i] = false;

@@ -81,6 +81,14 @@ int rtaudio_device_count(rtaudio_t audio) {
   return audio->audio->getDeviceCount();
 }
 
+int rtaudio_get_device_id(rtaudio_t audio, int i) {
+  std::vector<unsigned int> deviceIds = audio->audio->getDeviceIds();
+  if ( i >= 0 && i < (int) deviceIds.size() )
+    return deviceIds[i];
+  else
+    return 0;
+}
+
 rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
   rtaudio_device_info_t result;
   std::memset(&result, 0, sizeof(result));
@@ -90,7 +98,7 @@ rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
   if (audio->errtype != RTAUDIO_ERROR_NONE)
       return result;
 
-  result.probed = info.probed;
+  result.id = info.ID;
   result.output_channels = info.outputChannels;
   result.input_channels = info.inputChannels;
   result.duplex_channels = info.duplexChannels;

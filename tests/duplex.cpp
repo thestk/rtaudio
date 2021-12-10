@@ -41,11 +41,29 @@ void usage( void ) {
   std::cout << "\nuseage: duplex N fs <iDevice> <oDevice> <iChannelOffset> <oChannelOffset>\n";
   std::cout << "    where N = number of channels,\n";
   std::cout << "    fs = the sample rate,\n";
-  std::cout << "    iDevice = optional input device to use (default = 0),\n";
-  std::cout << "    oDevice = optional output device to use (default = 0),\n";
+  std::cout << "    iDevice = optional input device index to use (default = 0),\n";
+  std::cout << "    oDevice = optional output device index to use (default = 0),\n";
   std::cout << "    iChannelOffset = an optional input channel offset (default = 0),\n";
   std::cout << "    and oChannelOffset = optional output channel offset (default = 0).\n\n";
   exit( 0 );
+}
+
+unsigned int getDeviceIndex( std::vector<std::string> deviceNames, bool isInput = false )
+{
+  unsigned int i;
+  std::string keyHit;
+  std::cout << '\n';
+  for ( i=0; i<deviceNames.size(); i++ )
+    std::cout << "  Device #" << i << ": " << deviceNames[i] << '\n';
+  do {
+    if ( isInput )
+      std::cout << "\nChoose an input device #: ";
+    else
+      std::cout << "\nChoose an output device #: ";
+    std::cin >> i;
+  } while ( i >= deviceNames.size() );
+  std::getline( std::cin, keyHit );  // used to clear out stdin
+  return i;
 }
 
 double streamTimePrintIncrement = 1.0; // seconds
@@ -76,7 +94,8 @@ int main( int argc, char *argv[] )
   if (argc < 3 || argc > 7 ) usage();
 
   RtAudio adac;
-  if ( adac.getDeviceCount() < 1 ) {
+  std::vector<unsigned int> deviceIds = adac.getDeviceIds();
+  if ( deviceIds.size() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
     exit( 1 );
   }
@@ -98,17 +117,25 @@ int main( int argc, char *argv[] )
   // Set the same number of channels for both input and output.
   unsigned int bufferFrames = 512;
   RtAudio::StreamParameters iParams, oParams;
-  iParams.deviceId = iDevice;
   iParams.nChannels = channels;
   iParams.firstChannel = iOffset;
-  oParams.deviceId = oDevice;
   oParams.nChannels = channels;
   oParams.firstChannel = oOffset;
 
   if ( iDevice == 0 )
     iParams.deviceId = adac.getDefaultInputDevice();
+  else {
+    if ( iDevice >= deviceIds.size() )
+      iDevice = getDeviceIndex( adac.getDeviceNames(), true );
+    iParams.deviceId = deviceIds[iDevice];
+  }
   if ( oDevice == 0 )
     oParams.deviceId = adac.getDefaultOutputDevice();
+  else {
+    if ( oDevice >= deviceIds.size() )
+      oDevice = getDeviceIndex( adac.getDeviceNames() );
+    oParams.deviceId = deviceIds[oDevice];
+  }
   
   RtAudio::StreamOptions options;
   //options.flags |= RTAUDIO_NONINTERLEAVED;

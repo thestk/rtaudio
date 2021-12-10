@@ -266,8 +266,8 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 
   //! The public device information structure for returning queried values.
   struct DeviceInfo {
-    bool probed;                  /*!< true if the device capabilities were successfully probed. */
-    std::string name;             /*!< Character string device identifier. */
+    unsigned int ID{};              /*!< Device ID used to specify a device to RtAudio. */
+    std::string name;               /*!< Character string device identifier. */
     unsigned int outputChannels{};  /*!< Maximum output channels supported by device. */
     unsigned int inputChannels{};   /*!< Maximum input channels supported by device. */
     unsigned int duplexChannels{};  /*!< Maximum simultaneous input/output channels supported by device. */
@@ -281,7 +281,8 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 
   //! The structure for specifying input or output stream parameters.
   struct StreamParameters {
-    unsigned int deviceId{};     /*!< Device index (0 to getDeviceCount() - 1). */
+    //std::string deviceName{};     /*!< Device name from device list. */
+    unsigned int deviceId{};     /*!< Device id as provided by getDeviceIds(). */
     unsigned int nChannels{};    /*!< Number of channels. */
     unsigned int firstChannel{}; /*!< First channel index on device (default = 0). */
   };
@@ -414,44 +415,66 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 
   //! A public function that queries for the number of audio devices available.
   /*!
-    This function performs a system query of available devices each time it
-    is called, thus supporting devices connected \e after instantiation. If
-    a system error occurs during processing, a warning will be issued. 
+    This function performs a system query of available devices each
+    time it is called, thus supporting devices (dis)connected \e after
+    instantiation. If a system error occurs during processing, a
+    warning will be issued.
   */
   unsigned int getDeviceCount( void );
 
-  //! Return an RtAudio::DeviceInfo structure for a specified device number.
+  //! A public function that returns a vector of audio device IDs.
   /*!
-    Any device integer between 0 and getDeviceCount() - 1 is valid.
-    If an invalid argument is provided, an RTAUDIO_INVALID_USE
-    will be passed to the user-provided errorCallback function (or
-    otherwise printed to stderr), the structure member "probed" will
-    have a value of "false" and all other members will be undefined.
-    If a device is busy or otherwise unavailable, the structure member
-    "probed" will have a value of "false" and all other members will
-    be undefined.  If the specified device is the current default
-    input or output device, the corresponding "isDefault" member will
-    have a value of "true".
+    The ID values returned by this function are used internally by
+    RtAudio to identify a given device. The values themselves are
+    arbitrary and do not correspond to device IDs used by the
+    underlying API (nor are they index values). This function performs
+    a system query of available devices each time it is called, thus
+    supporting devices (dis)connected \e after instantiation. If no
+    devices are available, the vector size will be zero. If a system
+    error occurs during processing, a warning will be issued.
   */
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device );
+  std::vector<unsigned int> getDeviceIds( void );
 
-  //! A function that returns the index of the default output device.
+  //! A public function that returns a vector of audio device names.
   /*!
-    If the underlying audio API does not provide a "default
-    device", or if no devices are available, the return value will be
-    0.  Note that this is a valid device identifier and it is the
-    client's responsibility to verify that a device is available
-    before attempting to open a stream.
+    This function performs a system query of available devices each
+    time it is called, thus supporting devices connected \e after
+    instantiation. If no devices are available, the vector size will
+    be zero. If a system error occurs during processing, a warning
+    will be issued.
+  */
+  std::vector<std::string> getDeviceNames( void );
+
+  //! Return an RtAudio::DeviceInfo structure for a specified device ID.
+  /*!
+    Any device ID returned by getDeviceIds() is valid, unless it has
+    been removed between the call to getDevceIds() and this
+    function. If an invalid argument is provided, an
+    RTAUDIO_INVALID_USE will be passed to the user-provided
+    errorCallback function (or otherwise printed to stderr) and all
+    members of the returned RtAudio::DeviceInfo structure will be
+    initialized to default, invalid values (ID = 0, empty name, ...).
+    If the specified device is the current default input or output
+    device, the corresponding "isDefault" member will have a value of
+    "true".
+  */
+  RtAudio::DeviceInfo getDeviceInfo( unsigned int deviceId );
+
+  //! A function that returns the ID of the default output device.
+  /*!
+    If the underlying audio API does not provide a "default device",
+    the first probed output device ID will be returned. If no devices
+    are available, the return value will be 0 (which is an invalid
+    device identifier).
   */
   unsigned int getDefaultOutputDevice( void );
 
-  //! A function that returns the index of the default input device.
+  //! A function that returns the ID of the default input device.
   /*!
-    If the underlying audio API does not provide a "default
-    device", or if no devices are available, the return value will be
-    0.  Note that this is a valid device identifier and it is the
-    client's responsibility to verify that a device is available
-    before attempting to open a stream.
+    If the underlying audio API does not provide a "default device",
+    the first probed input device ID will be returned. If no devices
+    are available, the return value will be 0 (which is an invalid
+    device identifier).
   */
   unsigned int getDefaultInputDevice( void );
 
@@ -465,13 +488,13 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     \param outputParameters Specifies output stream parameters to use
            when opening a stream, including a device ID, number of channels,
            and starting channel number.  For input-only streams, this
-           argument should be NULL.  The device ID is an index value between
-           0 and getDeviceCount() - 1.
+           argument should be NULL.  The device ID is a value returned by
+           getDeviceIds().
     \param inputParameters Specifies input stream parameters to use
            when opening a stream, including a device ID, number of channels,
            and starting channel number.  For output-only streams, this
-           argument should be NULL.  The device ID is an index value between
-           0 and getDeviceCount() - 1.
+           argument should be NULL.  The device ID is a value returned by
+           getDeviceIds().
     \param format An RtAudioFormat specifying the desired sample data format.
     \param sampleRate The desired sample rate (sample frames per second).
     \param bufferFrames A pointer to a value indicating the desired
@@ -689,8 +712,10 @@ public:
   RtApi();
   virtual ~RtApi();
   virtual RtAudio::Api getCurrentApi( void ) = 0;
-  virtual unsigned int getDeviceCount( void ) = 0;
-  virtual RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) = 0;
+  unsigned int getDeviceCount( void );
+  std::vector<unsigned int> getDeviceIds( void );
+  std::vector<std::string> getDeviceNames( void );
+  RtAudio::DeviceInfo getDeviceInfo( unsigned int deviceId );
   virtual unsigned int getDefaultInputDevice( void );
   virtual unsigned int getDefaultOutputDevice( void );
   RtAudioErrorType openStream( RtAudio::StreamParameters *outputParameters,
@@ -744,7 +769,7 @@ protected:
 
   // A protected structure for audio streams.
   struct RtApiStream {
-    unsigned int device[2];    // Playback and record, respectively.
+    unsigned int deviceId[2];  // Playback and record, respectively.
     void *apiHandle;           // void pointer for API specific stream handle information
     StreamMode mode;           // OUTPUT, INPUT, or DUPLEX.
     StreamState state;         // STOPPED, RUNNING, or CLOSED
@@ -773,7 +798,7 @@ protected:
 #endif
 
     RtApiStream()
-      :apiHandle(0), deviceBuffer(0) { device[0] = 11111; device[1] = 11111; }
+    :apiHandle(0), deviceBuffer(0) {} // { device[0] = std::string(); device[1] = std::string(); }
   };
 
   typedef S24 Int24;
@@ -786,8 +811,20 @@ protected:
   std::string errorText_;
   RtAudioErrorCallback errorCallback_;
   bool showWarnings_;
+  std::vector<RtAudio::DeviceInfo> deviceList_;
+  unsigned int currentDeviceId_;
   RtApiStream stream_;
 
+  /*!
+    Protected, api-specific method that attempts to probe all device
+    capabilities in a system. The function will not re-probe devices
+    that were previously found and probed. This function MUST be
+    implemented by all subclasses.  If an error is encountered during
+    the probe, a "warning" message may be reported and the internal
+    list of devices may be incomplete.
+  */
+  virtual void probeDevices( void );
+  
   /*!
     Protected, api-specific method that attempts to open a device
     with the given parameters.  This function MUST be implemented by
@@ -795,7 +832,7 @@ protected:
     "warning" message is reported and FAILURE is returned. A
     successful probe is indicated by a return value of SUCCESS.
   */
-  virtual bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+  virtual bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                                 unsigned int firstChannel, unsigned int sampleRate,
                                 RtAudioFormat format, unsigned int *bufferSize,
                                 RtAudio::StreamOptions *options );
@@ -833,7 +870,9 @@ protected:
 
 inline RtAudio::Api RtAudio :: getCurrentApi( void ) { return rtapi_->getCurrentApi(); }
 inline unsigned int RtAudio :: getDeviceCount( void ) { return rtapi_->getDeviceCount(); }
-inline RtAudio::DeviceInfo RtAudio :: getDeviceInfo( unsigned int device ) { return rtapi_->getDeviceInfo( device ); }
+inline RtAudio::DeviceInfo RtAudio :: getDeviceInfo( unsigned int deviceId ) { return rtapi_->getDeviceInfo( deviceId ); }
+inline std::vector<unsigned int> RtAudio :: getDeviceIds( void ) { return rtapi_->getDeviceIds(); }
+inline std::vector<std::string> RtAudio :: getDeviceNames( void ) { return rtapi_->getDeviceNames(); }
 inline unsigned int RtAudio :: getDefaultInputDevice( void ) { return rtapi_->getDefaultInputDevice(); }
 inline unsigned int RtAudio :: getDefaultOutputDevice( void ) { return rtapi_->getDefaultOutputDevice(); }
 inline void RtAudio :: closeStream( void ) { return rtapi_->closeStream(); }
@@ -862,8 +901,6 @@ public:
   RtApiCore();
   ~RtApiCore();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::MACOSX_CORE; }
-  unsigned int getDeviceCount( void ) override;
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   unsigned int getDefaultOutputDevice( void ) override;
   unsigned int getDefaultInputDevice( void ) override;
   void closeStream( void ) override;
@@ -872,25 +909,29 @@ public:
   RtAudioErrorType abortStream( void ) override;
 
   // This function is intended for internal use only.  It must be
-  // public because it is called by the internal callback handler,
+  // public because it is called by an internal callback handler,
   // which is not a member of RtAudio.  External use of this function
   // will most likely produce highly undesirable results!
   bool callbackEvent( AudioDeviceID deviceId,
                       const AudioBufferList *inBufferList,
                       const AudioBufferList *outBufferList );
 
-  private:
-
-  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+ private:
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo &info );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;
   static const char* getErrorCode( OSStatus code );
+  std::vector< AudioDeviceID > deviceIds_;
 };
 
 #endif
 
 #if defined(__UNIX_JACK__)
+
+#include <jack/jack.h>
 
 class RtApiJack: public RtApi
 {
@@ -899,8 +940,6 @@ public:
   RtApiJack();
   ~RtApiJack();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::UNIX_JACK; }
-  unsigned int getDeviceCount( void ) override;
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -913,8 +952,9 @@ public:
   bool callbackEvent( unsigned long nframes );
 
   private:
-
-  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, jack_client_t *client );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;

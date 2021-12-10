@@ -5,7 +5,7 @@
 
   This program starts and stops an RtAudio
   stream many times in succession and in
-  different ways to to test its functionality.
+  different ways to test its functionality.
 */
 /******************************************/
 
@@ -35,11 +35,29 @@ void usage( void ) {
   std::cout << "\nuseage: teststops N fs <iDevice> <oDevice> <iChannelOffset> <oChannelOffset>\n";
   std::cout << "    where N = number of channels,\n";
   std::cout << "    fs = the sample rate,\n";
-  std::cout << "    iDevice = optional input device to use (default = 0),\n";
-  std::cout << "    oDevice = optional output device to use (default = 0),\n";
+  std::cout << "    iDevice = optional input device index to use (default = 0),\n";
+  std::cout << "    oDevice = optional output device index to use (default = 0),\n";
   std::cout << "    iChannelOffset = an optional input channel offset (default = 0),\n";
   std::cout << "    and oChannelOffset = optional output channel offset (default = 0).\n\n";
   exit( 0 );
+}
+
+unsigned int getDeviceIndex( std::vector<std::string> deviceNames, bool isInput = false )
+{
+  unsigned int i;
+  std::string keyHit;
+  std::cout << '\n';
+  for ( i=0; i<deviceNames.size(); i++ )
+    std::cout << "  Device #" << i << ": " << deviceNames[i] << '\n';
+  do {
+    if ( isInput )
+      std::cout << "\nChoose an input device #: ";
+    else
+      std::cout << "\nChoose an output device #: ";
+    std::cin >> i;
+  } while ( i >= deviceNames.size() );
+  std::getline( std::cin, keyHit );  // used to clear out stdin
+  return i;
 }
 
 struct MyData {
@@ -87,10 +105,11 @@ int main( int argc, char *argv[] )
   if (argc < 3 || argc > 7 ) usage();
 
   RtAudio *adc = new RtAudio();
-  if ( adc->getDeviceCount() < 1 ) {
+  std::vector<unsigned int> deviceIds = adc->getDeviceIds();
+  if ( deviceIds.size() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
     exit( 1 );
-  }
+  }  
 
   MyData mydata;
   mydata.channels = (unsigned int) atoi( argv[1] );
@@ -113,19 +132,26 @@ int main( int argc, char *argv[] )
   // Set our stream parameters for a duplex stream.
   bufferFrames = 512;
   RtAudio::StreamParameters oParams, iParams;
-  oParams.deviceId = oDevice;
   oParams.nChannels = mydata.channels;
   oParams.firstChannel = oOffset;
-
-  iParams.deviceId = iDevice;
   iParams.nChannels = mydata.channels;
   iParams.firstChannel = iOffset;
 
   if ( iDevice == 0 )
     iParams.deviceId = adc->getDefaultInputDevice();
+  else {
+    if ( iDevice >= deviceIds.size() )
+      iDevice = getDeviceIndex( adc->getDeviceNames(), true );
+    iParams.deviceId = deviceIds[iDevice];
+  }
   if ( oDevice == 0 )
     oParams.deviceId = adc->getDefaultOutputDevice();
-
+  else {
+    if ( oDevice >= deviceIds.size() )
+      oDevice = getDeviceIndex( adc->getDeviceNames() );
+    oParams.deviceId = deviceIds[oDevice];
+  }
+  
   // First, test external stopStream() calls.
   mydata.pulseCount = static_cast<unsigned int>(PULSE_RATE * fs);
   mydata.nFrames = 50 * fs;

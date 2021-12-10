@@ -22,11 +22,29 @@ void usage( void ) {
   std::cout << "\nuseage: testall N fs <iDevice> <oDevice> <iChannelOffset> <oChannelOffset>\n";
   std::cout << "    where N = number of channels,\n";
   std::cout << "    fs = the sample rate,\n";
-  std::cout << "    iDevice = optional input device to use (default = 0),\n";
-  std::cout << "    oDevice = optional output device to use (default = 0),\n";
+  std::cout << "    iDevice = optional input device index to use (default = 0),\n";
+  std::cout << "    oDevice = optional output device index to use (default = 0),\n";
   std::cout << "    iChannelOffset = an optional input channel offset (default = 0),\n";
   std::cout << "    and oChannelOffset = optional output channel offset (default = 0).\n\n";
   exit( 0 );
+}
+
+unsigned int getDeviceIndex( std::vector<std::string> deviceNames, bool isInput = false )
+{
+  unsigned int i;
+  std::string keyHit;
+  std::cout << '\n';
+  for ( i=0; i<deviceNames.size(); i++ )
+    std::cout << "  Device #" << i << ": " << deviceNames[i] << '\n';
+  do {
+    if ( isInput )
+      std::cout << "\nChoose an input device #: ";
+    else
+      std::cout << "\nChoose an output device #: ";
+    std::cin >> i;
+  } while ( i >= deviceNames.size() );
+  std::getline( std::cin, keyHit );  // used to clear out stdin
+  return i;
 }
 
 unsigned int channels;
@@ -100,7 +118,8 @@ int main( int argc, char *argv[] )
   if (argc < 3 || argc > 7 ) usage();
 
   RtAudio dac;
-  if ( dac.getDeviceCount() < 1 ) {
+  std::vector<unsigned int> deviceIds = dac.getDeviceIds();
+  if ( deviceIds.size() < 1 ) {
     std::cout << "\nNo audio devices found!\n";
     exit( 1 );
   }
@@ -121,55 +140,60 @@ int main( int argc, char *argv[] )
   // Let RtAudio print messages to stderr.
   dac.showWarnings( true );
 
-  // Set our stream parameters for output only.
+  // Set our stream parameters for both input and output.
   bufferFrames = 512;
   RtAudio::StreamParameters oParams, iParams;
-  oParams.deviceId = oDevice;
+  iParams.nChannels = channels;
+  iParams.firstChannel = iOffset;
   oParams.nChannels = channels;
   oParams.firstChannel = oOffset;
 
+  if ( iDevice == 0 )
+    iParams.deviceId = dac.getDefaultInputDevice();
+  else {
+    if ( iDevice >= deviceIds.size() )
+      iDevice = getDeviceIndex( dac.getDeviceNames(), true );
+    iParams.deviceId = deviceIds[iDevice];
+  }
   if ( oDevice == 0 )
     oParams.deviceId = dac.getDefaultOutputDevice();
+  else {
+    if ( oDevice >= deviceIds.size() )
+      oDevice = getDeviceIndex( dac.getDeviceNames() );
+    oParams.deviceId = deviceIds[oDevice];
+  }
 
   RtAudio::StreamOptions options;
   options.flags = RTAUDIO_HOG_DEVICE;
-  //try {
-    dac.openStream( &oParams, NULL, RTAUDIO_FLOAT64, fs, &bufferFrames, &sawi, (void *)data, &options );
-    std::cout << "\nStream latency = " << dac.getStreamLatency() << std::endl;
+  dac.openStream( &oParams, NULL, RTAUDIO_FLOAT64, fs, &bufferFrames, &sawi, (void *)data, &options );
+  std::cout << "\nStream latency = " << dac.getStreamLatency() << std::endl;
 
-    if ( !dac.isStreamOpen() ) goto cleanup;
-    // Start the stream
-    dac.startStream();
-    std::cout << "\nPlaying ... press <enter> to stop.\n";
-    std::cin.get( input );
+  if ( !dac.isStreamOpen() ) goto cleanup;
+  // Start the stream
+  dac.startStream();
+  std::cout << "\nPlaying ... press <enter> to stop.\n";
+  std::cin.get( input );
 
-    // Stop the stream
-    dac.stopStream();
+  // Stop the stream
+  dac.stopStream();
 
-    // Restart again
-    std::cout << "Press <enter> to restart.\n";
-    std::cin.get( input );
-    dac.startStream();
+  // Restart again
+  std::cout << "Press <enter> to restart.\n";
+  std::cin.get( input );
+  dac.startStream();
 
-    // Test abort function
-    std::cout << "Playing again ... press <enter> to abort.\n";
-    std::cin.get( input );
-    dac.abortStream();
+  // Test abort function
+  std::cout << "Playing again ... press <enter> to abort.\n";
+  std::cin.get( input );
+  dac.abortStream();
 
-    // Restart another time
-    std::cout << "Press <enter> to restart again.\n";
-    std::cin.get( input );
-    dac.startStream();
+  // Restart another time
+  std::cout << "Press <enter> to restart again.\n";
+  std::cin.get( input );
+  dac.startStream();
 
-    std::cout << "Playing again ... press <enter> to close the stream.\n";
-    std::cin.get( input );
-    /*
-  }
-  catch ( RtAudioError& e ) {
-    e.printMessage();
-    goto cleanup;
-  }
-    */
+  std::cout << "Playing again ... press <enter> to close the stream.\n";
+  std::cin.get( input );
 
   if ( dac.isStreamOpen() ) dac.closeStream();
 
@@ -193,11 +217,6 @@ int main( int argc, char *argv[] )
 
   // Now open a duplex stream.
   unsigned int bufferBytes;
-  iParams.deviceId = iDevice;
-  iParams.nChannels = channels;
-  iParams.firstChannel = iOffset;
-  if ( iDevice == 0 )
-    iParams.deviceId = dac.getDefaultInputDevice();
   options.flags = RTAUDIO_NONINTERLEAVED;
 
   if ( dac.openStream( &oParams, &iParams, RTAUDIO_SINT32, fs, &bufferFrames, &inout, (void *)&bufferBytes, &options ) )
