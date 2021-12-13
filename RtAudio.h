@@ -1083,8 +1083,8 @@ public:
   RtApiAlsa();
   ~RtApiAlsa();
   RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_ALSA; }
-  unsigned int getDeviceCount( void ) override;
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
+
+
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1097,13 +1097,14 @@ public:
   void callbackEvent( void );
 
   private:
-
-  std::vector<RtAudio::DeviceInfo> devices_;
-  void saveDeviceInfo( void );
-  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, std::string name );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;
+
+  std::vector< std::string > deviceIds_;
 };
 
 #endif
