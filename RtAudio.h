@@ -1111,13 +1111,13 @@ public:
 
 #if defined(__LINUX_PULSE__)
 
+#include <pulse/pulseaudio.h>
+
 class RtApiPulse: public RtApi
 {
 public:
   ~RtApiPulse();
   RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_PULSE; }
-  unsigned int getDeviceCount( void ) override;
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1129,10 +1129,16 @@ public:
   // will most likely produce highly undesirable results!
   void callbackEvent( void );
 
-  private:
+  struct PaDeviceInfo {
+    std::string sinkName;
+    std::string sourceName;
+  };
 
-  void collectDeviceInfo( void );
-  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+ private:
+
+  std::vector< PaDeviceInfo > paDeviceList_;
+  void probeDevices( void ) override;
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;
