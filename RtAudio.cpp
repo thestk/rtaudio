@@ -764,15 +764,19 @@ void RtApiCore :: probeDevices( void )
   }
 
   unsigned int nDevices = dataSize / sizeof( AudioDeviceID );
-  if ( nDevices ) {
-    AudioDeviceID ids[ nDevices ];
-    property.mSelector = kAudioHardwarePropertyDevices;
-    result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, (void *) &ids );
-    if ( result != noErr ) {
-      errorText_ = "RtApiCore::probeDevices: OS-X system error getting device IDs.";
-      error( RTAUDIO_SYSTEM_ERROR );
-      return;
-    }
+  if ( nDevices == 0 ) {
+    deviceList_.clear();
+    deviceIds_.clear();
+    return;
+  }
+
+  AudioDeviceID ids[ nDevices ];
+  property.mSelector = kAudioHardwarePropertyDevices;
+  result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, (void *) &ids );
+  if ( result != noErr ) {
+    errorText_ = "RtApiCore::probeDevices: OS-X system error getting device IDs.";
+    error( RTAUDIO_SYSTEM_ERROR );
+    return;
   }
 
   for ( unsigned int n=0; n<nDevices; n++ ) {
@@ -8572,6 +8576,7 @@ static void *alsaCallbackHandler( void *ptr )
 #include <cstdio>
 
 static pa_mainloop_api *rt_pa_mainloop_api = NULL;
+
 struct PaDeviceInfo {
   PaDeviceInfo() : sink_index(-1), source_index(-1) {}
   int sink_index;
@@ -8580,6 +8585,7 @@ struct PaDeviceInfo {
   std::string source_name;
   RtAudio::DeviceInfo info;
 };
+
 static struct {
   std::vector<PaDeviceInfo> dev;
   std::string default_sink_name;
@@ -8615,7 +8621,8 @@ static void rt_pa_mainloop_api_quit(int ret) {
     rt_pa_mainloop_api->quit(rt_pa_mainloop_api, ret);
 }
 
-static void rt_pa_set_server_info(pa_context *context, const pa_server_info *info, void *data){
+static void rt_pa_set_server_info(pa_context *context, const pa_server_info *info, void *data)
+{
   (void)context;
   (void)data;
   pa_sample_spec ss;
@@ -8884,8 +8891,6 @@ void RtApiPulse::closeStream( void )
   }
 
   clearStreamInfo();
-  //stream_.state = STREAM_CLOSED;
-  //stream_.mode = UNINITIALIZED;
 }
 
 void RtApiPulse::callbackEvent( void )

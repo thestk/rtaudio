@@ -99,20 +99,16 @@ int main(int argc, char *argv[])
   if ( argc > 2 ) nRepeats = (unsigned int) atoi( argv[2] );
 
   char input;
-  for ( size_t n=0; n <= nRepeats; n++ ) {
-    for ( size_t api=0; api < apis.size(); api++ ) {
-      errno = 0;
-      char *s;
-      if (argc < 2
-          || apis[api] == RtAudio::getCompiledApiByName(argv[1])
-          || (api == std::strtoul(argv[1], &s, 10) && argv[1] != s && !errno)) {
-        RtAudio audio(apis[api]);
+  for ( size_t api=0; api < apis.size(); api++ ) {
+    if (argc < 2 || apis[api] == RtAudio::getCompiledApiByName(argv[1]) ) {
+      RtAudio audio(apis[api]);
+      for ( size_t n=0; n <= nRepeats; n++ ) {
         listDevices(audio);
-      }
-      if ( n < nRepeats ) {
-        std::cout << std::endl;
-        std::cout << "\nWaiting ... press <enter> to repeat.\n";
-        std::cin.get(input);
+        if ( n < nRepeats ) {
+          std::cout << std::endl;
+          std::cout << "\nWaiting ... press <enter> to repeat.\n";
+          std::cin.get(input);
+        }
       }
     }
   }
