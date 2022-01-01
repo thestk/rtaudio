@@ -9355,7 +9355,6 @@ RtAudioErrorType RtApiPulse::abortStream( void )
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
 #include <errno.h>
 #include <math.h>
 
@@ -9412,11 +9411,10 @@ void RtApiOss :: probeDevices( void )
   std::vector<std::string> deviceNames;
   for ( n=0; n<nDevices; n++ ) {
     ainfo.dev = n;
-    result = ioctl( mixerfd, SNDCTL_AUDIOINFO, &ainfo );
-    if ( result == -1 ) continue;
+    if ( ioctl( mixerfd, SNDCTL_AUDIOINFO, &ainfo ) == -1 ) continue;
     deviceNames.push_back( ainfo.name );
     for ( m=0; m<deviceList_.size(); m++ ) {
-      if ( deviceList_[m].name == deviceNames.end() )
+      if ( deviceList_[m].name == deviceNames.back() )
         break; // We already have this device.
     }
     if ( m == deviceList_.size() ) { // new device
@@ -9592,7 +9590,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsign
   if ( mode == OUTPUT )
     flags |= O_WRONLY;
   else { // mode == INPUT
-    if (stream_.mode == OUTPUT && stream_.device[0] == device) {
+    if (stream_.mode == OUTPUT && stream_.deviceId[0] == device) {
       // We just set the same device for playback ... close and reopen for duplex (OSS only).
       close( handle->id[0] );
       handle->id[0] = 0;
@@ -9888,7 +9886,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsign
     }
   }
 
-  stream_.device[mode] = device;
+  stream_.deviceId[mode] = device;
   stream_.state = STREAM_STOPPED;
 
   // Setup the buffer conversion information structure.
@@ -10105,7 +10103,7 @@ RtAudioErrorType RtApiOss :: stopStream()
 
     result = ioctl( handle->id[0], SNDCTL_DSP_HALT, 0 );
     if ( result == -1 ) {
-      errorStream_ << "RtApiOss::stopStream: system error stopping callback procedure on device (" << stream_.device[0] << ").";
+      errorStream_ << "RtApiOss::stopStream: system error stopping callback procedure on device (" << stream_.deviceId[0] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -10115,7 +10113,7 @@ RtAudioErrorType RtApiOss :: stopStream()
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && handle->id[0] != handle->id[1] ) ) {
     result = ioctl( handle->id[1], SNDCTL_DSP_HALT, 0 );
     if ( result == -1 ) {
-      errorStream_ << "RtApiOss::stopStream: system error stopping input callback procedure on device (" << stream_.device[0] << ").";
+      errorStream_ << "RtApiOss::stopStream: system error stopping input callback procedure on device (" << stream_.deviceId[0] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -10152,7 +10150,7 @@ RtAudioErrorType RtApiOss :: abortStream()
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     result = ioctl( handle->id[0], SNDCTL_DSP_HALT, 0 );
     if ( result == -1 ) {
-      errorStream_ << "RtApiOss::abortStream: system error stopping callback procedure on device (" << stream_.device[0] << ").";
+      errorStream_ << "RtApiOss::abortStream: system error stopping callback procedure on device (" << stream_.deviceId[0] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }
@@ -10162,7 +10160,7 @@ RtAudioErrorType RtApiOss :: abortStream()
   if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && handle->id[0] != handle->id[1] ) ) {
     result = ioctl( handle->id[1], SNDCTL_DSP_HALT, 0 );
     if ( result == -1 ) {
-      errorStream_ << "RtApiOss::abortStream: system error stopping input callback procedure on device (" << stream_.device[0] << ").";
+      errorStream_ << "RtApiOss::abortStream: system error stopping input callback procedure on device (" << stream_.deviceId[0] << ").";
       errorText_ = errorStream_.str();
       goto unlock;
     }

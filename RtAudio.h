@@ -1148,6 +1148,8 @@ public:
 
 #if defined(__LINUX_OSS__)
 
+#include <sys/soundcard.h>
+
 class RtApiOss: public RtApi
 {
 public:
@@ -1155,8 +1157,6 @@ public:
   RtApiOss();
   ~RtApiOss();
   RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_OSS; }
-  //unsigned int getDeviceCount( void ) override;
-  //RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1171,7 +1171,7 @@ public:
   private:
 
   void probeDevices( void ) override;
-  bool probeDeviceInfo( RtAudio::DeviceInfo &info, std::string name );
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainfo );
   bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
