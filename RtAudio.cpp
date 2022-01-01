@@ -5815,33 +5815,20 @@ RtApiDs :: ~RtApiDs()
   if ( coInitialized_ ) CoUninitialize(); // balanced call.
 }
 
-// The DirectSound default output is always the first device.
-unsigned int RtApiDs :: getDefaultOutputDevice( void )
-{
-  return 0;
-}
-
-// The DirectSound default input is always the first input device,
-// which is the first capture device enumerated.
-unsigned int RtApiDs :: getDefaultInputDevice( void )
-{
-  return 0;
-}
-
-unsigned int RtApiDs :: getDeviceCount( void )
+void RtApiDs :: probeDevices( void )
 {
   // Set query flag for previously found devices to false, so that we
   // can check for any devices that have disappeared.
-  for ( unsigned int i=0; i<dsDevices.size(); i++ )
-    dsDevices[i].found = false;
+  for ( unsigned int i=0; i<dsDevices_.size(); i++ )
+    dsDevices_[i].found = false;
 
   // Query DirectSound devices.
   struct DsProbeData probeInfo;
   probeInfo.isInput = false;
-  probeInfo.dsDevices = &dsDevices;
+  probeInfo.dsDevices = &dsDevices_;
   HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &probeInfo );
   if ( FAILED( result ) ) {
-    errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating output devices!";
+    errorStream_ << "RtApiDs::probeDevices: error (" << getErrorString( result ) << ") enumerating output devices!";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
   }
@@ -5850,49 +5837,76 @@ unsigned int RtApiDs :: getDeviceCount( void )
   probeInfo.isInput = true;
   result = DirectSoundCaptureEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &probeInfo );
   if ( FAILED( result ) ) {
-    errorStream_ << "RtApiDs::getDeviceCount: error (" << getErrorString( result ) << ") enumerating input devices!";
+    errorStream_ << "RtApiDs::probeDevices: error (" << getErrorString( result ) << ") enumerating input devices!";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
   }
 
   // Clean out any devices that may have disappeared (code update submitted by Eli Zehngut).
-  for ( unsigned int i=0; i<dsDevices.size(); ) {
-    if ( dsDevices[i].found == false ) dsDevices.erase( dsDevices.begin() + i );
+  for ( unsigned int i=0; i<dsDevices_.size(); ) {
+    if ( dsDevices_[i].found == false ) dsDevices_.erase( dsDevices_.begin() + i );
     else i++;
   }
 
-  return static_cast<unsigned int>(dsDevices.size());
-}
-
-RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
-{
-  RtAudio::DeviceInfo info;
-  info.probed = false;
-
-  if ( dsDevices.size() == 0 ) {
-    // Force a query of all devices
-    getDeviceCount();
-    if ( dsDevices.size() == 0 ) {
-      errorText_ = "RtApiDs::getDeviceInfo: no devices found!";
-      error( RTAUDIO_INVALID_USE );
-      return info;
+  // Now fill our deviceList_ vector.
+  unsigned int m, n;
+  for ( n=0; n<dsDevices_.size(); n++ ) {
+    for ( m=0; m<deviceList_.size(); m++ ) {
+      if ( deviceList_[m].name == dsDevices_[n].name )
+        break; // We already have this device.
+    }
+    if ( m == deviceList_.size() ) { // new device
+      RtAudio::DeviceInfo info;
+      if ( probeDeviceInfo( info, dsDevices_[n] ) == false ) continue; // ignore if probe fails
+      info.ID = currentDeviceId_++;  // arbitrary internal device ID
+      deviceList_.push_back( info );
     }
   }
 
-  if ( device >= dsDevices.size() ) {
-    errorText_ = "RtApiDs::getDeviceInfo: device ID is invalid!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
+  // Remove any devices left in the list that are no longer available.
+  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
+    for ( n=0; n<dsDevices.size(); n++ ) {
+      if ( (*it).name == deviceNames[n] ) {
+        ++it;
+        break;
+      }
+    }
+    if ( n == dsDevices.size() ) // not found so remove it from our list
+      it = deviceList_.erase( it );
   }
+  
+  // Now determine the default devices
+  for ( n=0; n<dsDevices_.size(); n++ ) {
+    if ( dsDevices_[n].validId[0] && dsDevices_[n].id[0] == NULL ) {
+      // This is the default output device
+      for ( m=0; m<deviceList_.size(); m++ ) {
+        if ( dsDevices_[n].name == deviceList_[m].name )
+          deviceList_[m].isDefaultOutput = true;
+        else
+          deviceList_[m].isDefaultOutput = false;
+      }
+    }
+    if ( dsDevices_[n].validId[1] && dsDevices_[n].id[1] == NULL ) {
+      // This is the default input device
+      for ( m=0; m<deviceList_.size(); m++ ) {
+        if ( dsDevices_[n].name == deviceList_[m].name )
+          deviceList_[m].isDefaultInput = true;
+        else
+          deviceList_[m].isDefaultInput = false;
+      }
+    }
+  }
+}
 
-  HRESULT result;
-  if ( dsDevices[ device ].validId[0] == false ) goto probeInput;
+bool RtApiDs :: probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice )
+{
+  if ( dsDevice.validId[0] == false ) goto probeInput;
 
   LPDIRECTSOUND output;
   DSCAPS outCaps;
-  result = DirectSoundCreate( dsDevices[ device ].id[0], &output, NULL );
+  HRESULT result = DirectSoundCreate( dsDevice.id[0], &output, NULL );
   if ( FAILED( result ) ) {
-    errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") opening output device (" << dsDevices[ device ].name << ")!";
+    errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") opening output device (" << dsDevice.name << ")!";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
     goto probeInput;
@@ -5902,7 +5916,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   result = output->GetCaps( &outCaps );
   if ( FAILED( result ) ) {
     output->Release();
-    errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") getting capabilities!";
+    errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") getting capabilities!";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
     goto probeInput;
@@ -5929,24 +5943,20 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
 
   output->Release();
 
-  if ( getDefaultOutputDevice() == device )
-    info.isDefaultOutput = true;
-
-  if ( dsDevices[ device ].validId[1] == false ) {
-    info.name = dsDevices[ device ].name;
-    info.probed = true;
-    return info;
+  if ( dsDevice.validId[1] == false ) {
+    info.name = dsDevice.name;
+    return true;
   }
 
  probeInput:
 
   LPDIRECTSOUNDCAPTURE input;
-  result = DirectSoundCaptureCreate( dsDevices[ device ].id[1], &input, NULL );
+  result = DirectSoundCaptureCreate( dsDevice.id[1], &input, NULL );
   if ( FAILED( result ) ) {
-    errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") opening input device (" << dsDevices[ device ].name << ")!";
+    errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") opening input device (" << dsDevice.name << ")!";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   DSCCAPS inCaps;
@@ -5954,10 +5964,10 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   result = input->GetCaps( &inCaps );
   if ( FAILED( result ) ) {
     input->Release();
-    errorStream_ << "RtApiDs::getDeviceInfo: error (" << getErrorString( result ) << ") getting object capabilities (" << dsDevices[ device ].name << ")!";
+    errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") getting object capabilities (" << dsDevice.name << ")!";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Get input channel information.
@@ -6015,7 +6025,7 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
 
   input->Release();
 
-  if ( info.inputChannels == 0 ) return info;
+  if ( info.inputChannels == 0 ) return false;
 
   // Copy the supported rates to the info structure but avoid duplication.
   bool found;
@@ -6035,15 +6045,12 @@ RtAudio::DeviceInfo RtApiDs :: getDeviceInfo( unsigned int device )
   if ( info.outputChannels > 0 && info.inputChannels > 0 )
     info.duplexChannels = (info.outputChannels > info.inputChannels) ? info.inputChannels : info.outputChannels;
 
-  if ( device == 0 ) info.isDefaultInput = true;
-
   // Copy name and return.
-  info.name = dsDevices[ device ].name;
-  info.probed = true;
-  return info;
+  info.name = dsDevice.name;
+  return true;
 }
 
-bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+bool RtApiDs :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                                  unsigned int firstChannel, unsigned int sampleRate,
                                  RtAudioFormat format, unsigned int *bufferSize,
                                  RtAudio::StreamOptions *options )
@@ -6053,29 +6060,41 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     return FAILURE;
   }
 
-  size_t nDevices = dsDevices.size();
+  size_t nDevices = dsDevices_.size();
   if ( nDevices == 0 ) {
     // This should not happen because a check is made before this function is called.
     errorText_ = "RtApiDs::probeDeviceOpen: no devices found!";
     return FAILURE;
   }
 
-  if ( device >= nDevices ) {
-    // This should not happen because a check is made before this function is called.
+  int deviceIdx = -1;
+  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
+    if ( deviceList_[m].ID == deviceId ) {
+      for ( unsigned int n=0; n<dsDevices_.size(); n++ ) {
+        if ( deviceList_[m].name == dsDevices_[n].name ) {
+          deviceIdx = n;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  if ( deviceIdx < 0 ) {
     errorText_ = "RtApiDs::probeDeviceOpen: device ID is invalid!";
     return FAILURE;
   }
 
   if ( mode == OUTPUT ) {
-    if ( dsDevices[ device ].validId[0] == false ) {
-      errorStream_ << "RtApiDs::probeDeviceOpen: device (" << device << ") does not support output!";
+    if ( dsDevices_[ deviceIdx ].validId[0] == false ) {
+      errorStream_ << "RtApiDs::probeDeviceOpen: device (" << deviceIdx << ") does not support output!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
   }
   else { // mode == INPUT
-    if ( dsDevices[ device ].validId[1] == false ) {
-      errorStream_ << "RtApiDs::probeDeviceOpen: device (" << device << ") does not support input!";
+    if ( dsDevices_[ deviceIdx ].validId[1] == false ) {
+      errorStream_ << "RtApiDs::probeDeviceOpen: device (" << deviceIdx << ") does not support input!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6122,9 +6141,9 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   if ( mode == OUTPUT ) {
 
     LPDIRECTSOUND output;
-    result = DirectSoundCreate( dsDevices[ device ].id[0], &output, NULL );
+    result = DirectSoundCreate( dsDevices_[ deviceIdx ].id[0], &output, NULL );
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") opening output device (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") opening output device (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6134,14 +6153,14 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = output->GetCaps( &outCaps );
     if ( FAILED( result ) ) {
       output->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting capabilities (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting capabilities (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
 
     // Check channel information.
     if ( channels + firstChannel == 2 && !( outCaps.dwFlags & DSCAPS_PRIMARYSTEREO ) ) {
-      errorStream_ << "RtApiDs::getDeviceInfo: the output device (" << dsDevices[ device ].name << ") does not support stereo playback.";
+      errorStream_ << "RtApiDs::probeDeviceInfo: the output device (" << dsDevices_[ deviceIdx ].name << ") does not support stereo playback.";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6174,7 +6193,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = output->SetCooperativeLevel( hWnd, DSSCL_PRIORITY );
     if ( FAILED( result ) ) {
       output->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") setting cooperative level (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") setting cooperative level (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6193,7 +6212,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = output->CreateSoundBuffer( &bufferDescription, &buffer, NULL );
     if ( FAILED( result ) ) {
       output->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") accessing primary buffer (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") accessing primary buffer (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6202,7 +6221,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = buffer->SetFormat( &waveFormat );
     if ( FAILED( result ) ) {
       output->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") setting primary buffer format (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") setting primary buffer format (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6228,7 +6247,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
       result = output->CreateSoundBuffer( &bufferDescription, &buffer, NULL );
       if ( FAILED( result ) ) {
         output->Release();
-        errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") creating secondary buffer (" << dsDevices[ device ].name << ")!";
+        errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") creating secondary buffer (" << dsDevices_[ deviceIdx ].name << ")!";
         errorText_ = errorStream_.str();
         return FAILURE;
       }
@@ -6241,7 +6260,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     if ( FAILED( result ) ) {
       output->Release();
       buffer->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting buffer settings (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting buffer settings (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6255,7 +6274,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     if ( FAILED( result ) ) {
       output->Release();
       buffer->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") locking buffer (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") locking buffer (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6268,7 +6287,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     if ( FAILED( result ) ) {
       output->Release();
       buffer->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") unlocking buffer (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") unlocking buffer (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6280,9 +6299,9 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   if ( mode == INPUT ) {
 
     LPDIRECTSOUNDCAPTURE input;
-    result = DirectSoundCaptureCreate( dsDevices[ device ].id[1], &input, NULL );
+    result = DirectSoundCaptureCreate( dsDevices_[ deviceIdx ].id[1], &input, NULL );
     if ( FAILED( result ) ) {
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") opening input device (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") opening input device (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6292,14 +6311,14 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = input->GetCaps( &inCaps );
     if ( FAILED( result ) ) {
       input->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting input capabilities (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting input capabilities (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
 
     // Check channel information.
     if ( inCaps.dwChannels < channels + firstChannel ) {
-      errorText_ = "RtApiDs::getDeviceInfo: the input device does not support requested input channels.";
+      errorText_ = "RtApiDs::probeDeviceInfo: the input device does not support requested input channels.";
       return FAILURE;
     }
 
@@ -6353,7 +6372,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     result = input->CreateCaptureBuffer( &bufferDescription, &buffer, NULL );
     if ( FAILED( result ) ) {
       input->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") creating input buffer (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") creating input buffer (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6365,7 +6384,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     if ( FAILED( result ) ) {
       input->Release();
       buffer->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting buffer settings (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") getting buffer settings (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6384,7 +6403,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     if ( FAILED( result ) ) {
       input->Release();
       buffer->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") locking input buffer (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") locking input buffer (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6397,7 +6416,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
     if ( FAILED( result ) ) {
       input->Release();
       buffer->Release();
-      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") unlocking input buffer (" << dsDevices[ device ].name << ")!";
+      errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") unlocking input buffer (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
@@ -6480,7 +6499,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned 
   handle->dsBufferSize[mode] = dsBufferSize;
   handle->dsPointerLeadTime[mode] = dsPointerLeadTime;
 
-  stream_.device[mode] = device;
+  stream_.device[mode] = deviceIdx;
   stream_.state = STREAM_STOPPED;
   if ( stream_.mode == OUTPUT && mode == INPUT )
     // We had already set up an output stream.
@@ -7263,13 +7282,11 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
   if ( validDevice ) {
     for ( unsigned int i=0; i<dsDevices.size(); i++ ) {
       if ( dsDevices[i].name == name ) {
-        if ( probeInfo.isInput && dsDevices[i].id[1] == lpguid)
-        {
+        if ( probeInfo.isInput && dsDevices[i].id[1] == lpguid ) {
           dsDevices[i].found = true;
           dsDevices[i].validId[1] = true;
         }
-        else if (dsDevices[i].id[0] == lpguid)
-        {
+        else if ( dsDevices[i].id[0] == lpguid ) {
           dsDevices[i].found = true;
           dsDevices[i].validId[0] = true;
         }
@@ -9466,7 +9483,7 @@ bool RtApiOss :: probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainf
 
   // Check that we have at least one supported format
   if ( info.nativeFormats == 0 ) {
-    errorStream_ << "RtApiOss::getDeviceInfo: device (" << ainfo.name << ") data format not supported by RtAudio.";
+    errorStream_ << "RtApiOss::probeDeviceInfo: device (" << ainfo.name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
     return false;
@@ -9501,7 +9518,7 @@ bool RtApiOss :: probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainf
   }
 
   if ( info.sampleRates.size() == 0 ) {
-    errorStream_ << "RtApiOss::getDeviceInfo: no supported sample rates found for device (" << ainfo.name << ").";
+    errorStream_ << "RtApiOss::probeDeviceInfo: no supported sample rates found for device (" << ainfo.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
     return false;

@@ -1010,10 +1010,6 @@ public:
   RtApiDs();
   ~RtApiDs();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_DS; }
-  unsigned int getDeviceCount( void ) override;
-  unsigned int getDefaultOutputDevice( void ) override;
-  unsigned int getDefaultInputDevice( void ) override;
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1026,12 +1022,15 @@ public:
   void callbackEvent( void );
 
   private:
-
+  
   bool coInitialized_;
   bool buffersRolling;
   long duplexPrerollBytes;
-  std::vector<struct DsDevice> dsDevices;
-  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+  std::vector<struct DsDevice> dsDevices_;
+  
+  void probeDevices( void );
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;
