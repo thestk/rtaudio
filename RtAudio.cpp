@@ -9439,7 +9439,7 @@ void RtApiOss :: probeDevices( void )
   }
 }
 
-bool RtApiOss :: probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainfo );
+bool RtApiOss :: probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainfo )
 {
   // Probe channels
   if ( ainfo.caps & PCM_CAP_OUTPUT ) info.outputChannels = ainfo.max_channels;
@@ -9535,13 +9535,6 @@ bool RtApiOss :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsign
     // This should not happen because a check is made before this function is called.
     close( mixerfd );
     errorText_ = "RtApiOss::probeDeviceOpen: no devices found!";
-    return FAILURE;
-  }
-
-  if ( device >= nDevices ) {
-    // This should not happen because a check is made before this function is called.
-    close( mixerfd );
-    errorText_ = "RtApiOss::probeDeviceOpen: device ID is invalid!";
     return FAILURE;
   }
 
@@ -9811,7 +9804,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsign
   }
   stream_.sampleRate = sampleRate;
 
-  if ( mode == INPUT && stream_.mode == OUTPUT && stream_.device[0] == device) {
+  if ( mode == INPUT && stream_.mode == OUTPUT && stream_.deviceId[0] == device) {
     // We're doing duplex setup here.
     stream_.deviceFormat[0] = stream_.deviceFormat[1];
     stream_.nDeviceChannels[0] = deviceChannels;
@@ -9896,7 +9889,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsign
   if ( stream_.mode == OUTPUT && mode == INPUT ) {
     // We had already set up an output stream.
     stream_.mode = DUPLEX;
-    if ( stream_.device[0] == device ) handle->id[0] = fd;
+    if ( stream_.deviceId[0] == device ) handle->id[0] = fd;
   }
   else {
     stream_.mode = mode;
