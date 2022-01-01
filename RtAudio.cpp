@@ -5865,13 +5865,13 @@ void RtApiDs :: probeDevices( void )
 
   // Remove any devices left in the list that are no longer available.
   for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
-    for ( n=0; n<dsDevices.size(); n++ ) {
-      if ( (*it).name == deviceNames[n] ) {
+    for ( n=0; n<dsDevices_.size(); n++ ) {
+      if ( (*it).name == dsDevices_[n].name ) {
         ++it;
         break;
       }
     }
-    if ( n == dsDevices.size() ) // not found so remove it from our list
+    if ( n == dsDevices_.size() ) // not found so remove it from our list
       it = deviceList_.erase( it );
   }
   
@@ -5900,11 +5900,12 @@ void RtApiDs :: probeDevices( void )
 
 bool RtApiDs :: probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice )
 {
+  HRESULT result;
   if ( dsDevice.validId[0] == false ) goto probeInput;
 
   LPDIRECTSOUND output;
   DSCAPS outCaps;
-  HRESULT result = DirectSoundCreate( dsDevice.id[0], &output, NULL );
+  result = DirectSoundCreate( dsDevice.id[0], &output, NULL );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") opening output device (" << dsDevice.name << ")!";
     errorText_ = errorStream_.str();
@@ -6499,7 +6500,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigne
   handle->dsBufferSize[mode] = dsBufferSize;
   handle->dsPointerLeadTime[mode] = dsPointerLeadTime;
 
-  stream_.device[mode] = deviceIdx;
+  stream_.deviceId[mode] = deviceIdx;
   stream_.state = STREAM_STOPPED;
   if ( stream_.mode == OUTPUT && mode == INPUT )
     // We had already set up an output stream.
