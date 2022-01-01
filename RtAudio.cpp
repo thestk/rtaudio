@@ -11,7 +11,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2021 Gary P. Scavone
+    Copyright (c) 2001-2022 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -8747,7 +8747,7 @@ RtApiPulse::~RtApiPulse()
     closeStream();
 }
 
-void RtApiPulse::probeDevices( void )
+void RtApiPulse :: probeDevices( void )
 {
   pa_mainloop *ml = NULL;
   pa_context *context = NULL;
@@ -9383,74 +9383,66 @@ RtApiOss :: ~RtApiOss()
   if ( stream_.state != STREAM_CLOSED ) closeStream();
 }
 
-unsigned int RtApiOss :: getDeviceCount( void )
+void RtApiOss :: probeDevices( void )
 {
   int mixerfd = open( "/dev/mixer", O_RDWR, 0 );
   if ( mixerfd == -1 ) {
-    errorText_ = "RtApiOss::getDeviceCount: error opening '/dev/mixer'.";
-    error( RTAUDIO_WARNING );
-    return 0;
+    errorText_ = "RtApiOss::probeDevices: error opening '/dev/mixer'.";
+    error( RTAUDIO_SYSTEM_ERROR );
+    return;
   }
 
   oss_sysinfo sysinfo;
   if ( ioctl( mixerfd, SNDCTL_SYSINFO, &sysinfo ) == -1 ) {
     close( mixerfd );
-    errorText_ = "RtApiOss::getDeviceCount: error getting sysinfo, OSS version >= 4.0 is required.";
-    error( RTAUDIO_WARNING );
-    return 0;
+    errorText_ = "RtApiOss::probeDevices: error getting sysinfo, OSS version >= 4.0 is required.";
+    error( RTAUDIO_SYSTEM_ERROR );
+    return;
   }
 
-  close( mixerfd );
-  return sysinfo.numaudios;
-}
-
-RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
-{
-  RtAudio::DeviceInfo info;
-  info.probed = false;
-
-  int mixerfd = open( "/dev/mixer", O_RDWR, 0 );
-  if ( mixerfd == -1 ) {
-    errorText_ = "RtApiOss::getDeviceInfo: error opening '/dev/mixer'.";
-    error( RTAUDIO_WARNING );
-    return info;
-  }
-
-  oss_sysinfo sysinfo;
-  int result = ioctl( mixerfd, SNDCTL_SYSINFO, &sysinfo );
-  if ( result == -1 ) {
-    close( mixerfd );
-    errorText_ = "RtApiOss::getDeviceInfo: error getting sysinfo, OSS version >= 4.0 is required.";
-    error( RTAUDIO_WARNING );
-    return info;
-  }
-
-  unsigned nDevices = sysinfo.numaudios;
+  unsigned int nDevices = sysinfo.numaudios;
   if ( nDevices == 0 ) {
     close( mixerfd );
-    errorText_ = "RtApiOss::getDeviceInfo: no devices found!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
-  }
-
-  if ( device >= nDevices ) {
-    close( mixerfd );
-    errorText_ = "RtApiOss::getDeviceInfo: device ID is invalid!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
+    deviceList_.clear();
+    return;
   }
 
   oss_audioinfo ainfo;
-  ainfo.dev = device;
-  result = ioctl( mixerfd, SNDCTL_AUDIOINFO, &ainfo );
-  close( mixerfd );
-  if ( result == -1 ) {
-    errorStream_ << "RtApiOss::getDeviceInfo: error getting device (" << ainfo.name << ") info.";
-    errorText_ = errorStream_.str();
-    error( RTAUDIO_WARNING );
-    return info;
+  unsigned int m, n;
+  std::vector<std::string> deviceNames;
+  for ( n=0; n<nDevices; n++ ) {
+    ainfo.dev = n;
+    result = ioctl( mixerfd, SNDCTL_AUDIOINFO, &ainfo );
+    if ( result == -1 ) continue;
+    deviceNames.push_back( ainfo.name );
+    for ( m=0; m<deviceList_.size(); m++ ) {
+      if ( deviceList_[m].name == deviceNames.end() )
+        break; // We already have this device.
+    }
+    if ( m == deviceList_.size() ) { // new device
+      RtAudio::DeviceInfo info;
+      if ( probeDeviceInfo( info, ainfo ) == false ) continue; // ignore if probe fails
+      info.ID = currentDeviceId_++;  // arbitrary internal device ID
+      deviceList_.push_back( info );
+    }
   }
+  close( mixerfd );
 
+  // Remove any devices left in the list that are no longer available.
+  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
+    for ( m=0; m<deviceNames.size(); m++ ) {
+      if ( (*it).name == deviceNames[m] ) {
+        ++it;
+        break;
+      }
+    }
+    if ( m == deviceNames.size() ) // not found so remove it from our list
+      it = deviceList_.erase( it );
+  }
+}
+
+bool RtApiOss :: probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainfo );
+{
   // Probe channels
   if ( ainfo.caps & PCM_CAP_OUTPUT ) info.outputChannels = ainfo.max_channels;
   if ( ainfo.caps & PCM_CAP_INPUT ) info.inputChannels = ainfo.max_channels;
@@ -9479,7 +9471,7 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiOss::getDeviceInfo: device (" << ainfo.name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Probe the supported sample rates.
@@ -9514,17 +9506,14 @@ RtAudio::DeviceInfo RtApiOss :: getDeviceInfo( unsigned int device )
     errorStream_ << "RtApiOss::getDeviceInfo: no supported sample rates found for device (" << ainfo.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-  }
-  else {
-    info.probed = true;
-    info.name = ainfo.name;
+    return false;
   }
 
-  return info;
+  return true;
 }
 
 
-bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+bool RtApiOss :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                                   unsigned int firstChannel, unsigned int sampleRate,
                                   RtAudioFormat format, unsigned int *bufferSize,
                                   RtAudio::StreamOptions *options )
@@ -9543,7 +9532,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     return FAILURE;
   }
 
-  unsigned nDevices = sysinfo.numaudios;
+  unsigned int nDevices = sysinfo.numaudios;
   if ( nDevices == 0 ) {
     // This should not happen because a check is made before this function is called.
     close( mixerfd );
@@ -9558,12 +9547,31 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     return FAILURE;
   }
 
+  std::string deviceName;
+  unsigned int m, device;
+  for ( m=0; m<deviceList_.size(); m++ ) {
+    if ( deviceList_[m].ID == deviceId ) {
+      deviceName = deviceList_[m].name;
+      break;
+    }
+  }
+
+  if ( deviceName.empty() ) {
+    errorText_ = "RtApiOss::probeDeviceOpen: device ID is invalid!";
+    return FAILURE;
+  }
+
   oss_audioinfo ainfo;
-  ainfo.dev = device;
-  result = ioctl( mixerfd, SNDCTL_AUDIOINFO, &ainfo );
+  for ( device=0; device<nDevices; device++ ) {
+    ainfo.dev = device;
+    result = ioctl( mixerfd, SNDCTL_AUDIOINFO, &ainfo );
+    if ( result == -1 ) continue;
+    if ( deviceName == std::string( ainfo.name ) ) break;
+  }
+
   close( mixerfd );
-  if ( result == -1 ) {
-    errorStream_ << "RtApiOss::getDeviceInfo: error getting device (" << ainfo.name << ") info.";
+  if ( device == nDevices ) {
+    errorStream_ << "RtApiOss::probeDeviceOpen: device (" << ainfo.name << ") not found.";
     errorText_ = errorStream_.str();
     return FAILURE;
   }

@@ -1155,8 +1155,8 @@ public:
   RtApiOss();
   ~RtApiOss();
   RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_OSS; }
-  unsigned int getDeviceCount( void ) override;
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
+  //unsigned int getDeviceCount( void ) override;
+  //RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1170,7 +1170,9 @@ public:
 
   private:
 
-  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, std::string name );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
                         RtAudio::StreamOptions *options ) override;
@@ -1186,8 +1188,8 @@ public:
 
   RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RTAUDIO_WARNING ); }
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::RTAUDIO_DUMMY; }
-  unsigned int getDeviceCount( void ) override { return 0; }
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int /*device*/ ) override { RtAudio::DeviceInfo info; return info; }
+  //unsigned int getDeviceCount( void ) override { return 0; }
+  //RtAudio::DeviceInfo getDeviceInfo( unsigned int /*device*/ ) override { RtAudio::DeviceInfo info; return info; }
   void closeStream( void ) override {}
   RtAudioErrorType startStream( void ) override { return RTAUDIO_NO_ERROR; }
   RtAudioErrorType stopStream( void ) override { return RTAUDIO_NO_ERROR; }
@@ -1195,7 +1197,7 @@ public:
 
   private:
 
-  bool probeDeviceOpen( unsigned int /*device*/, StreamMode /*mode*/, unsigned int /*channels*/, 
+  bool probeDeviceOpen( unsigned int /*deviceId*/, StreamMode /*mode*/, unsigned int /*channels*/, 
                         unsigned int /*firstChannel*/, unsigned int /*sampleRate*/,
                         RtAudioFormat /*format*/, unsigned int * /*bufferSize*/,
                         RtAudio::StreamOptions * /*options*/ ) override { return false; }
