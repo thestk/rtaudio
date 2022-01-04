@@ -973,9 +973,6 @@ public:
   RtApiAsio();
   ~RtApiAsio();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_ASIO; }
-  unsigned int getDeviceCount( void ) override;
-  unsigned int getDefaultOutputDevice( void ) override;
-  unsigned int getDefaultInputDevice( void ) override;
   RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
@@ -990,9 +987,9 @@ public:
 
   private:
 
-  std::vector<RtAudio::DeviceInfo> devices_;
-  void saveDeviceInfo( void );
   bool coInitialized_;
+  void probeDevices( void );
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info );
   bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,

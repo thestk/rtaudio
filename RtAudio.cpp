@@ -415,7 +415,25 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
 void RtApi :: probeDevices( void )
 {
-  // MUST be implemented in subclasses!
+  // This function MUST be implemented in all subclasses! Within each
+  // API, this function will be used to:
+  // - enumerate the devices and fill or update our
+  //   std::vector< RtAudio::DeviceInfo> deviceList_ class variable
+  // - store corresponding (usually API-specific) identifiers that
+  //   are needed to open each device
+  // - make sure that the default devices are properly identified
+  //   within the deviceList_ (unless API-specific functions are
+  //   available for this purpose).
+  //
+  // The function should not reprobe devices that have already been
+  // found. The function must properly handle devices that are removed
+  // or added.
+  //
+  // Ideally, we would also configure callback functions to be invoked
+  // when devices are added or removed (which could be used to inform
+  // clients about changes). However, none of the APIs currently
+  // support notification of _new_ devices and I don't see the
+  // usefulness of having this work only for device removal.
   return;
 }
 
@@ -747,11 +765,7 @@ static OSStatus streamDisconnectListener( AudioObjectID /*id*/,
 
 void RtApiCore :: probeDevices( void )
 {
-  // This function will be used to probe the devices, both initially
-  // and subsequently as other functions are called.  Thus, it should
-  // be able to fill a new deviceList_ or update an existing
-  // one. Devices that are already found in the deviceList_ will not
-  // be reprobed for capabilities.
+  // See list of required functionality in RtApi::probeDevices().
   
   // Find out how many audio devices there are.
   UInt32 dataSize;
@@ -779,6 +793,7 @@ void RtApiCore :: probeDevices( void )
     return;
   }
 
+  // Fill or update the deviceList_ and also save a corresponding list of Ids.
   for ( unsigned int n=0; n<nDevices; n++ ) {
     if ( std::find( deviceIds_.begin(), deviceIds_.end(), ids[n] ) != deviceIds_.end() ) {
       continue; // We already have this device.
@@ -810,6 +825,8 @@ void RtApiCore :: probeDevices( void )
       deviceList_.erase( deviceList_.begin() + distance(deviceIds_.begin(), it ) );
     }
   }
+
+  // Identification of default devices is handled by CoreAudio functions.
 }
 
 bool RtApiCore :: probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo& info )
@@ -2202,11 +2219,7 @@ RtApiJack :: ~RtApiJack()
 
 void RtApiJack :: probeDevices( void )
 {
-  // This function will be used to probe the devices, both initially
-  // and subsequently as other functions are called.  Thus, it should
-  // be able to fill a new deviceList_ or update an existing
-  // one. Devices that are already found in the deviceList_ will not
-  // be reprobed for capabilities.
+  // See list of required functionality in RtApi::probeDevices().
 
   // See if we can become a jack client.
   jack_options_t options = (jack_options_t) ( JackNoStartServer ); //JackNullOption;
@@ -2242,6 +2255,7 @@ void RtApiJack :: probeDevices( void )
     free( ports );
   }
 
+  // Fill or update the deviceList_.
   unsigned int m, n;
   for ( n=0; n<nDevices; n++ ) {
     for ( m=0; m<deviceList_.size(); m++ ) {
@@ -2279,8 +2293,8 @@ void RtApiJack :: probeDevices( void )
   if ( nDevices == 0 ) return;
   
   // Jack doesn't provide default devices so call the getDefault
-  // functions, which will set the first available devices as the
-  // defaults.
+  // functions, which will set the first available input and output
+  // devices as the defaults.
   getDefaultInputDevice();
   getDefaultOutputDevice();
 }
@@ -3000,6 +3014,7 @@ RtApiAsio :: ~RtApiAsio()
   if ( coInitialized_ ) CoUninitialize();
 }
 
+/*
 unsigned int RtApiAsio :: getDeviceCount( void )
 {
   return (unsigned int) drivers.asioGetNumDev();
@@ -3016,60 +3031,77 @@ unsigned int RtApiAsio :: getDefaultInputDevice( void )
 {
   return 0;
 }
+*/
 
-RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
+void RtApiAsio :: probeDevices( void )
 {
-  RtAudio::DeviceInfo info;
-  info.probed = false;
+  // See list of required functionality in RtApi::probeDevices().
 
-  // Get device ID
-  unsigned int nDevices = getDeviceCount();
+  unsigned int nDevices = drivers.asioGetNumDev();
   if ( nDevices == 0 ) {
-    errorText_ = "RtApiAsio::getDeviceInfo: no devices found!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
+    deviceList_.clear();
+    return;
   }
 
-  if ( device >= nDevices ) {
-    errorText_ = "RtApiAsio::getDeviceInfo: device ID is invalid!";
-    error( RTAUDIO_INVALID_USE );
-    return info;
-  }
-
-  // If a stream is already open, we cannot probe other devices.  Thus, use the saved results.
-  if ( stream_.state != STREAM_CLOSED ) {
-    if ( device >= devices_.size() ) {
-      errorText_ = "RtApiAsio::getDeviceInfo: device ID was not present before stream was opened.";
+  char tmp[32];
+  std::vector< std::string > driverNames;
+  unsigned int n, m;
+  for ( n=0; n<nDevices; n++ ) {
+    ASIOError result = drivers.asioGetDriverName( (int) n, tmp, 32 );
+    if ( result != ASE_OK ) {
+      errorStream_ << "RtApiAsio::probeDevices: unable to get driver name (" << getAsioErrorString( result ) << ").";
+      errorText_ = errorStream_.str();
       error( RTAUDIO_WARNING );
-      return info;
+      continue;
     }
-    return devices_[ device ];
+    driverNames.push_back( tmp );
+    for ( m=0; m<deviceList_.size(); m++ ) {
+      if ( deviceList_[m].name == driverNames.back() )
+        break; // We already have this device.
+    }
+    if ( m == deviceList_.size() ) { // new device
+      RtAudio::DeviceInfo info;
+      info.name = driverNames.back();
+      if ( probeDeviceInfo( info ) == false ) continue; // ignore if probe fails
+      info.ID = currentDeviceId_++;  // arbitrary internal device ID
+      deviceList_.push_back( info );
+    }
   }
 
-  char driverName[32];
-  ASIOError result = drivers.asioGetDriverName( (int) device, driverName, 32 );
-  if ( result != ASE_OK ) {
-    errorStream_ << "RtApiAsio::getDeviceInfo: unable to get driver name (" << getAsioErrorString( result ) << ").";
-    errorText_ = errorStream_.str();
-    error( RTAUDIO_WARNING );
-    return info;
+  // Remove any devices left in the list that are no longer available.
+  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
+    for ( m=0; m<driverNames.size(); m++ ) {
+      if ( (*it).name == driverNames[m] ) {
+        ++it;
+        break;
+      }
+    }
+    if ( m == driverNames.size() ) // not found so remove it from our list
+      it = deviceList_.erase( it );
   }
 
-  info.name = driverName;
+  // Asio doesn't provide default devices so call the getDefault
+  // functions, which will set the first available input and output
+  // devices as the defaults.
+  getDefaultInputDevice();
+  getDefaultOutputDevice();
+}
 
-  if ( !drivers.loadDriver( driverName ) ) {
-    errorStream_ << "RtApiAsio::getDeviceInfo: unable to load driver (" << driverName << ").";
+RtAudio::DeviceInfo RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
+{
+  if ( !drivers.loadDriver( info.name ) ) {
+    errorStream_ << "RtApiAsio::probeDeviceInfo: unable to load driver (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   result = ASIOInit( &driverInfo );
   if ( result != ASE_OK ) {
-    errorStream_ << "RtApiAsio::getDeviceInfo: error (" << getAsioErrorString( result ) << ") initializing driver (" << driverName << ").";
+    errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") initializing driver (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   // Determine the device channel information.
@@ -3077,10 +3109,10 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   result = ASIOGetChannels( &inputChannels, &outputChannels );
   if ( result != ASE_OK ) {
     drivers.removeCurrentDriver();
-    errorStream_ << "RtApiAsio::getDeviceInfo: error (" << getAsioErrorString( result ) << ") getting channel count (" << driverName << ").";
+    errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") getting channel count (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   info.outputChannels = outputChannels;
@@ -3108,10 +3140,10 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   result = ASIOGetChannelInfo( &channelInfo );
   if ( result != ASE_OK ) {
     drivers.removeCurrentDriver();
-    errorStream_ << "RtApiAsio::getDeviceInfo: error (" << getAsioErrorString( result ) << ") getting driver channel info (" << driverName << ").";
+    errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") getting driver channel info (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
-    return info;
+    return false;
   }
 
   info.nativeFormats = 0;
@@ -3126,14 +3158,8 @@ RtAudio::DeviceInfo RtApiAsio :: getDeviceInfo( unsigned int device )
   else if ( channelInfo.type == ASIOSTInt24MSB || channelInfo.type == ASIOSTInt24LSB )
     info.nativeFormats |= RTAUDIO_SINT24;
 
-  if ( info.outputChannels > 0 )
-    if ( getDefaultOutputDevice() == device ) info.isDefaultOutput = true;
-  if ( info.inputChannels > 0 )
-    if ( getDefaultInputDevice() == device ) info.isDefaultInput = true;
-
-  info.probed = true;
   drivers.removeCurrentDriver();
-  return info;
+  return true;
 }
 
 static void bufferSwitch( long index, ASIOBool /*processNow*/ )
@@ -3142,47 +3168,35 @@ static void bufferSwitch( long index, ASIOBool /*processNow*/ )
   object->callbackEvent( index );
 }
 
-void RtApiAsio :: saveDeviceInfo( void )
-{
-  devices_.clear();
-
-  unsigned int nDevices = getDeviceCount();
-  devices_.resize( nDevices );
-  for ( unsigned int i=0; i<nDevices; i++ )
-    devices_[i] = getDeviceInfo( i );
-}
-
-bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels,
+bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                                    unsigned int firstChannel, unsigned int sampleRate,
                                    RtAudioFormat format, unsigned int *bufferSize,
                                    RtAudio::StreamOptions *options )
-{////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  bool isDuplexInput =  mode == INPUT && stream_.mode == OUTPUT;
+{
+  bool isDuplexInput = mode == INPUT && stream_.mode == OUTPUT;
 
   // For ASIO, a duplex stream MUST use the same driver.
-  if ( isDuplexInput && stream_.device[0] != device ) {
+  if ( isDuplexInput && stream_.deviceId[0] != deviceId ) {
     errorText_ = "RtApiAsio::probeDeviceOpen: an ASIO duplex stream must use the same device for input and output!";
     return FAILURE;
   }
 
-  char driverName[32];
-  ASIOError result = drivers.asioGetDriverName( (int) device, driverName, 32 );
-  if ( result != ASE_OK ) {
-    errorStream_ << "RtApiAsio::probeDeviceOpen: unable to get driver name (" << getAsioErrorString( result ) << ").";
-    errorText_ = errorStream_.str();
+  std::string driverName;
+  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
+    if ( deviceList_[m].ID == deviceId ) {
+      driverName = deviceList_[m].name;
+      break;
+    }
+  }
+
+  if ( driverName.empty() ) {
+    errorText_ = "RtApiAsio::probeDeviceOpen: device ID is invalid!";
     return FAILURE;
   }
 
   // Only load the driver once for duplex stream.
   if ( !isDuplexInput ) {
-    // The getDeviceInfo() function will not work when a stream is open
-    // because ASIO does not allow multiple devices to run at the same
-    // time.  Thus, we'll probe the system before opening a stream and
-    // save the results for use by getDeviceInfo().
-    this->saveDeviceInfo();
-
-    if ( !drivers.loadDriver( driverName ) ) {
+    if ( !drivers.loadDriver( driverName.c_str() ) ) {
       errorStream_ << "RtApiAsio::probeDeviceOpen: unable to load driver (" << driverName << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -3196,11 +3210,9 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     }
   }
 
-  // keep them before any "goto error", they are used for error cleanup + goto device boundary checks
   bool buffersAllocated = false;
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   unsigned int nChannels;
-
 
   // Check the device channel count.
   long inputChannels, outputChannels;
@@ -3416,7 +3428,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
 
   // prepare for callbacks
   stream_.sampleRate = sampleRate;
-  stream_.device[mode] = device;
+  stream_.deviceId[mode] = deviceId;
   stream_.mode = isDuplexInput ? DUPLEX : mode;
 
   // store this class instance before registering callbacks, that are going to use it
@@ -3535,7 +3547,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   }
 
   return FAILURE;
-}////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+}
 
 void RtApiAsio :: closeStream()
 {
@@ -5817,6 +5829,8 @@ RtApiDs :: ~RtApiDs()
 
 void RtApiDs :: probeDevices( void )
 {
+  // See list of required functionality in RtApi::probeDevices().
+  
   // Set query flag for previously found devices to false, so that we
   // can check for any devices that have disappeared.
   for ( unsigned int i=0; i<dsDevices_.size(); i++ )
@@ -5848,7 +5862,7 @@ void RtApiDs :: probeDevices( void )
     else i++;
   }
 
-  // Now fill our deviceList_ vector.
+  // Now fill or update our deviceList_ vector.
   unsigned int m, n;
   for ( n=0; n<dsDevices_.size(); n++ ) {
     for ( m=0; m<deviceList_.size(); m++ ) {
@@ -7405,11 +7419,7 @@ RtApiAlsa :: ~RtApiAlsa()
 
 void RtApiAlsa :: probeDevices( void )
 {
-  // This function will be used to probe the devices, both initially
-  // and subsequently as other functions are called.  Thus, it should
-  // be able to fill a new deviceList_ or update an existing
-  // one. Devices that are already found in the deviceList_ will not
-  // be reprobed for capabilities.
+  // See list of required functionality in RtApi::probeDevices().
   
   int result, device, card;
   char name[128];
@@ -7423,7 +7433,7 @@ void RtApiAlsa :: probeDevices( void )
   snd_pcm_stream_t stream;
   std::string defaultDeviceName;
 
-  // Add the default interface if available
+  // Add the default interface if available.
   result = snd_ctl_open( &handle, "default", 0 );
   if (result == 0) {
     deviceIds.push_back( "default" );
@@ -7432,7 +7442,7 @@ void RtApiAlsa :: probeDevices( void )
     snd_ctl_close( handle );
   }
 
-  // Add the Pulse interface if available
+  // Add the Pulse interface if available.
   result = snd_ctl_open( &handle, "pulse", 0 );
   if (result == 0) {
     deviceIds.push_back( "pulse" );
@@ -7440,7 +7450,7 @@ void RtApiAlsa :: probeDevices( void )
     snd_ctl_close( handle );
   }
   
-  // Count cards and devices and get ascii identifiers
+  // Count cards and devices and get ascii identifiers.
   card = -1;
   snd_card_next( &card );
   while ( card >= 0 ) {
@@ -7510,6 +7520,7 @@ void RtApiAlsa :: probeDevices( void )
     return;
   }
 
+  // Fill or update the deviceList_ and also save a corresponding list of Ids.
   unsigned int m, n;
   for ( n=0; n<deviceNames.size(); n++ ) {
     for ( m=0; m<deviceList_.size(); m++ ) {
@@ -7527,8 +7538,8 @@ void RtApiAlsa :: probeDevices( void )
       }
       deviceList_.push_back( info );
       deviceIds_.push_back( deviceIds[n] );
-      // I don't think ALSA provides property listeners to know if
-      // devices are removed.
+      // I don't see that ALSA provides property listeners to know if
+      // devices are removed or added.
     }
   }
 
@@ -8767,6 +8778,8 @@ RtApiPulse::~RtApiPulse()
 
 void RtApiPulse :: probeDevices( void )
 {
+  // See list of required functionality in RtApi::probeDevices().
+  
   pa_mainloop *ml = NULL;
   pa_context *context = NULL;
   char *server = NULL;
@@ -9402,6 +9415,8 @@ RtApiOss :: ~RtApiOss()
 
 void RtApiOss :: probeDevices( void )
 {
+  // See list of required functionality in RtApi::probeDevices().
+  
   int mixerfd = open( "/dev/mixer", O_RDWR, 0 );
   if ( mixerfd == -1 ) {
     errorText_ = "RtApiOss::probeDevices: error opening '/dev/mixer'.";
@@ -9455,6 +9470,10 @@ void RtApiOss :: probeDevices( void )
     if ( m == deviceNames.size() ) // not found so remove it from our list
       it = deviceList_.erase( it );
   }
+
+  // I don't think the OSS API supports default devices. Our parent
+  // class versions of the getDefault functions will return the first
+  // one found.
 }
 
 bool RtApiOss :: probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainfo )
