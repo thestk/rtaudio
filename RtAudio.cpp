@@ -3089,7 +3089,7 @@ void RtApiAsio :: probeDevices( void )
 
 bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
 {
-  if ( !drivers.loadDriver( info.name.c_str() ) ) {
+  if ( !drivers.loadDriver( const_cast<char *>(info.name.c_str()) ) ) {
     errorStream_ << "RtApiAsio::probeDeviceInfo: unable to load driver (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -3197,7 +3197,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // Only load the driver once for duplex stream.
   ASIOError result;
   if ( !isDuplexInput ) {
-    if ( !drivers.loadDriver( driverName.c_str() ) ) {
+    if ( !drivers.loadDriver( const_cast<char *>(driverName.c_str()) ) ) {
       errorStream_ << "RtApiAsio::probeDeviceOpen: unable to load driver (" << driverName << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
