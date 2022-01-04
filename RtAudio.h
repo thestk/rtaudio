@@ -973,7 +973,6 @@ public:
   RtApiAsio();
   ~RtApiAsio();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_ASIO; }
-  RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
