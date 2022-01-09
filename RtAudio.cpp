@@ -4661,7 +4661,8 @@ void RtApiWasapi::probeDevices( void )
     }
     else { // There is a new device to probe.
       RtAudio::DeviceInfo info;
-      if ( probeDeviceInfo( info, ids[n].first.c_str(), ids[n].second ) == false ) continue; // ignore if probe fails
+      std::wstring temp = std::wstring(ids[n].first.begin(), ids[n].first.end());
+      if ( probeDeviceInfo( info, temp.c_str(), ids[n].second ) == false ) continue; // ignore if probe fails
       deviceIds_.push_back( ids[n] );
       info.ID = currentDeviceId_++;  // arbitrary internal device ID
       deviceList_.push_back( info );
