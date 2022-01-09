@@ -4649,7 +4649,8 @@ void RtApiWasapi::probeDevices( void )
       error( RTAUDIO_WARNING );
       continue;
     }
-    ids.push_back( std::pair< convertCharPointerToStdString(deviceId), isCaptureDevice > );
+
+    ids.push_back( std::pair< std::string, bool>(convertCharPointerToStdString(deviceId), isCaptureDevice) );
     CoTaskMemFree( deviceId );
   }
 
@@ -4660,7 +4661,7 @@ void RtApiWasapi::probeDevices( void )
     }
     else { // There is a new device to probe.
       RtAudio::DeviceInfo info;
-      if ( probeDeviceInfo( info, ids[n].first, ids[n].second ) == false ) continue; // ignore if probe fails
+      if ( probeDeviceInfo( info, ids[n].first.c_str(), ids[n].second ) == false ) continue; // ignore if probe fails
       deviceIds_.push_back( ids[n] );
       info.ID = currentDeviceId_++;  // arbitrary internal device ID
       deviceList_.push_back( info );
