@@ -4433,7 +4433,7 @@ RtApiWasapi::~RtApiWasapi()
 
 unsigned int RtApiWasapi::getDefaultInputDevice( void )
 {
-    IMMDevice* devicePtr = NULL;
+  IMMDevice* devicePtr = NULL;
   LPWSTR defaultId = NULL;
   std::string id;
   
@@ -4441,7 +4441,7 @@ unsigned int RtApiWasapi::getDefaultInputDevice( void )
   errorText_.clear();
 
   // Get the default capture device Id.
-  hr = deviceEnumerator_->GetDefaultAudioEndpoint( eCapture, eConsole, &devicePtr );
+  HRESULT hr = deviceEnumerator_->GetDefaultAudioEndpoint( eCapture, eConsole, &devicePtr );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::getDefaultInputDevice: Unable to retrieve default capture device handle.";
     goto Release;
@@ -4452,7 +4452,7 @@ unsigned int RtApiWasapi::getDefaultInputDevice( void )
     errorText_ = "RtApiWasapi::getDefaultInputDevice: Unable to get default capture device Id.";
     goto Release;
   }
-  id = defaultId;
+  id = convertCharPointerToStdString( defaultId );
 
  Release:
   SAFE_RELEASE( devicePtr );
@@ -4498,7 +4498,7 @@ unsigned int RtApiWasapi::getDefaultOutputDevice( void )
   errorText_.clear();
 
   // Get the default render device Id.
-  hr = deviceEnumerator_->GetDefaultAudioEndpoint( eRender, eConsole, &devicePtr );
+  HRESULT hr = deviceEnumerator_->GetDefaultAudioEndpoint( eRender, eConsole, &devicePtr );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::getDefaultOutputDevice: Unable to retrieve default render device handle.";
     goto Release;
@@ -4509,7 +4509,7 @@ unsigned int RtApiWasapi::getDefaultOutputDevice( void )
     errorText_ = "RtApiWasapi::getDefaultOutputDevice: Unable to get default render device Id.";
     goto Release;
   }
-  id = defaultId;
+  id = convertCharPointerToStdString( defaultId );
 
  Release:
   SAFE_RELEASE( devicePtr );
@@ -4649,7 +4649,7 @@ void RtApiWasapi::probeDevices( void )
       error( RTAUDIO_WARNING );
       continue;
     }
-    ids.push_back( std::pair< deviceId, isCaptureDevice > );
+    ids.push_back( std::pair< convertCharPointerToStdString(deviceId), isCaptureDevice > );
     CoTaskMemFree( deviceId );
   }
 
