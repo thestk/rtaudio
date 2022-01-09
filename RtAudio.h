@@ -1006,8 +1006,6 @@ public:
   RtApiDs();
   ~RtApiDs();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_DS; }
-  unsigned int getDefaultOutputDevice( void ) override;
-  unsigned int getDefaultInputDevice( void ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1027,7 +1025,7 @@ public:
   std::vector<struct DsDevice> dsDevices_;
   
   void probeDevices( void ) override;
-  bool probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, bool isCaptureDevice );
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice );
   bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int *bufferSize,
@@ -1046,8 +1044,8 @@ public:
   RtApiWasapi();
   virtual ~RtApiWasapi();
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_WASAPI; }
-  //unsigned int getDeviceCount( void ) override;
-  //RtAudio::DeviceInfo getDeviceInfo( unsigned int device ) override;
+  unsigned int getDefaultOutputDevice( void ) override;
+  unsigned int getDefaultInputDevice( void ) override;
   void closeStream( void ) override;
   RtAudioErrorType startStream( void ) override;
   RtAudioErrorType stopStream( void ) override;
@@ -1059,7 +1057,7 @@ private:
   std::vector< std::pair< std::string, bool> > deviceIds_;
 
   void probeDevices( void ) override;
-  bool probeDeviceInfo( RtAudio::DeviceInfo &info );
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, bool isCaptureDevice );
   bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
                         unsigned int firstChannel, unsigned int sampleRate,
                         RtAudioFormat format, unsigned int* bufferSize,
