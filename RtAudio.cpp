@@ -3956,6 +3956,7 @@ static const char* getAsioErrorString( ASIOError result )
 #if defined(__WINDOWS_WASAPI__) // Windows WASAPI API
 
 // Authored by Marcus Tomlinson <themarcustomlinson@gmail.com>, April 2014
+// Updates for new device selection scheme by Gary Scavone, January 2022
 // - Introduces support for the Windows WASAPI API
 // - Aims to deliver bit streams to and from hardware at the lowest possible latency, via the absolute minimum buffer sizes required
 // - Provides flexible stream configuration to an otherwise strict and inflexible WASAPI interface
@@ -4556,6 +4557,13 @@ void RtApiWasapi::probeDevices( void )
 
   LPWSTR defaultCaptureId = NULL;
   LPWSTR defaultRenderId = NULL;
+  std::string defaultCaptureString;
+  std::string defaultRenderString;
+
+  unsigned int nDevices;
+  bool isCaptureDevice = false;
+  std::vector< std::pair< std::string, bool> > ids;
+  LPWSTR deviceId = NULL;
 
   if ( !deviceEnumerator_ ) return;
   errorText_.clear();
@@ -4586,7 +4594,7 @@ void RtApiWasapi::probeDevices( void )
     goto Exit;
   }
 
-  unsigned int nDevices = captureDeviceCount + renderDeviceCount;
+  nDevices = captureDeviceCount + renderDeviceCount;
   if ( nDevices == 0 ) {
     errorText_ = "RtApiWasapi::probeDevices: No devices found.";
     goto Exit;
@@ -4604,7 +4612,8 @@ void RtApiWasapi::probeDevices( void )
     errorText_ = "RtApiWasapi::probeDevices: Unable to get default capture device Id.";
     goto Exit;
   }
-
+  defaultCaptureString = convertCharPointerToStdString( defaultCaptureId );
+  
   // Get the default render device Id.
   SAFE_RELEASE( devicePtr );
   hr = deviceEnumerator_->GetDefaultAudioEndpoint( eRender, eConsole, &devicePtr );
@@ -4618,11 +4627,9 @@ void RtApiWasapi::probeDevices( void )
     errorText_ = "RtApiWasapi::probeDevices: Unable to get default render device Id.";
     goto Exit;
   }
-
+  defaultRenderString = convertCharPointerToStdString( defaultRenderId );
+  
   // Collect device IDs with mode.
-  std::vector< std::pair< std::string, bool> > ids;
-  LPWSTR deviceId = NULL;
-  bool isCaptureDevice = false;
   for ( unsigned int n=0; n<nDevices; n++ ) {
     SAFE_RELEASE( devicePtr );
     if ( n < renderDeviceCount ) {
@@ -4662,7 +4669,7 @@ void RtApiWasapi::probeDevices( void )
     else { // There is a new device to probe.
       RtAudio::DeviceInfo info;
       std::wstring temp = std::wstring(ids[n].first.begin(), ids[n].first.end());
-      if ( probeDeviceInfo( info, temp.c_str(), ids[n].second ) == false ) continue; // ignore if probe fails
+      if ( probeDeviceInfo( info, (LPWSTR) temp.c_str(), ids[n].second ) == false ) continue; // ignore if probe fails
       deviceIds_.push_back( ids[n] );
       info.ID = currentDeviceId_++;  // arbitrary internal device ID
       deviceList_.push_back( info );
@@ -4671,7 +4678,7 @@ void RtApiWasapi::probeDevices( void )
 
   // Remove any devices left in the list that are no longer available.
   unsigned int m;
-  for ( std::vector< std::string >::iterator it=deviceIds_.begin(); it!=deviceIds_.end(); ) {
+  for ( std::vector< std::pair< std::string, bool> >::iterator it=deviceIds_.begin(); it!=deviceIds_.end(); ) {
     for ( m=0; m<ids.size(); m++ ) {
       if ( ids[m] == *it ) {
         ++it;
@@ -4686,11 +4693,11 @@ void RtApiWasapi::probeDevices( void )
 
   // Set the default device flags in deviceList_.
   for ( m=0; m<deviceList_.size(); m++ ) {
-    if ( deviceIds_[m] == defaultRenderId )
+    if ( deviceIds_[m].first == defaultRenderString )
       deviceList_[m].isDefaultOutput = true;
     else
       deviceList_[m].isDefaultOutput = false;
-    if ( deviceIds_[m] == defaultCaptureId )
+    if ( deviceIds_[m].first == defaultCaptureString )
       deviceList_[m].isDefaultInput = true;
     else
       deviceList_[m].isDefaultInput = false;
@@ -4729,7 +4736,7 @@ bool RtApiWasapi::probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, b
   RtAudioErrorType errorType = RTAUDIO_DRIVER_ERROR;
 
   // Get the device pointer from the device Id
-  HRESULT hr = GetDevice( deviceId, &devicePtr );
+  HRESULT hr = deviceEnumerator_->GetDevice( deviceId, &devicePtr );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::probeDeviceInfo: Unable to retrieve device handle.";
     goto Exit;
@@ -4992,19 +4999,22 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     }
   }
 
+  errorText_.clear();
+  RtAudioErrorType errorType = RTAUDIO_INVALID_USE;
   if ( id.empty() ) {
     errorText_ = "RtApiWasapi::probeDeviceOpen: the device ID was not found!";
     return FAILURE;
   }
 
   if ( isInput && mode != INPUT ) {
-      errorType = RTAUDIO_INVALID_USE;
-      errorText_ = "RtApiWasapi::probeDeviceOpen: deviceId specified does not support output mode.";
-      return FAILURE;
+    errorText_ = "RtApiWasapi::probeDeviceOpen: deviceId specified does not support output mode.";
+    return FAILURE;
   }
 
   // Get the device pointer from the device Id
-  HRESULT hr = GetDevice( id.c_str(), &devicePtr );
+  errorType = RTAUDIO_DRIVER_ERROR;
+  std::wstring temp = std::wstring(id.begin(), id.end());
+  HRESULT hr = deviceEnumerator_->GetDevice( (LPWSTR)temp.c_str(), &devicePtr );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve device handle.";
     return FAILURE;
@@ -5013,9 +5023,6 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // Create API handle if not already created.
   if ( !stream_.apiHandle )
     stream_.apiHandle = ( void* ) new WasapiHandle();
-
-  errorText_.clear();
-  RtAudioErrorType errorType = RTAUDIO_DRIVER_ERROR;
 
   if ( isInput ) {
     IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
@@ -5221,7 +5228,7 @@ void RtApiWasapi::wasapiThread()
   unsigned int bufferFrameCount = 0;
   unsigned int numFramesPadding = 0;
   unsigned int convBufferSize = 0;
-  bool loopbackEnabled = stream_.device[INPUT] == stream_.device[OUTPUT];
+  bool loopbackEnabled = stream_.deviceId[INPUT] == stream_.deviceId[OUTPUT];
   bool callbackPushed = true;
   bool callbackPulled = false;
   bool callbackStopped = false;
@@ -5875,13 +5882,13 @@ static const char* getErrorString( int code );
 static unsigned __stdcall callbackHandler( void *ptr );
 
 struct DsDevice {
-  LPGUID id[2];
-  bool validId[2];
-  bool found;
+  LPGUID id;
+  bool isInput;
   std::string name;
+  std::string epID; // endpoint ID
 
   DsDevice()
-  : found(false) { validId[0] = false; validId[1] = false; }
+    : isInput(false) {}
 };
 
 struct DsProbeData {
@@ -5907,16 +5914,12 @@ RtApiDs :: ~RtApiDs()
 void RtApiDs :: probeDevices( void )
 {
   // See list of required functionality in RtApi::probeDevices().
-  
-  // Set query flag for previously found devices to false, so that we
-  // can check for any devices that have disappeared.
-  for ( unsigned int i=0; i<dsDevices_.size(); i++ )
-    dsDevices_[i].found = false;
 
   // Query DirectSound devices.
   struct DsProbeData probeInfo;
   probeInfo.isInput = false;
-  probeInfo.dsDevices = &dsDevices_;
+  std::vector< struct DsDevice > devices;
+  probeInfo.dsDevices = &devices;
   HRESULT result = DirectSoundEnumerate( (LPDSENUMCALLBACK) deviceQueryCallback, &probeInfo );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::probeDevices: error (" << getErrorString( result ) << ") enumerating output devices!";
@@ -5933,70 +5936,62 @@ void RtApiDs :: probeDevices( void )
     error( RTAUDIO_WARNING );
   }
 
-  // Clean out any devices that may have disappeared (code update submitted by Eli Zehngut).
-  for ( unsigned int i=0; i<dsDevices_.size(); ) {
-    if ( dsDevices_[i].found == false ) dsDevices_.erase( dsDevices_.begin() + i );
-    else i++;
-  }
-
   // Now fill or update our deviceList_ vector.
   unsigned int m, n;
-  for ( n=0; n<dsDevices_.size(); n++ ) {
-    for ( m=0; m<deviceList_.size(); m++ ) {
-      if ( deviceList_[m].name == dsDevices_[n].name )
+  for ( n=0; n<devices.size(); n++ ) {
+    for ( m=0; m<dsDevices_.size(); m++ ) {
+      if ( ( dsDevices_[m].epID == devices[n].epID ) && ( devices[n].isInput == dsDevices_[m].isInput ) ) {
+        dsDevices_[m].id = devices[n].id; // Update the ID, since it seems to change when devices are added/removed
         break; // We already have this device.
+      }
     }
-    if ( m == deviceList_.size() ) { // new device
+    if ( m == dsDevices_.size() ) { // new device
       RtAudio::DeviceInfo info;
-      if ( probeDeviceInfo( info, dsDevices_[n] ) == false ) continue; // ignore if probe fails
+      if ( probeDeviceInfo( info, devices[n] ) == false ) continue; // ignore if probe fails
       info.ID = currentDeviceId_++;  // arbitrary internal device ID
       deviceList_.push_back( info );
+      dsDevices_.push_back( devices[n] );
     }
   }
 
   // Remove any devices left in the list that are no longer available.
-  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
-    for ( n=0; n<dsDevices_.size(); n++ ) {
-      if ( (*it).name == dsDevices_[n].name ) {
+  for ( std::vector< struct DsDevice >::iterator it=dsDevices_.begin(); it!=dsDevices_.end(); ) {
+    for ( n=0; n<devices.size(); n++ ) {
+      if ( (*it).epID == devices[n].epID ) {
         ++it;
         break;
       }
     }
-    if ( n == dsDevices_.size() ) // not found so remove it from our list
-      it = deviceList_.erase( it );
+    if ( n == devices.size() ) { // not found so remove it from our list
+      it = dsDevices_.erase( it );
+      deviceList_.erase( deviceList_.begin() + distance(dsDevices_.begin(), it ) );
+    }
   }
-  
-  // Now determine the default devices
+
+  // Determine the default devices
   for ( n=0; n<dsDevices_.size(); n++ ) {
-    if ( dsDevices_[n].validId[0] && dsDevices_[n].id[0] == NULL ) {
-      // This is the default output device
-      for ( m=0; m<deviceList_.size(); m++ ) {
-        if ( dsDevices_[n].name == deviceList_[m].name )
-          deviceList_[m].isDefaultOutput = true;
-        else
-          deviceList_[m].isDefaultOutput = false;
-      }
+    if ( dsDevices_[n].id == NULL ) { // default device
+      if ( dsDevices_[n].isInput )
+        deviceList_[n].isDefaultInput = true;
+      else
+        deviceList_[n].isDefaultOutput = true;
     }
-    if ( dsDevices_[n].validId[1] && dsDevices_[n].id[1] == NULL ) {
-      // This is the default input device
-      for ( m=0; m<deviceList_.size(); m++ ) {
-        if ( dsDevices_[n].name == deviceList_[m].name )
-          deviceList_[m].isDefaultInput = true;
-        else
-          deviceList_[m].isDefaultInput = false;
-      }
-    }
+    else if ( dsDevices_[n].isInput )
+      deviceList_[n].isDefaultInput = false;
+    else
+      deviceList_[n].isDefaultOutput = false;
   }
 }
 
 bool RtApiDs :: probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice )
 {
+  // Devices will either be input or output devices but not both.
   HRESULT result;
-  if ( dsDevice.validId[0] == false ) goto probeInput;
+  if ( dsDevice.isInput ) goto probeInput;
 
   LPDIRECTSOUND output;
   DSCAPS outCaps;
-  result = DirectSoundCreate( dsDevice.id[0], &output, NULL );
+  result = DirectSoundCreate( dsDevice.id, &output, NULL );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") opening output device (" << dsDevice.name << ")!";
     errorText_ = errorStream_.str();
@@ -6035,15 +6030,13 @@ bool RtApiDs :: probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice )
 
   output->Release();
 
-  if ( dsDevice.validId[1] == false ) {
-    info.name = dsDevice.name;
-    return true;
-  }
+  info.name = dsDevice.name;
+  return true;
 
  probeInput:
 
   LPDIRECTSOUNDCAPTURE input;
-  result = DirectSoundCaptureCreate( dsDevice.id[1], &input, NULL );
+  result = DirectSoundCaptureCreate( dsDevice.id, &input, NULL );
   if ( FAILED( result ) ) {
     errorStream_ << "RtApiDs::probeDeviceInfo: error (" << getErrorString( result ) << ") opening input device (" << dsDevice.name << ")!";
     errorText_ = errorStream_.str();
@@ -6132,10 +6125,10 @@ bool RtApiDs :: probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice )
     if ( found == false ) info.sampleRates.push_back( rates[i] );
   }
   std::sort( info.sampleRates.begin(), info.sampleRates.end() );
-
-  // If device opens for both playback and capture, we determine the channels.
-  if ( info.outputChannels > 0 && info.inputChannels > 0 )
-    info.duplexChannels = (info.outputChannels > info.inputChannels) ? info.inputChannels : info.outputChannels;
+  for ( unsigned int i=0; i<info.sampleRates.size(); i++ ) {
+    if ( !info.preferredSampleRate || ( info.sampleRates[i] <= 48000 && info.sampleRates[i] > info.preferredSampleRate ) )
+      info.preferredSampleRate = info.sampleRates[i];
+  }
 
   // Copy name and return.
   info.name = dsDevice.name;
@@ -6162,12 +6155,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigne
   int deviceIdx = -1;
   for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
     if ( deviceList_[m].ID == deviceId ) {
-      for ( unsigned int n=0; n<dsDevices_.size(); n++ ) {
-        if ( deviceList_[m].name == dsDevices_[n].name ) {
-          deviceIdx = n;
-          break;
-        }
-      }
+      deviceIdx = m;
       break;
     }
   }
@@ -6178,14 +6166,14 @@ bool RtApiDs :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigne
   }
 
   if ( mode == OUTPUT ) {
-    if ( dsDevices_[ deviceIdx ].validId[0] == false ) {
+    if ( dsDevices_[ deviceIdx ].isInput ) {
       errorStream_ << "RtApiDs::probeDeviceOpen: device (" << deviceIdx << ") does not support output!";
       errorText_ = errorStream_.str();
       return FAILURE;
     }
   }
   else { // mode == INPUT
-    if ( dsDevices_[ deviceIdx ].validId[1] == false ) {
+    if ( dsDevices_[ deviceIdx ].isInput == false ) {
       errorStream_ << "RtApiDs::probeDeviceOpen: device (" << deviceIdx << ") does not support input!";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -6233,7 +6221,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigne
   if ( mode == OUTPUT ) {
 
     LPDIRECTSOUND output;
-    result = DirectSoundCreate( dsDevices_[ deviceIdx ].id[0], &output, NULL );
+    result = DirectSoundCreate( dsDevices_[ deviceIdx ].id, &output, NULL );
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") opening output device (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
@@ -6391,7 +6379,7 @@ bool RtApiDs :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigne
   if ( mode == INPUT ) {
 
     LPDIRECTSOUNDCAPTURE input;
-    result = DirectSoundCaptureCreate( dsDevices_[ deviceIdx ].id[1], &input, NULL );
+    result = DirectSoundCaptureCreate( dsDevices_[ deviceIdx ].id, &input, NULL );
     if ( FAILED( result ) ) {
       errorStream_ << "RtApiDs::probeDeviceOpen: error (" << getErrorString( result ) << ") opening input device (" << dsDevices_[ deviceIdx ].name << ")!";
       errorText_ = errorStream_.str();
@@ -7330,7 +7318,7 @@ static unsigned __stdcall callbackHandler( void *ptr )
 
 static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
                                           LPCTSTR description,
-                                          LPCTSTR /*module*/,
+                                          LPCTSTR lpctstr,
                                           LPVOID lpContext )
 {
   struct DsProbeData& probeInfo = *(struct DsProbeData*) lpContext;
@@ -7368,35 +7356,13 @@ static BOOL CALLBACK deviceQueryCallback( LPGUID lpguid,
     object->Release();
   }
 
-  // If good device, then save its name and guid.
-  std::string name = convertCharPointerToStdString( description );
-
   if ( validDevice ) {
-    for ( unsigned int i=0; i<dsDevices.size(); i++ ) {
-      if ( dsDevices[i].name == name ) {
-        if ( probeInfo.isInput && dsDevices[i].id[1] == lpguid ) {
-          dsDevices[i].found = true;
-          dsDevices[i].validId[1] = true;
-        }
-        else if ( dsDevices[i].id[0] == lpguid ) {
-          dsDevices[i].found = true;
-          dsDevices[i].validId[0] = true;
-        }
-        return TRUE;
-      }
-    }
-
+    // If good device, then save its name and guid.
     DsDevice device;
-    device.name = name;
-    device.found = true;
-    if ( probeInfo.isInput ) {
-      device.id[1] = lpguid;
-      device.validId[1] = true;
-    }
-    else {
-      device.id[0] = lpguid;
-      device.validId[0] = true;
-    }
+    device.name = convertCharPointerToStdString( description );
+    device.epID = convertCharPointerToStdString(lpctstr);
+    device.id = lpguid;
+    device.isInput = probeInfo.isInput;
     dsDevices.push_back( device );
   }
 
