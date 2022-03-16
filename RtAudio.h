@@ -75,6 +75,8 @@
     internal routines will automatically take care of any necessary
     byte-swapping between the host format and the soundcard.  Thus,
     endian-ness is not a concern in the following format definitions.
+    Note that there are no range checks for floating-point values that
+    extend beyond plus/minus 1.0.
 
     - \e RTAUDIO_SINT8:   8-bit signed integer.
     - \e RTAUDIO_SINT16:  16-bit signed integer.
