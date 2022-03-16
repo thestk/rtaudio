@@ -267,7 +267,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   //! The public device information structure for returning queried values.
   struct DeviceInfo {
     unsigned int ID{};              /*!< Device ID used to specify a device to RtAudio. */
-    std::string name;               /*!< Character string device identifier. */
+    std::string name;               /*!< Character string device name. */
     unsigned int outputChannels{};  /*!< Maximum output channels supported by device. */
     unsigned int inputChannels{};   /*!< Maximum input channels supported by device. */
     unsigned int duplexChannels{};  /*!< Maximum simultaneous input/output channels supported by device. */
