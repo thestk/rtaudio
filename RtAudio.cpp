@@ -10421,8 +10421,9 @@ RtAudioErrorType RtApi :: error( RtAudioErrorType type )
   if ( type == RTAUDIO_WARNING && showWarnings_ == false ) return type;
   
   if ( errorCallback_ ) {
-    const std::string errorMessage = errorText_;
-    errorCallback_( type, errorMessage );
+    //const std::string errorMessage = errorText_;
+    //errorCallback_( type, errorMessage );
+    errorCallback_( type, errorText_ );
   }
   else
     std::cerr << '\n' << errorText_ << "\n\n";

@@ -207,7 +207,7 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
                                 void *userData );
 
 enum RtAudioErrorType {
-  RTAUDIO_NO_ERROR,          /*!< No error. */
+  RTAUDIO_NO_ERROR = 0,      /*!< No error. */
   RTAUDIO_WARNING,           /*!< A non-critical error. */
   RTAUDIO_UNKNOWN_ERROR,     /*!< An unspecified error type. */
   RTAUDIO_NO_DEVICES_FOUND,  /*!< No devices found on system. */
@@ -438,7 +438,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   //! A public function that returns a vector of audio device names.
   /*!
     This function performs a system query of available devices each
-    time it is called, thus supporting devices connected \e after
+    time it is called, thus supporting devices (dis)connected \e after
     instantiation. If no devices are available, the vector size will
     be zero. If a system error occurs during processing, a warning
     will be issued.
@@ -553,6 +553,14 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     open or is already stopped.
   */
   RtAudioErrorType abortStream( void );
+
+  //! Retrieve the error message corresponding to the last error or warning condition.
+  /*!
+    This function can be used to get a detailed error message when a
+    non-zero RtAudioErrorType is returned by a function. This is the
+    same message sent to the user-provided errorCallback function.
+  */
+  const std::string getErrorText( void );
 
   //! Returns true if a stream is open and false if not.
   bool isStreamOpen( void ) const;
@@ -727,6 +735,7 @@ public:
   virtual RtAudioErrorType startStream( void ) = 0;
   virtual RtAudioErrorType stopStream( void ) = 0;
   virtual RtAudioErrorType abortStream( void ) = 0;
+  const std::string getErrorText( void ) const { return errorText_; }
   long getStreamLatency( void );
   unsigned int getStreamSampleRate( void );
   virtual double getStreamTime( void ) const { return stream_.streamTime; }
@@ -879,6 +888,7 @@ inline void RtAudio :: closeStream( void ) { return rtapi_->closeStream(); }
 inline RtAudioErrorType RtAudio :: startStream( void ) { return rtapi_->startStream(); }
 inline RtAudioErrorType RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
 inline RtAudioErrorType RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
+inline const std::string RtAudio :: getErrorText( void ) { return rtapi_->getErrorText(); }
 inline bool RtAudio :: isStreamOpen( void ) const { return rtapi_->isStreamOpen(); }
 inline bool RtAudio :: isStreamRunning( void ) const { return rtapi_->isStreamRunning(); }
 inline long RtAudio :: getStreamLatency( void ) { return rtapi_->getStreamLatency(); }

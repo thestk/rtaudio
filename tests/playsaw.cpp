@@ -222,14 +222,19 @@ int main( int argc, char *argv[] )
   // An error in the openStream() function can be detected either by
   // checking for a non-zero return value OR by a subsequent call to
   // isStreamOpen().
-  if ( dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options ) )
+  if ( dac.openStream( &oParams, NULL, FORMAT, fs, &bufferFrames, &saw, (void *)data, &options ) ) {
+    std::cout << dac.getErrorText() << std::endl;
     goto cleanup;
+  }
   if ( dac.isStreamOpen() == false ) goto cleanup;
 
   //std::cout << "Stream latency = " << dac.getStreamLatency() << "\n" << std::endl;
   
   // Stream is open ... now start it.
-  if ( dac.startStream() ) goto cleanup;
+  if ( dac.startStream() ) {
+    std::cout << dac.getErrorText() << std::endl;
+    goto cleanup;
+  }
 
   if ( checkCount ) {
     while ( dac.isStreamRunning() == true ) SLEEP( 100 );
