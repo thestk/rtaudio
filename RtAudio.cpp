@@ -106,13 +106,13 @@ std::string RtAudio :: getVersion( void )
 extern "C" {
 const char* rtaudio_api_names[][2] = {
   { "unspecified" , "Unknown" },
+  { "core"        , "CoreAudio" },
   { "alsa"        , "ALSA" },
+  { "jack"        , "Jack" },
   { "pulse"       , "Pulse" },
   { "oss"         , "OpenSoundSystem" },
-  { "jack"        , "Jack" },
-  { "core"        , "CoreAudio" },
-  { "wasapi"      , "WASAPI" },
   { "asio"        , "ASIO" },
+  { "wasapi"      , "WASAPI" },
   { "ds"          , "DirectSound" },
   { "dummy"       , "Dummy" },
 };
@@ -123,14 +123,17 @@ const unsigned int rtaudio_num_api_names =
 // The order here will control the order of RtAudio's API search in
 // the constructor.
 extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
+#if defined(__MACOSX_CORE__)
+  RtAudio::MACOSX_CORE,
+#endif
+#if defined(__LINUX_ALSA__)
+  RtAudio::LINUX_ALSA,
+#endif
 #if defined(__UNIX_JACK__)
   RtAudio::UNIX_JACK,
 #endif
 #if defined(__LINUX_PULSE__)
   RtAudio::LINUX_PULSE,
-#endif
-#if defined(__LINUX_ALSA__)
-  RtAudio::LINUX_ALSA,
 #endif
 #if defined(__LINUX_OSS__)
   RtAudio::LINUX_OSS,
@@ -143,9 +146,6 @@ extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
 #endif
 #if defined(__WINDOWS_DS__)
   RtAudio::WINDOWS_DS,
-#endif
-#if defined(__MACOSX_CORE__)
-  RtAudio::MACOSX_CORE,
 #endif
 #if defined(__RTAUDIO_DUMMY__)
   RtAudio::RTAUDIO_DUMMY,
@@ -190,6 +190,15 @@ RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
   unsigned int i=0;
   for (i = 0; i < rtaudio_num_compiled_apis; ++i)
     if (name == rtaudio_api_names[rtaudio_compiled_apis[i]][0])
+      return rtaudio_compiled_apis[i];
+  return RtAudio::UNSPECIFIED;
+}
+
+RtAudio::Api RtAudio :: getCompiledApiByDisplayName( const std::string &name )
+{
+  unsigned int i=0;
+  for (i = 0; i < rtaudio_num_compiled_apis; ++i)
+    if (name == rtaudio_api_names[rtaudio_compiled_apis[i]][1])
       return rtaudio_compiled_apis[i];
   return RtAudio::UNSPECIFIED;
 }
@@ -362,6 +371,9 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
     return error( RTAUDIO_INVALID_PARAMETER );
   }
 
+  // Scan devices if none currently listed.
+  if ( deviceList_.size() == 0 ) probeDevices();
+  
   unsigned int m, oChannels = 0;
   if ( oParams ) {
     oChannels = oParams->nChannels;
@@ -511,6 +523,7 @@ unsigned int RtApi :: getDefaultOutputDevice( void )
 
 RtAudio::DeviceInfo RtApi :: getDeviceInfo( unsigned int deviceId )
 {
+  if ( deviceList_.size() == 0 ) probeDevices();
   for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
     if ( deviceList_[m].ID == deviceId )
       return deviceList_[m];

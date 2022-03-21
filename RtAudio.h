@@ -252,13 +252,13 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   //! Audio API specifier arguments.
   enum Api {
     UNSPECIFIED,    /*!< Search for a working compiled API. */
+    MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
     LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
+    UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
     LINUX_PULSE,    /*!< The Linux PulseAudio API. */
     LINUX_OSS,      /*!< The Linux Open Sound System API. */
-    UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
-    MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
-    WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
+    WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
     RTAUDIO_DUMMY,  /*!< A compilable but non-functional API. */
     NUM_APIS        /*!< Number of values in this enum. */
@@ -380,10 +380,18 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   //! Return the compiled audio API having the given name.
   /*!
     A case insensitive comparison will check the specified name
-    against the list of compiled APIs, and return the one which
+    against the list of compiled APIs, and return the one that
     matches. On failure, the function returns UNSPECIFIED.
   */
   static RtAudio::Api getCompiledApiByName( const std::string &name );
+
+  //! Return the compiled audio API having the given display name.
+  /*!
+    A case sensitive comparison will check the specified display name
+    against the list of compiled APIs, and return the one that
+    matches. On failure, the function returns UNSPECIFIED.
+  */
+  static RtAudio::Api getCompiledApiByDisplayName( const std::string &name );
 
   //! The class constructor.
   /*!
