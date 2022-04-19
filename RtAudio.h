@@ -341,9 +341,11 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     function by the value actually used by the system.
 
     The \c streamName parameter can be used to set the client name
-    when using the Jack API.  By default, the client name is set to
-    RtApiJack.  However, if you wish to create multiple instances of
-    RtAudio with Jack, each instance must have a unique client name.
+    when using the Jack API or the application name when using the
+    Pulse API.  By default, the Jack client name is set to RtApiJack.
+    However, if you wish to create multiple instances of RtAudio with
+    Jack, each instance must have a unique client name. The default
+    Pulse application name is set to "RtAudio."
   */
   struct StreamOptions {
     RtAudioStreamFlags flags{};      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */
