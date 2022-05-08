@@ -4505,7 +4505,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   PropVariantInit( &defaultDeviceNameProp );
 
   hr = defaultDevicePropStore->GetValue( PKEY_Device_FriendlyName, &defaultDeviceNameProp );
-  if ( FAILED( hr ) ) {
+  if ( FAILED( hr ) || defaultDeviceNameProp.pwszVal==nullptr) {
     errorText_ = "RtApiWasapi::getDeviceInfo: Unable to retrieve default device property: PKEY_Device_FriendlyName.";
     goto Exit;
   }
@@ -4522,7 +4522,7 @@ RtAudio::DeviceInfo RtApiWasapi::getDeviceInfo( unsigned int device )
   PropVariantInit( &deviceNameProp );
 
   hr = devicePropStore->GetValue( PKEY_Device_FriendlyName, &deviceNameProp );
-  if ( FAILED( hr ) ) {
+  if ( FAILED( hr ) || deviceNameProp.pwszVal==nullptr) {
     errorText_ = "RtApiWasapi::getDeviceInfo: Unable to retrieve device property: PKEY_Device_FriendlyName.";
     goto Exit;
   }
