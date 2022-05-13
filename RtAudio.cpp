@@ -58,7 +58,7 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
-  #Define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
+  #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
 
