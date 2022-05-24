@@ -577,10 +577,10 @@ struct CoreHandle {
     :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; procId[0] = 0; procId[1] = 0; xrun[0] = false; xrun[1] = false; xrunListenerAdded[0] = false; xrunListenerAdded[1] = false; disconnectListenerAdded[0] = false; disconnectListenerAdded[1] = false; }
 };
 
-#if defined( MAC_OS_X_VERSION_10_12 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12 )
-  #define KAUDIOOBJECTPROPERTYELEMENT kAudioObjectPropertyElementMaster // deprecated with 10.12
-#else
+#if defined( MAC_OS_VERSION_12_0 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_VERSION_12_0 )
   #define KAUDIOOBJECTPROPERTYELEMENT kAudioObjectPropertyElementMain
+#else
+  #define KAUDIOOBJECTPROPERTYELEMENT kAudioObjectPropertyElementMaster // deprecated with macOS 12
 #endif
 
 RtApiCore:: RtApiCore()
