@@ -120,22 +120,6 @@ const char* rtaudio_api_names[][2] = {
 const unsigned int rtaudio_num_api_names = 
   sizeof(rtaudio_api_names)/sizeof(rtaudio_api_names[0]);
 
-#if defined(__UNIX_JACK__)
-std::string escapeJackPortRegex(std::string &str)
-{
-  const std::string need_escaping = "()[]{}*+?$^.|\\";
-  std::string escaped_string;
-  for (auto c : str)
-  {
-    if (need_escaping.find(c) !=  std::string::npos)
-      escaped_string.push_back('\\');
-
-    escaped_string.push_back(c);
-  }
-  return escaped_string;
-}
-#endif
-
 // The order here will control the order of RtAudio's API search in
 // the constructor.
 extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
@@ -2236,6 +2220,20 @@ struct JackHandle {
   JackHandle()
     :client(0), drainCounter(0), internalDrain(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
+
+std::string escapeJackPortRegex(std::string &str)
+{
+  const std::string need_escaping = "()[]{}*+?$^.|\\";
+  std::string escaped_string;
+  for (auto c : str)
+  {
+    if (need_escaping.find(c) !=  std::string::npos)
+      escaped_string.push_back('\\');
+
+    escaped_string.push_back(c);
+  }
+  return escaped_string;
+}
 
 #if !defined(__RTAUDIO_DEBUG__)
 static void jackSilentError( const char * ) {};
