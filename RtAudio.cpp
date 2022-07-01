@@ -4769,7 +4769,7 @@ bool RtApiWasapi::probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, b
 
   // Get the device pointer from the device Id
   HRESULT hr = deviceEnumerator_->GetDevice( deviceId, &devicePtr );
-  if ( FAILED( hr ) || defaultDeviceNameProp.pwszVal == nullptr ) {
+  if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::probeDeviceInfo: Unable to retrieve device handle.";
     goto Exit;
   }
