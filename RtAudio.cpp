@@ -662,6 +662,12 @@ struct CoreHandle {
     :deviceBuffer(0), drainCounter(0), internalDrain(false) { nStreams[0] = 1; nStreams[1] = 1; id[0] = 0; id[1] = 0; procId[0] = 0; procId[1] = 0; xrun[0] = false; xrun[1] = false; xrunListenerAdded[0] = false; xrunListenerAdded[1] = false; disconnectListenerAdded[0] = false; disconnectListenerAdded[1] = false; }
 };
 
+#if defined( MAC_OS_VERSION_12_0 ) && ( MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_VERSION_12_0 )
+  #define KAUDIOOBJECTPROPERTYELEMENT kAudioObjectPropertyElementMain
+#else
+  #define KAUDIOOBJECTPROPERTYELEMENT kAudioObjectPropertyElementMaster // deprecated with macOS 12
+#endif
+
 RtApiCore:: RtApiCore()
 {
 #if defined( AVAILABLE_MAC_OS_X_VERSION_10_6_AND_LATER )
@@ -672,7 +678,7 @@ RtApiCore:: RtApiCore()
   CFRunLoopRef theRunLoop = NULL;
   AudioObjectPropertyAddress property = { kAudioHardwarePropertyRunLoop,
                                           kAudioObjectPropertyScopeGlobal,
-                                          kAudioObjectPropertyElementMain };
+                                          KAUDIOOBJECTPROPERTYELEMENT };
   OSStatus result = AudioObjectSetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, sizeof(CFRunLoopRef), &theRunLoop);
   if ( result != noErr ) {
     errorText_ = "RtApiCore::RtApiCore: error setting run loop property!";
@@ -693,7 +699,7 @@ unsigned int RtApiCore :: getDefaultOutputDevice( void )
 {
   AudioDeviceID id;
   UInt32 dataSize = sizeof( AudioDeviceID );
-  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, KAUDIOOBJECTPROPERTYELEMENT };
   OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, &id );
   if ( result != noErr ) {
     errorText_ = "RtApiCore::getDefaultOutputDevice: OS-X system error getting device.";
@@ -727,7 +733,7 @@ unsigned int RtApiCore :: getDefaultInputDevice( void )
 {
   AudioDeviceID id;
   UInt32 dataSize = sizeof( AudioDeviceID );
-  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, KAUDIOOBJECTPROPERTYELEMENT };
   OSStatus result = AudioObjectGetPropertyData( kAudioObjectSystemObject, &property, 0, NULL, &dataSize, &id );
   if ( result != noErr ) {
     errorText_ = "RtApiCore::getDefaultInputDevice: OS-X system error getting device.";
@@ -782,7 +788,7 @@ void RtApiCore :: probeDevices( void )
   
   // Find out how many audio devices there are.
   UInt32 dataSize;
-  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, KAUDIOOBJECTPROPERTYELEMENT };
   OSStatus result = AudioObjectGetPropertyDataSize( kAudioObjectSystemObject, &property, 0, NULL, &dataSize );
   if ( result != noErr ) {
     errorText_ = "RtApiCore::probeDevices: OS-X system error getting device info!";
@@ -878,7 +884,7 @@ bool RtApiCore :: probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo& info )
   UInt32 dataSize = sizeof( CFStringRef );
   AudioObjectPropertyAddress property = { kAudioObjectPropertyManufacturer,
                                           kAudioObjectPropertyScopeGlobal,
-                                          kAudioObjectPropertyElementMain };
+                                          KAUDIOOBJECTPROPERTYELEMENT };
   OSStatus result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &cfname );
   if ( result != noErr ) {
     errorStream_ << "RtApiCore::probeDeviceInfo: system error (" << getErrorCode( result ) << ") getting device manufacturer.";
@@ -1134,7 +1140,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
   AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
                                           kAudioDevicePropertyScopeOutput,
-                                          kAudioObjectPropertyElementMain };
+                                          KAUDIOOBJECTPROPERTYELEMENT };
 
   // Setup for stream mode.
   bool isInput = false;
@@ -1618,7 +1624,7 @@ void RtApiCore :: closeStream( void )
     if ( handle ) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
                                               kAudioObjectPropertyScopeGlobal,
-                                              kAudioObjectPropertyElementMain };
+                                              KAUDIOOBJECTPROPERTYELEMENT };
 
       if ( handle->xrunListenerAdded[0] ) {
         property.mSelector = kAudioDeviceProcessorOverload;
@@ -1653,7 +1659,7 @@ void RtApiCore :: closeStream( void )
     if ( handle ) {
       AudioObjectPropertyAddress property = { kAudioHardwarePropertyDevices,
         kAudioObjectPropertyScopeGlobal,
-        kAudioObjectPropertyElementMain };
+        KAUDIOOBJECTPROPERTYELEMENT };
 
       if ( handle->xrunListenerAdded[1] ) {
         property.mSelector = kAudioDeviceProcessorOverload;
