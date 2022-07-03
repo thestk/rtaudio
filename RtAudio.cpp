@@ -92,6 +92,320 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
 
 // *************************************************** //
 //
+// RtApi subclass prototypes.
+//
+// *************************************************** //
+
+#if defined(__MACOSX_CORE__)
+
+#include <CoreAudio/AudioHardware.h>
+
+class RtApiCore: public RtApi
+{
+public:
+
+  RtApiCore();
+  ~RtApiCore();
+  RtAudio::Api getCurrentApi( void ) override { return RtAudio::MACOSX_CORE; }
+  unsigned int getDefaultOutputDevice( void ) override;
+  unsigned int getDefaultInputDevice( void ) override;
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by an internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  bool callbackEvent( AudioDeviceID deviceId,
+                      const AudioBufferList *inBufferList,
+                      const AudioBufferList *outBufferList );
+
+ private:
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo &info );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+  static const char* getErrorCode( OSStatus code );
+  std::vector< AudioDeviceID > deviceIds_;
+};
+
+#endif
+
+#if defined(__UNIX_JACK__)
+
+#include <jack/jack.h>
+
+class RtApiJack: public RtApi
+{
+public:
+
+  RtApiJack();
+  ~RtApiJack();
+  RtAudio::Api getCurrentApi( void ) override { return RtAudio::UNIX_JACK; }
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  bool callbackEvent( unsigned long nframes );
+
+  private:
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, jack_client_t *client );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+
+  bool shouldAutoconnect_;
+};
+
+#endif
+
+#if defined(__WINDOWS_ASIO__)
+
+class RtApiAsio: public RtApi
+{
+public:
+
+  RtApiAsio();
+  ~RtApiAsio();
+  RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_ASIO; }
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  bool callbackEvent( long bufferIndex );
+
+  private:
+
+  bool coInitialized_;
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info );
+  bool probeDeviceOpen( unsigned int device, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+};
+
+#endif
+
+#if defined(__WINDOWS_DS__)
+
+class RtApiDs: public RtApi
+{
+public:
+
+  RtApiDs();
+  ~RtApiDs();
+  RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_DS; }
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  void callbackEvent( void );
+
+  private:
+  
+  bool coInitialized_;
+  bool buffersRolling;
+  long duplexPrerollBytes;
+  std::vector<struct DsDevice> dsDevices_;
+  
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, DsDevice &dsDevice );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+};
+
+#endif
+
+#if defined(__WINDOWS_WASAPI__)
+
+struct IMMDeviceEnumerator;
+
+class RtApiWasapi : public RtApi
+{
+public:
+  RtApiWasapi();
+  virtual ~RtApiWasapi();
+  RtAudio::Api getCurrentApi( void ) override { return RtAudio::WINDOWS_WASAPI; }
+  unsigned int getDefaultOutputDevice( void ) override;
+  unsigned int getDefaultInputDevice( void ) override;
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+private:
+  bool coInitialized_;
+  IMMDeviceEnumerator* deviceEnumerator_;
+  std::vector< std::pair< std::string, bool> > deviceIds_;
+
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, bool isCaptureDevice );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int* bufferSize,
+                        RtAudio::StreamOptions* options ) override;
+
+  static DWORD WINAPI runWasapiThread( void* wasapiPtr );
+  static DWORD WINAPI stopWasapiThread( void* wasapiPtr );
+  static DWORD WINAPI abortWasapiThread( void* wasapiPtr );
+  void wasapiThread();
+};
+
+#endif
+
+#if defined(__LINUX_ALSA__)
+
+class RtApiAlsa: public RtApi
+{
+public:
+
+  RtApiAlsa();
+  ~RtApiAlsa();
+  RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_ALSA; }
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  void callbackEvent( void );
+
+  private:
+  std::vector< std::string > deviceIds_;
+  
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, std::string name );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+};
+
+#endif
+
+#if defined(__LINUX_PULSE__)
+
+#include <pulse/pulseaudio.h>
+
+class RtApiPulse: public RtApi
+{
+public:
+  ~RtApiPulse();
+  RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_PULSE; }
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  void callbackEvent( void );
+
+  struct PaDeviceInfo {
+    std::string sinkName;
+    std::string sourceName;
+  };
+
+ private:
+  std::vector< PaDeviceInfo > paDeviceList_;
+
+  void probeDevices( void ) override;
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+};
+
+#endif
+
+#if defined(__LINUX_OSS__)
+
+#include <sys/soundcard.h>
+
+class RtApiOss: public RtApi
+{
+public:
+
+  RtApiOss();
+  ~RtApiOss();
+  RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_OSS; }
+  void closeStream( void ) override;
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal callback handler,
+  // which is not a member of RtAudio.  External use of this function
+  // will most likely produce highly undesirable results!
+  void callbackEvent( void );
+
+  private:
+
+  void probeDevices( void ) override;
+  bool probeDeviceInfo( RtAudio::DeviceInfo &info, oss_audioinfo &ainfo );
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+};
+
+#endif
+
+#if defined(__RTAUDIO_DUMMY__)
+
+class RtApiDummy: public RtApi
+{
+public:
+
+  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RTAUDIO_WARNING ); }
+  RtAudio::Api getCurrentApi( void ) override { return RtAudio::RTAUDIO_DUMMY; }
+  void closeStream( void ) override {}
+  RtAudioErrorType startStream( void ) override { return RTAUDIO_NO_ERROR; }
+  RtAudioErrorType stopStream( void ) override { return RTAUDIO_NO_ERROR; }
+  RtAudioErrorType abortStream( void ) override { return RTAUDIO_NO_ERROR; }
+
+  private:
+
+  bool probeDeviceOpen( unsigned int /*deviceId*/, StreamMode /*mode*/, unsigned int /*channels*/, 
+                        unsigned int /*firstChannel*/, unsigned int /*sampleRate*/,
+                        RtAudioFormat /*format*/, unsigned int * /*bufferSize*/,
+                        RtAudio::StreamOptions * /*options*/ ) override { return false; }
+};
+
+#endif
+
+// *************************************************** //
+//
 // RtAudio definitions.
 //
 // *************************************************** //
