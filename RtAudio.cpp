@@ -2578,7 +2578,8 @@ void RtApiJack :: probeDevices( void )
   if ( client == 0 ) {
     deviceList_.clear(); // in case the server is shutdown after a previous successful probe
     errorText_ = "RtApiJack::probeDevices: Jack server not found or connection error!";
-    error( RTAUDIO_SYSTEM_ERROR );
+    //error( RTAUDIO_SYSTEM_ERROR );
+    error( RTAUDIO_WARNING );
     return;
   }
 
