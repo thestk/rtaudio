@@ -39,7 +39,7 @@ CMake support is provided via the CMakeLists.txt files.  Assuming you have CMake
 
 mkdir _build_
 cd _build_
-cmake <path to CMakeLists.txt usually two dots> <options> e.g. cmake .. -DAUDIO_WINDOWS_WASAPI=ON
+cmake <path to CMakeLists.txt usually two dots> <options> e.g. cmake .. -DRTAUDIO_WINDOWS_WASAPI=ON
 
 
 WINDOWS:
