@@ -5272,11 +5272,13 @@ RtAudioErrorType RtApiWasapi::startStream( void )
 
 RtAudioErrorType RtApiWasapi::stopStream( void )
 {
+  MUTEX_LOCK( &stream_.mutex );
   if ( stream_.state != STREAM_RUNNING && stream_.state != STREAM_STOPPING ) {
     if ( stream_.state == STREAM_STOPPED )
       errorText_ = "RtApiWasapi::stopStream(): the stream is already stopped!";
     else if ( stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiWasapi::stopStream(): the stream is closed!";
+    MUTEX_UNLOCK( &stream_.mutex );
     return error( RTAUDIO_WARNING );
   }
 
@@ -5288,10 +5290,12 @@ RtAudioErrorType RtApiWasapi::stopStream( void )
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
     errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
+    MUTEX_UNLOCK( &stream_.mutex );
     return error( RTAUDIO_THREAD_ERROR );
   }
 
   stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  MUTEX_UNLOCK( &stream_.mutex );
   return RTAUDIO_NO_ERROR;
 }
 
@@ -5299,11 +5303,13 @@ RtAudioErrorType RtApiWasapi::stopStream( void )
 
 RtAudioErrorType RtApiWasapi::abortStream( void )
 {
+  MUTEX_LOCK( &stream_.mutex );
   if ( stream_.state != STREAM_RUNNING ) {
     if ( stream_.state == STREAM_STOPPED )
       errorText_ = "RtApiWasapi::abortStream(): the stream is already stopped!";
     else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiWasapi::abortStream(): the stream is stopping or closed!";
+    MUTEX_UNLOCK( &stream_.mutex );
     return error( RTAUDIO_WARNING );
   }
     
@@ -5315,10 +5321,12 @@ RtAudioErrorType RtApiWasapi::abortStream( void )
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
     errorText_ = "RtApiWasapi::abortStream: Unable to close callback thread.";
+    MUTEX_UNLOCK( &stream_.mutex );
     return error( RTAUDIO_THREAD_ERROR );
   }
 
   stream_.callbackInfo.thread = (ThreadHandle) NULL;
+  MUTEX_UNLOCK( &stream_.mutex );
   return RTAUDIO_NO_ERROR;
 }
 
