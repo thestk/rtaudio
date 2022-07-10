@@ -766,7 +766,7 @@ void RtApi :: probeDevices( void )
 unsigned int RtApi :: getDeviceCount( void )
 {
   probeDevices();
-  return deviceList_.size();
+  return (unsigned int)deviceList_.size();
 }
 
 std::vector<unsigned int> RtApi :: getDeviceIds( void )
@@ -4765,14 +4765,20 @@ RtApiWasapi::RtApiWasapi()
 
 RtApiWasapi::~RtApiWasapi()
 {
+  MUTEX_LOCK( &stream_.mutex );
   if ( stream_.state != STREAM_CLOSED )
+  {
+    MUTEX_UNLOCK( &stream_.mutex );
     closeStream();
+    MUTEX_LOCK( &stream_.mutex );
+  }
 
   SAFE_RELEASE( deviceEnumerator_ );
 
   // If this object previously called CoInitialize()
   if ( coInitialized_ )
     CoUninitialize();
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 //-----------------------------------------------------------------------------
@@ -5190,14 +5196,20 @@ bool RtApiWasapi::probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, b
 
 void RtApiWasapi::closeStream( void )
 {
+  MUTEX_LOCK( &stream_.mutex );
   if ( stream_.state == STREAM_CLOSED ) {
     errorText_ = "RtApiWasapi::closeStream: No open stream to close.";
     error( RTAUDIO_WARNING );
+    MUTEX_UNLOCK( &stream_.mutex );
     return;
   }
 
   if ( stream_.state != STREAM_STOPPED )
+  {
+    MUTEX_UNLOCK( &stream_.mutex );
     stopStream();
+    MUTEX_LOCK( &stream_.mutex );
+  }
 
   // clean up stream memory
   SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient )
@@ -5228,18 +5240,20 @@ void RtApiWasapi::closeStream( void )
   }
 
   clearStreamInfo();
-  //stream_.state = STREAM_CLOSED;
+  MUTEX_UNLOCK( &stream_.mutex );
 }
 
 //-----------------------------------------------------------------------------
 
 RtAudioErrorType RtApiWasapi::startStream( void )
 {
+  MUTEX_LOCK( &stream_.mutex );
   if ( stream_.state != STREAM_STOPPED ) {
     if ( stream_.state == STREAM_RUNNING )
       errorText_ = "RtApiWasapi::startStream(): the stream is already running!";
     else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
       errorText_ = "RtApiWasapi::startStream(): the stream is stopping or closed!";
+    MUTEX_UNLOCK( &stream_.mutex );
     return error( RTAUDIO_WARNING );
   }
 
@@ -5257,12 +5271,14 @@ RtAudioErrorType RtApiWasapi::startStream( void )
 
   if ( !stream_.callbackInfo.thread ) {
     errorText_ = "RtApiWasapi::startStream: Unable to instantiate callback thread.";
+    MUTEX_UNLOCK( &stream_.mutex );
     return error( RTAUDIO_THREAD_ERROR );
   }
   else {
     SetThreadPriority( ( void* ) stream_.callbackInfo.thread, stream_.callbackInfo.priority );
     ResumeThread( ( void* ) stream_.callbackInfo.thread );
   }
+  MUTEX_UNLOCK( &stream_.mutex );
   return RTAUDIO_NO_ERROR;
 }
 
@@ -5335,6 +5351,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
                                    RtAudioFormat format, unsigned int* bufferSize,
                                    RtAudio::StreamOptions* options )
 {
+  MUTEX_LOCK( &stream_.mutex );
   bool methodResult = FAILURE;
   IMMDevice* devicePtr = NULL;
   WAVEFORMATEX* deviceFormat = NULL;
@@ -5356,11 +5373,13 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   RtAudioErrorType errorType = RTAUDIO_INVALID_USE;
   if ( id.empty() ) {
     errorText_ = "RtApiWasapi::probeDeviceOpen: the device ID was not found!";
+    MUTEX_UNLOCK( &stream_.mutex );
     return FAILURE;
   }
 
   if ( isInput && mode != INPUT ) {
     errorText_ = "RtApiWasapi::probeDeviceOpen: deviceId specified does not support output mode.";
+    MUTEX_UNLOCK( &stream_.mutex );
     return FAILURE;
   }
 
@@ -5370,6 +5389,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   HRESULT hr = deviceEnumerator_->GetDevice( (LPWSTR)temp.c_str(), &devicePtr );
   if ( FAILED( hr ) ) {
     errorText_ = "RtApiWasapi::probeDeviceOpen: Unable to retrieve device handle.";
+    MUTEX_UNLOCK( &stream_.mutex );
     return FAILURE;
   }
   
@@ -5402,7 +5422,9 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     // If renderAudioClient is not initialised, initialise it now
     IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
     if ( !renderAudioClient ) {
+      MUTEX_UNLOCK( &stream_.mutex );
       probeDeviceOpen( deviceId, OUTPUT, channels, firstChannel, sampleRate, format, bufferSize, options );
+      MUTEX_LOCK( &stream_.mutex );
     }
 
     // Retrieve captureAudioClient from our stream handle.
@@ -5516,10 +5538,16 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
   // if method failed, close the stream
   if ( methodResult == FAILURE )
+  {
+    MUTEX_UNLOCK( &stream_.mutex );
     closeStream();
+    MUTEX_LOCK( &stream_.mutex );
+  }
 
   if ( !errorText_.empty() )
     error( errorType );
+
+  MUTEX_UNLOCK( &stream_.mutex );
   return methodResult;
 }
 
