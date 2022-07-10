@@ -4953,32 +4953,26 @@ void RtApiWasapi::probeDevices( void )
 
   // Get the default capture device Id.
   hr = deviceEnumerator_->GetDefaultAudioEndpoint( eCapture, eConsole, &devicePtr );
-  if ( FAILED( hr ) ) {
-    errorText_ = "RtApiWasapi::probeDevices: Unable to retrieve default capture device handle.";
-    goto Exit;
+  if ( SUCCEEDED( hr) ) {
+    hr = devicePtr->GetId( &defaultCaptureId );
+    if ( FAILED( hr ) ) {
+      errorText_ = "RtApiWasapi::probeDevices: Unable to get default capture device Id.";
+      goto Exit;
+    }
+    defaultCaptureString = convertCharPointerToStdString( defaultCaptureId );
   }
 
-  hr = devicePtr->GetId( &defaultCaptureId );
-  if ( FAILED( hr ) ) {
-    errorText_ = "RtApiWasapi::probeDevices: Unable to get default capture device Id.";
-    goto Exit;
-  }
-  defaultCaptureString = convertCharPointerToStdString( defaultCaptureId );
-  
   // Get the default render device Id.
   SAFE_RELEASE( devicePtr );
   hr = deviceEnumerator_->GetDefaultAudioEndpoint( eRender, eConsole, &devicePtr );
-  if ( FAILED( hr ) ) {
-    errorText_ = "RtApiWasapi::probeDevices: Unable to retrieve default render device handle.";
-    goto Exit;
+  if ( SUCCEEDED( hr) ) {
+    hr = devicePtr->GetId( &defaultRenderId );
+    if ( FAILED( hr ) ) {
+      errorText_ = "RtApiWasapi::probeDevices: Unable to get default render device Id.";
+      goto Exit;
+    }
+    defaultRenderString = convertCharPointerToStdString( defaultRenderId );
   }
-
-  hr = devicePtr->GetId( &defaultRenderId );
-  if ( FAILED( hr ) ) {
-    errorText_ = "RtApiWasapi::probeDevices: Unable to get default render device Id.";
-    goto Exit;
-  }
-  defaultRenderString = convertCharPointerToStdString( defaultRenderId );
   
   // Collect device IDs with mode.
   for ( unsigned int n=0; n<nDevices; n++ ) {
