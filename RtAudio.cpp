@@ -1831,7 +1831,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // Allocate necessary internal buffers.
   unsigned long bufferBytes;
   bufferBytes = stream_.nUserChannels[mode] * *bufferSize * formatBytes( stream_.userFormat );
-  stream_.userBuffer[mode] = (char *) malloc( bufferBytes * sizeof(char) );
+  stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
   if ( stream_.userBuffer[mode] == NULL ) {
     errorText_ = "RtApiCore::probeDeviceOpen: error allocating user buffer memory.";
     goto error;
@@ -1854,7 +1854,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     if ( makeBuffer ) {
       bufferBytes *= *bufferSize;
       if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
-      stream_.deviceBuffer = (char *) calloc( bufferBytes, sizeof(char) );
+      stream_.deviceBuffer = (char *) calloc( bufferBytes, 1 );
       if ( stream_.deviceBuffer == NULL ) {
         errorText_ = "RtApiCore::probeDeviceOpen: error allocating device buffer memory.";
         goto error;
