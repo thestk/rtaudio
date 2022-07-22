@@ -55,12 +55,18 @@ AC_ARG_WITH(wasapi, [AS_HELP_STRING([--with-wasapi], [choose Windows Audio Sessi
 
 # Check version number coherency between RtAudio.h and configure.ac
 AC_MSG_CHECKING([that version numbers are coherent])
-RTAUDIO_VERSION=`sed -n 's/#define RTAUDIO_VERSION "\(.*\)"/\1/p' $srcdir/RtAudio.h`
-AS_IF([test "x$RTAUDIO_VERSION" != "x$PACKAGE_VERSION"],[
+RTAUDIO_VERSION_MAJOR=`sed -n 's/#define RTAUDIO_VERSION_MAJOR *\([0-9]*\)/\1/p' $srcdir/RtAudio.h`
+RTAUDIO_VERSION_MINOR=`sed -n 's/#define RTAUDIO_VERSION_MINOR *\([0-9]*\)/\1/p' $srcdir/RtAudio.h`
+RTAUDIO_VERSION_PATCH=`sed -n 's/#define RTAUDIO_VERSION_PATCH *\([0-9]*\)/\1/p' $srcdir/RtAudio.h`
+RTAUDIO_VERSION_BETA=`sed -n 's/#define RTAUDIO_VERSION_BETA *\([0-9]*\)/\1/p' $srcdir/RtAudio.h`
+
+AS_IF([test "0$RTAUDIO_VERSION_BETA" -gt 0 \
+             -a "x$RTAUDIO_VERSION_MAJOR.$RTAUDIO_VERSION_MINOR.${RTAUDIO_VERSION_PATCH}beta${RTAUDIO_VERSION_BETA}" == "x$PACKAGE_VERSION" \
+             -o "x$RTAUDIO_VERSION_MAJOR.$RTAUDIO_VERSION_MINOR.${RTAUDIO_VERSION_PATCH}" == "x$PACKAGE_VERSION"],[
+   AC_MSG_RESULT([yes])
+   ],[
    AC_MSG_RESULT([no])
    AC_MSG_FAILURE([testing RTAUDIO_VERSION==PACKAGE_VERSION failed, check that RtAudio.h defines RTAUDIO_VERSION as "$PACKAGE_VERSION" or that the first line of configure.ac has been updated.])
-   ],[
-   AC_MSG_RESULT([yes])
 ])
 # Enable some nice automake features if they are available
 m4_ifdef([AM_MAINTAINER_MODE], [AM_MAINTAINER_MODE])
