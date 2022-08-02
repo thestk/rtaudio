@@ -400,7 +400,7 @@ typedef struct ASIOCallbacks
 		// - the input buffer that is now filled with incoming data. Note that
 		//   because of the synchronicity of i/o, the input always has at
 		//   least one buffer latency in relation to the output.
-		// directProcess suggests to the host whether it should immedeately
+		// directProcess suggests to the host whether it should immediately
 		// start processing (directProcess == ASIOTrue), or whether its process
 		// should be deferred because the call comes from a very low level
 		// (for instance, a high level priority interrupt), and direct processing

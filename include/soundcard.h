@@ -932,7 +932,7 @@ typedef struct copr_msg {
 /*
  * The AD1848 codec and compatibles have three line level inputs
  * (line, aux1 and aux2). Since each card manufacturer have assigned
- * different meanings to these inputs, it's inpractical to assign
+ * different meanings to these inputs, it's impractical to assign
  * specific meanings (line, cd, synth etc.) to them.
  */
 #define SOUND_MIXER_LINE1	14	/* Input source 1  (aux1) */

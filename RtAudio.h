@@ -215,7 +215,7 @@ enum RtAudioErrorType {
   RTAUDIO_NO_DEVICES_FOUND,  /*!< No devices found on system. */
   RTAUDIO_INVALID_DEVICE,    /*!< An invalid device ID was specified. */
   RTAUDIO_DEVICE_DISCONNECT, /*!< A device in use was disconnected. */
-  RTAUDIO_MEMORY_ERROR,      /*!< An error occured during memory allocation. */
+  RTAUDIO_MEMORY_ERROR,      /*!< An error occurred during memory allocation. */
   RTAUDIO_INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
   RTAUDIO_INVALID_USE,       /*!< The function was called incorrectly. */
   RTAUDIO_DRIVER_ERROR,      /*!< A system driver error occurred. */

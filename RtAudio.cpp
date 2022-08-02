@@ -3348,7 +3348,7 @@ RtApiAsio :: RtApiAsio()
   coInitialized_ = false;
   HRESULT hr = CoInitialize( NULL ); 
   if ( FAILED(hr) ) {
-    errorText_ = "RtApiAsio::ASIO requires a single-threaded appartment. Call CoInitializeEx(0,COINIT_APARTMENTTHREADED)";
+    errorText_ = "RtApiAsio::ASIO requires a single-threaded apartment. Call CoInitializeEx(0,COINIT_APARTMENTTHREADED)";
     error( RTAUDIO_WARNING );
   }
   coInitialized_ = true;
