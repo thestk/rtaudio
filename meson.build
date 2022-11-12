@@ -69,7 +69,8 @@ if alsa_dep.found()
 endif
 
 jack_dep = dependency('jack', required: get_option('jack'))
-if jack_dep.found()
+# broken on MSYS2. Need to use pthreads instead of Windows threading
+if jack_dep.found() and host_machine.system() != 'windows'
 	defines += '-D__UNIX_JACK__'
 	deps += jack_dep
 endif
@@ -79,7 +80,8 @@ if get_option('oss') == true
 endif
 
 pulsesimple_dep = dependency('libpulse-simple', required: get_option('pulse'))
-if pulsesimple_dep.found()
+# broken on MSYS2. Need to use pthreads instead of Windows threading
+if pulsesimple_dep.found() and host_machine.system() != 'windows'
 	defines += '-D__LINUX_PULSE__'
 	deps += pulsesimple_dep
 endif
