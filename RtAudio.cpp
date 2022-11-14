@@ -1408,6 +1408,8 @@ static OSStatus callbackHandler( AudioDeviceID inDevice,
                                  void* infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
+  if(info == NULL || info->object == NULL)
+    return kAudioHardwareUnspecifiedError;
 
   RtApiCore *object = (RtApiCore *) info->object;
   if ( object->callbackEvent( inDevice, inInputData, outOutputData ) == false )
