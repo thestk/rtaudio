@@ -647,7 +647,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 };
 
 // Operating system dependent thread functionality.
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_MSC_VER)
 
   #ifndef NOMINMAX
     #define NOMINMAX

@@ -178,9 +178,9 @@ AS_IF([test "x$systems" = "x"],
     [*-*-freebsd*],  [systems="oss"],
     [*-*-linux*],    [systems="alsa pulse jack oss"],
     [*-apple*],      [systems="core jack"],
-    [*-mingw32*],    [systems="asio dsound wasapi jack"],
-    [*-mingw64*],    [systems="asio dsound wasapi jack"],
-    [*-msys*],       [systems="asio dsound wasapi jack"],
+    [*-mingw32*],    [systems="asio dsound pulse wasapi jack"],
+    [*-mingw64*],    [systems="asio dsound pulse wasapi jack"],
+    [*-msys*],       [systems="asio dsound pulse wasapi jack"],
   ))
 
 # If any were specifically requested disabled, do it.
@@ -193,6 +193,7 @@ AS_IF([test "x$with_asio"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep 
 AS_IF([test "x$with_dsound" = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v dsound`])
 AS_IF([test "x$with_wasapi" = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v wasapi`])
 systems=" `echo $systems|tr \\\\n ' '` "
+need_pthread=yes
 
 # For each audio system, check if it is selected and found.
 # Note: Order specified above is not necessarily respected. However,
