@@ -11,10 +11,21 @@ pkg = import('pkgconfig')
 
 rt_h = fs.read('RtAudio.h').strip().split('\n')
 foreach line : rt_h
-	if line.startswith('#define RTAUDIO_VERSION')
-		rt_version = line.split('"')[1]
+	if line.startswith('#define RTAUDIO_VERSION_MAJOR')
+		rt_version_major = line.split()[2]
+	elif line.startswith('#define RTAUDIO_VERSION_MINOR')
+		rt_version_minor = line.split()[2]
+	elif line.startswith('#define RTAUDIO_VERSION_PATCH')
+		rt_version_patch = line.split()[2]
+	elif line.startswith('#define RTAUDIO_VERSION_BETA')
+		rt_version_beta = line.split()[2]
 	endif
 endforeach
+if rt_version_beta.to_int() > 0
+	rt_version = rt_version_major + '.' + rt_version_minor + '.' + rt_version_patch + 'beta' + rt_version_beta
+else
+	rt_version = rt_version_major + '.' + rt_version_minor + '.' + rt_version_patch
+endif
 
 assert(meson.project_version() == rt_version, 'Meson\'s RtAudio version does not match the version in header file.')
 
