@@ -42,6 +42,19 @@ cd _build_
 cmake <path to CMakeLists.txt usually two dots> <options> e.g. cmake .. -DRTAUDIO_WINDOWS_WASAPI=ON
 
 
+VCPKG USAGE:
+
+You can build and install rtaudio using [vcpkg](https://github.com/Microsoft/vcpkg/) dependency manager:
+
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh  # ./bootstrap-vcpkg.bat for Windows
+./vcpkg integrate install
+./vcpkg install rtaudio
+
+The rtaudio port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
+
 WINDOWS:
 
 All Windows audio APIs in RtAudio compile with either the MinGW compiler (tested with latest tdm64-gcc-4.8.1) or MS Visual Studio.
