@@ -6166,6 +6166,12 @@ void RtApiWasapi::wasapiThread()
 
   }
 
+  // the stream need to be stopped when it started
+  if ( captureAudioClient )
+      captureAudioClient->Stop();
+  if ( renderAudioClient )
+      renderAudioClient->Stop();
+
 Exit:
   // clean up
   CoTaskMemFree( captureFormat );
