@@ -9456,22 +9456,8 @@ bool RtApiPulse::probeDeviceOpen( unsigned int deviceId, StreamMode mode,
     }
     break;
   case OUTPUT: {
-    pa_buffer_attr * attr_ptr;
-
-    if ( options && options->numberOfBuffers > 0 ) {
-      // pa_buffer_attr::fragsize is recording-only.
-      // Hopefully PortAudio won't access uninitialized fields.
-      buffer_attr.maxlength = bufferBytes * options->numberOfBuffers;
-      buffer_attr.minreq = -1;
-      buffer_attr.prebuf = -1;
-      buffer_attr.tlength = -1;
-      attr_ptr = &buffer_attr;
-    } else {
-      attr_ptr = nullptr;
-    }
-
     pah->s_play = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_PLAYBACK,
-                                 dev_output, "Playback", &ss, NULL, attr_ptr, &error );
+                                 dev_output, "Playback", &ss, NULL, NULL, &error );
     if ( !pah->s_play ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error connecting output to PulseAudio server.";
       goto error;
