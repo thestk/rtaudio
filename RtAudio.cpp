@@ -4646,11 +4646,11 @@ void RtApiWasapi::closeStream( void )
     stopStream();
 
   // clean up stream memory
+  SAFE_RELEASE(((WasapiHandle*)stream_.apiHandle)->captureClient)
+  SAFE_RELEASE(((WasapiHandle*)stream_.apiHandle)->renderClient)
+
   SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient )
   SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient )
-
-  SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureClient )
-  SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->renderClient )
 
   if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent )
     CloseHandle( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent );
@@ -5119,6 +5119,7 @@ void RtApiWasapi::wasapiThread()
                                                                MinPeriodInFrames,
                                                                captureFormat,
                                                                NULL );
+        SAFE_RELEASE(captureAudioClient3);
       }
       else
       {
