@@ -78,7 +78,8 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   {
     int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
     std::string s( length-1, '\0' );
-    WideCharToMultiByte(CP_UTF8, 0, text, -1, &s[0], length, NULL, NULL);
+    if (length > 1)
+        WideCharToMultiByte(CP_UTF8, 0, text, -1, &s[0], length-1, NULL, NULL);
     return s;
   }
 
