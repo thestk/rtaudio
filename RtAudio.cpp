@@ -48,6 +48,12 @@
 #include <climits>
 #include <cmath>
 #include <algorithm>
+#include <codecvt>
+#include <locale>
+
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
@@ -56,35 +62,27 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   32000, 44100, 48000, 88200, 96000, 176400, 192000
 };
 
-#if defined(_WIN32) || defined(__CYGWIN__)
+template<typename T> inline
+std::string convertCharPointerToStdString(const T *text);
+
+template<> inline
+std::string convertCharPointerToStdString(const char *text)
+{
+  return text;
+}
+
+template<> inline
+std::string convertCharPointerToStdString(const wchar_t *text)
+{
+  return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{}.to_bytes(text);
+}
+
+#if defined(_MSC_VER)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
   #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
-
-  #include "tchar.h"
-
-  template<typename T> inline
-  std::string convertCharPointerToStdString(const T *text);
-
-  template<> inline
-  std::string convertCharPointerToStdString(const char *text)
-  {
-    return std::string(text);
-  }
-
-  template<> inline
-  std::string convertCharPointerToStdString(const wchar_t *text)
-  {
-    int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
-    std::string s( length-1, '\0' );
-    if (length > 1)
-        WideCharToMultiByte(CP_UTF8, 0, text, -1, &s[0], length-1, NULL, NULL);
-    return s;
-  }
-
-#elif defined(__unix__) || defined(__APPLE__)
-  // pthread API
+#else
   #define MUTEX_INITIALIZE(A) pthread_mutex_init(A, NULL)
   #define MUTEX_DESTROY(A)    pthread_mutex_destroy(A)
   #define MUTEX_LOCK(A)       pthread_mutex_lock(A)
