@@ -3370,7 +3370,6 @@ RtApiAsio :: ~RtApiAsio()
 void RtApiAsio :: probeDevices( void )
 {
   // See list of required functionality in RtApi::probeDevices().
-
   unsigned int nDevices = drivers.asioGetNumDev();
   if ( nDevices == 0 ) {
     deviceList_.clear();
@@ -3416,9 +3415,13 @@ void RtApiAsio :: probeDevices( void )
 
   // Asio doesn't provide default devices so call the getDefault
   // functions, which will set the first available input and output
-  // devices as the defaults.
-  getDefaultInputDevice();
-  getDefaultOutputDevice();
+  // devices as the defaults. Don't call getDefaultXXXDevice if
+  // deviceList is empty.
+  if(deviceList_.size() > 0)
+  {
+    getDefaultInputDevice();
+    getDefaultOutputDevice();
+  }
 }
 
 bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
