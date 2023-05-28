@@ -113,12 +113,12 @@ typedef int (*rtaudio_cb_t)(void *out, void *in, unsigned int nFrames,
     See \ref RtAudioError.
 */
 typedef enum rtaudio_error {
-  RTAUDIO_ERROR_NONE = -1,         /*!< No error. */
+  RTAUDIO_ERROR_NONE = 0,          /*!< No error. */
   RTAUDIO_ERROR_WARNING,           /*!< A non-critical error. */
-  RTAUDIO_ERROR_DEBUG_WARNING,     /*!< A non-critical error which might be useful for debugging. */
-  RTAUDIO_ERROR_UNSPECIFIED,       /*!< The default, unspecified error type. */
+  RTAUDIO_ERROR_UNKNOWN,           /*!< An unspecified error type. */
   RTAUDIO_ERROR_NO_DEVICES_FOUND,  /*!< No devices found on system. */
   RTAUDIO_ERROR_INVALID_DEVICE,    /*!< An invalid device ID was specified. */
+  RTAUDIO_ERROR_DEVICE_DISCONNECT, /*!< A device in use was disconnected. */
   RTAUDIO_ERROR_MEMORY_ERROR,      /*!< An error occurred during memory allocation. */
   RTAUDIO_ERROR_INVALID_PARAMETER, /*!< An invalid parameter was specified to a function. */
   RTAUDIO_ERROR_INVALID_USE,       /*!< The function was called incorrectly. */
@@ -139,13 +139,13 @@ typedef void (*rtaudio_error_cb_t)(rtaudio_error_t err, const char *msg);
 //! Audio API specifier.  See \ref RtAudio::Api.
 typedef enum rtaudio_api {
   RTAUDIO_API_UNSPECIFIED,    /*!< Search for a working compiled API. */
+  RTAUDIO_API_MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
   RTAUDIO_API_LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
+  RTAUDIO_API_UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
   RTAUDIO_API_LINUX_PULSE,    /*!< The Linux PulseAudio API. */
   RTAUDIO_API_LINUX_OSS,      /*!< The Linux Open Sound System API. */
-  RTAUDIO_API_UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
-  RTAUDIO_API_MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
-  RTAUDIO_API_WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
   RTAUDIO_API_WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
+  RTAUDIO_API_WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
   RTAUDIO_API_WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
   RTAUDIO_API_DUMMY,          /*!< A compilable but non-functional API. */
   RTAUDIO_API_NUM,            /*!< Number of values in this enum. */
