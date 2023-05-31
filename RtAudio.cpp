@@ -297,7 +297,7 @@ public:
   void callbackEvent( void );
 
   private:
-  std::vector< std::string > deviceIds_;
+  std::vector<std::pair<std::string, unsigned int>> deviceIdPairs_;
   
   void probeDevices( void ) override;
   bool probeDeviceInfo( RtAudio::DeviceInfo &info, std::string name );
@@ -7853,25 +7853,23 @@ void RtApiAlsa :: probeDevices( void )
   snd_pcm_info_t *pcminfo;
   snd_ctl_card_info_alloca(&ctlinfo);
   snd_pcm_info_alloca(&pcminfo);
-  std::vector<std::string> deviceIds;
-  std::vector<std::string> deviceNames;
+  // First element isthe device hw ID, second is the device "pretty name"
+  std::vector<std::pair<std::string, std::string>> deviceID_prettyName;
   snd_pcm_stream_t stream;
   std::string defaultDeviceName;
 
   // Add the default interface if available.
   result = snd_ctl_open( &handle, "default", 0 );
   if (result == 0) {
-    deviceIds.push_back( "default" );
-    deviceNames.push_back( "Default ALSA Device" );
-    defaultDeviceName = deviceNames[0];
+    deviceID_prettyName.push_back({"default", "Default ALSA Device"});
+    defaultDeviceName = deviceID_prettyName[0].second;
     snd_ctl_close( handle );
   }
 
   // Add the Pulse interface if available.
   result = snd_ctl_open( &handle, "pulse", 0 );
   if (result == 0) {
-    deviceIds.push_back( "pulse" );
-    deviceNames.push_back( "PulseAudio Sound Server" );
+    deviceID_prettyName.push_back({"pulse",  "PulseAudio Sound Server"});
     snd_ctl_close( handle );
   }
   
@@ -7927,9 +7925,10 @@ void RtApiAlsa :: probeDevices( void )
         else continue;
       }
       sprintf( name, "hw:%s,%d", snd_ctl_card_info_get_id(ctlinfo), device );
-      deviceIds.push_back( name );
+      std::string id(name);
       sprintf( name, "%s (%s)", snd_ctl_card_info_get_name(ctlinfo), snd_pcm_info_get_id(pcminfo) );
-      deviceNames.push_back( name );
+      std::string prettyName(name);
+      deviceID_prettyName.push_back( {id, prettyName} );
       if ( card == 0 && device == 0 && defaultDeviceName.empty() )
         defaultDeviceName = name;
     }
@@ -7939,46 +7938,83 @@ void RtApiAlsa :: probeDevices( void )
     snd_card_next( &card );
   }
 
-  if ( deviceIds.size() == 0 ) {
+  if ( deviceID_prettyName.size() == 0 ) {
     deviceList_.clear();
-    deviceIds_.clear();
+    deviceIdPairs_.clear();
     return;
   }
 
-  // Fill or update the deviceList_ and also save a corresponding list of Ids.
-  unsigned int m, n;
-  for ( n=0; n<deviceNames.size(); n++ ) {
-    for ( m=0; m<deviceList_.size(); m++ ) {
-      if ( deviceList_[m].name == deviceNames[n] )
-        break; // We already have this device.
-    }
-    if ( m == deviceList_.size() ) { // new device
-      RtAudio::DeviceInfo info;
-      info.name = deviceNames[n];
-      if ( probeDeviceInfo( info, deviceIds[n] ) == false ) continue; // ignore if probe fails
-      info.ID = currentDeviceId_++;  // arbitrary internal device ID
-      if ( info.name == defaultDeviceName ) {
-        if ( info.outputChannels > 0 ) info.isDefaultOutput = true;
-        if ( info.inputChannels > 0 ) info.isDefaultInput = true;
-      }
-      deviceList_.push_back( info );
-      deviceIds_.push_back( deviceIds[n] );
-      // I don't see that ALSA provides property listeners to know if
-      // devices are removed or added.
-    }
-  }
-
-  // Remove any devices left in the list that are no longer available.
-  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
-    for ( m=0; m<deviceNames.size(); m++ ) {
-      if ( (*it).name == deviceNames[m] ) {
-        ++it;
+  // Clean removed devices
+  for ( auto it = deviceIdPairs_.begin(); it != deviceIdPairs_.end(); )
+  {
+    bool found = false;
+    for(auto& d: deviceID_prettyName)
+    {
+      if(d.first == (*it).first)
+      {
+        found = true;
         break;
       }
     }
-    if ( m == deviceNames.size() ) { // not found so remove it from our list
-      it = deviceList_.erase( it );
-      deviceIds_.erase( deviceIds_.begin() + distance(deviceList_.begin(), it ) );
+
+    if(found)
+    {
+      ++it;
+    }
+    else
+    {
+      it = deviceIdPairs_.erase(it);
+    }
+  }
+
+  // Fill or update the deviceList_ and also save a corresponding list of Ids.
+  for (auto& d : deviceID_prettyName) 
+  {
+    bool found = false;
+    for ( auto& dID : deviceIdPairs_ ) {
+      if ( d.first == dID.first ) {
+        found = true;
+        break; // We already have this device.
+      }
+    }
+
+    if(found)
+      continue;
+
+    // new device
+    RtAudio::DeviceInfo info;
+    info.name = d.second;
+    if ( probeDeviceInfo( info, d.first ) == false ) continue; // ignore if probe fails
+    info.ID = currentDeviceId_++;  // arbitrary internal device ID
+    if ( info.name == defaultDeviceName ) {
+      if ( info.outputChannels > 0 ) info.isDefaultOutput = true;
+      if ( info.inputChannels > 0 ) info.isDefaultInput = true;
+    }
+    deviceList_.push_back( info );
+    deviceIdPairs_.push_back({d.first, info.ID});
+    // I don't see that ALSA provides property listeners to know if
+    // devices are removed or added.
+  }
+
+  // Remove any devices left in the list that are no longer available.
+  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); )
+  {
+    auto itID = deviceIdPairs_.begin();
+    while ( itID != deviceIdPairs_.end() ) {
+      if ( (*it).ID == (*itID).second ) {
+        break;
+      }
+      ++itID;
+    }
+
+    if( itID == deviceIdPairs_.end() )
+    {
+        // not found so remove it from our list
+        it = deviceList_.erase( it );
+    }
+    else
+    {
+      ++it;
     }
   }
 }
@@ -8167,9 +8203,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 #endif
 
   std::string name;
-  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
-    if ( deviceList_[m].ID == deviceId ) {
-      name = deviceIds_[m];
+  for ( auto& id : deviceIdPairs_) {
+    if ( id.second == deviceId ) {
+      name = id.first;
       break;
     }
   }
