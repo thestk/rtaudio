@@ -168,7 +168,7 @@ typedef struct rtaudio_device_info {
   rtaudio_format_t native_formats;
 
   unsigned int preferred_sample_rate;
-  int sample_rates[NUM_SAMPLE_RATES];
+  unsigned int sample_rates[NUM_SAMPLE_RATES];
 
   char name[MAX_NAME_LENGTH];
 } rtaudio_device_info_t;
@@ -242,7 +242,7 @@ RTAUDIOAPI int rtaudio_device_count(rtaudio_t audio);
 //! Note that a return value of 0 is invalid, which will occur if the
 //! index value is out of bounds or no devices are found. See \ref
 //! RtAudio::getDeviceIds().
-RTAUDIOAPI int rtaudio_get_device_id(rtaudio_t audio, int i);
+RTAUDIOAPI unsigned int rtaudio_get_device_id(rtaudio_t audio, int i);
 
 //! Return a struct rtaudio_device_info for a specified device number.
 //! See \ref RtAudio::getDeviceInfo().
@@ -259,7 +259,7 @@ RTAUDIOAPI unsigned int rtaudio_get_default_input_device(rtaudio_t audio);
 
 //! Opens a stream with the specified parameters.  See \ref RtAudio::openStream().
 //! \return an \ref rtaudio_error.
-RTAUDIOAPI int
+RTAUDIOAPI rtaudio_error_t
 rtaudio_open_stream(rtaudio_t audio, rtaudio_stream_parameters_t *output_params,
                     rtaudio_stream_parameters_t *input_params,
                     rtaudio_format_t format, unsigned int sample_rate,
@@ -271,15 +271,15 @@ rtaudio_open_stream(rtaudio_t audio, rtaudio_stream_parameters_t *output_params,
 RTAUDIOAPI void rtaudio_close_stream(rtaudio_t audio);
 
 //! Starts a stream.  See \ref RtAudio::startStream().
-RTAUDIOAPI int rtaudio_start_stream(rtaudio_t audio);
+RTAUDIOAPI rtaudio_error_t rtaudio_start_stream(rtaudio_t audio);
 
 //! Stop a stream, allowing any samples remaining in the output queue
 //! to be played.  See \ref RtAudio::stopStream().
-RTAUDIOAPI int rtaudio_stop_stream(rtaudio_t audio);
+RTAUDIOAPI rtaudio_error_t rtaudio_stop_stream(rtaudio_t audio);
 
 //! Stop a stream, discarding any samples remaining in the
 //! input/output queue.  See \ref RtAudio::abortStream().
-RTAUDIOAPI int rtaudio_abort_stream(rtaudio_t audio);
+RTAUDIOAPI rtaudio_error_t rtaudio_abort_stream(rtaudio_t audio);
 
 //! Returns 1 if a stream is open and false if not.  See \ref RtAudio::isStreamOpen().
 RTAUDIOAPI int rtaudio_is_stream_open(rtaudio_t audio);
@@ -298,7 +298,7 @@ RTAUDIOAPI void rtaudio_set_stream_time(rtaudio_t audio, double time);
 
 //! Returns the internal stream latency in sample frames.  See \ref
 //! RtAudio::getStreamLatency().
-RTAUDIOAPI int rtaudio_get_stream_latency(rtaudio_t audio);
+RTAUDIOAPI long rtaudio_get_stream_latency(rtaudio_t audio);
 
 //! Returns actual sample rate in use by the stream.  See \ref
 //! RtAudio::getStreamSampleRate().

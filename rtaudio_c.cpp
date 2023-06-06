@@ -81,7 +81,7 @@ int rtaudio_device_count(rtaudio_t audio) {
   return audio->audio->getDeviceCount();
 }
 
-int rtaudio_get_device_id(rtaudio_t audio, int i) {
+unsigned int rtaudio_get_device_id(rtaudio_t audio, int i) {
   std::vector<unsigned int> deviceIds = audio->audio->getDeviceIds();
   if ( i >= 0 && i < (int) deviceIds.size() )
     return deviceIds[i];
@@ -130,7 +130,7 @@ static int proxy_cb_func(void *out, void *in, unsigned int nframes, double time,
                    audio->userdata);
 }
 
-int rtaudio_open_stream(rtaudio_t audio,
+rtaudio_error_t rtaudio_open_stream(rtaudio_t audio,
                         rtaudio_stream_parameters_t *output_params,
                         rtaudio_stream_parameters_t *input_params,
                         rtaudio_format_t format, unsigned int sample_rate,
@@ -178,19 +178,19 @@ int rtaudio_open_stream(rtaudio_t audio,
 
 void rtaudio_close_stream(rtaudio_t audio) { audio->audio->closeStream(); }
 
-int rtaudio_start_stream(rtaudio_t audio) {
+rtaudio_error_t rtaudio_start_stream(rtaudio_t audio) {
   audio->errtype = RTAUDIO_ERROR_NONE;
   audio->audio->startStream();
   return audio->errtype;
 }
 
-int rtaudio_stop_stream(rtaudio_t audio) {
+rtaudio_error_t rtaudio_stop_stream(rtaudio_t audio) {
   audio->errtype = RTAUDIO_ERROR_NONE;
   audio->audio->stopStream();
   return audio->errtype;
 }
 
-int rtaudio_abort_stream(rtaudio_t audio) {
+rtaudio_error_t rtaudio_abort_stream(rtaudio_t audio) {
   audio->errtype = RTAUDIO_ERROR_NONE;
   audio->audio->abortStream();
   return audio->errtype;
@@ -214,7 +214,7 @@ void rtaudio_set_stream_time(rtaudio_t audio, double time) {
   audio->audio->setStreamTime(time);
 }
 
-int rtaudio_get_stream_latency(rtaudio_t audio) {
+long rtaudio_get_stream_latency(rtaudio_t audio) {
   audio->errtype = RTAUDIO_ERROR_NONE;
   return audio->audio->getStreamLatency();
 }
