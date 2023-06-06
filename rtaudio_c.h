@@ -112,7 +112,7 @@ typedef int (*rtaudio_cb_t)(void *out, void *in, unsigned int nFrames,
 
     See \ref RtAudioError.
 */
-typedef enum rtaudio_error {
+enum rtaudio_error {
   RTAUDIO_ERROR_NONE = 0,          /*!< No error. */
   RTAUDIO_ERROR_WARNING,           /*!< A non-critical error. */
   RTAUDIO_ERROR_UNKNOWN,           /*!< An unspecified error type. */
@@ -125,7 +125,8 @@ typedef enum rtaudio_error {
   RTAUDIO_ERROR_DRIVER_ERROR,      /*!< A system driver error occurred. */
   RTAUDIO_ERROR_SYSTEM_ERROR,      /*!< A system error occurred. */
   RTAUDIO_ERROR_THREAD_ERROR,      /*!< A thread error occurred. */
-} rtaudio_error_t;
+};
+typedef int rtaudio_error_t;
 
 //! RtAudio error callback function prototype.
 /*!
@@ -137,7 +138,7 @@ typedef enum rtaudio_error {
 typedef void (*rtaudio_error_cb_t)(rtaudio_error_t err, const char *msg);
 
 //! Audio API specifier.  See \ref RtAudio::Api.
-typedef enum rtaudio_api {
+enum rtaudio_api {
   RTAUDIO_API_UNSPECIFIED,    /*!< Search for a working compiled API. */
   RTAUDIO_API_MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
   RTAUDIO_API_LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
@@ -149,7 +150,8 @@ typedef enum rtaudio_api {
   RTAUDIO_API_WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
   RTAUDIO_API_DUMMY,          /*!< A compilable but non-functional API. */
   RTAUDIO_API_NUM,            /*!< Number of values in this enum. */
-} rtaudio_api_t;
+};
+typedef int rtaudio_api_t;
 
 #define NUM_SAMPLE_RATES 16
 #define MAX_NAME_LENGTH 512
