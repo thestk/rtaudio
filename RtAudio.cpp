@@ -3325,6 +3325,7 @@ static ASIOCallbacks asioCallbacks;
 static ASIODriverInfo driverInfo;
 static CallbackInfo *asioCallbackInfo;
 static bool asioXRun;
+static bool streamOpen = false; // Tracks whether any instance of RtAudio has a stream open
 
 struct AsioHandle {
   int drainCounter;       // Tracks callback counts when draining
@@ -3354,7 +3355,14 @@ RtApiAsio :: RtApiAsio()
   }
   coInitialized_ = true;
 
-  drivers.removeCurrentDriver();
+  // Check whether another RtAudio instance has an ASIO stream open.
+  if ( streamOpen ) {
+    errorText_ = "RtApiAsio(): Another RtAudio ASIO stream is open, functionality may be limited.";
+    error( RTAUDIO_WARNING );
+  }
+  else
+    drivers.removeCurrentDriver();
+
   driverInfo.asioVersion = 2;
 
   // See note in DirectSound implementation about GetDesktopWindow().
@@ -3370,6 +3378,13 @@ RtApiAsio :: ~RtApiAsio()
 void RtApiAsio :: probeDevices( void )
 {
   // See list of required functionality in RtApi::probeDevices().
+
+  if ( streamOpen ) {
+    errorText_ = "RtApiAsio::probeDevices: Another RtAudio ASIO stream is open, cannot probe devices.";
+    error( RTAUDIO_WARNING );
+    return;
+  }
+    
   unsigned int nDevices = drivers.asioGetNumDev();
   if ( nDevices == 0 ) {
     deviceList_.clear();
@@ -3534,6 +3549,10 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // Only load the driver once for duplex stream.
   ASIOError result;
   if ( !isDuplexInput ) {
+    if ( streamOpen ) {
+      errorText_ = "RtApiAsio::probeDeviceOpen: Another RtAudio ASIO stream is open, cannot open more than one at a time.";
+      return FAILURE;
+    }
     if ( !drivers.loadDriver( const_cast<char *>(driverName.c_str()) ) ) {
       errorStream_ << "RtApiAsio::probeDeviceOpen: unable to load driver (" << driverName << ").";
       errorText_ = errorStream_.str();
@@ -3851,6 +3870,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // here.
   if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, 0 );
 
+  streamOpen = true;
   return SUCCESS;
 
  error:
@@ -3924,6 +3944,7 @@ void RtApiAsio :: closeStream()
   }
 
   clearStreamInfo();
+  streamOpen = false;
   //stream_.mode = UNINITIALIZED;
   //stream_.state = STREAM_CLOSED;
 }
