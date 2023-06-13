@@ -112,7 +112,7 @@ typedef int (*rtaudio_cb_t)(void *out, void *in, unsigned int nFrames,
 
     See \ref RtAudioError.
 */
-typedef enum rtaudio_error {
+enum rtaudio_error {
   RTAUDIO_ERROR_NONE = 0,          /*!< No error. */
   RTAUDIO_ERROR_WARNING,           /*!< A non-critical error. */
   RTAUDIO_ERROR_UNKNOWN,           /*!< An unspecified error type. */
@@ -125,7 +125,8 @@ typedef enum rtaudio_error {
   RTAUDIO_ERROR_DRIVER_ERROR,      /*!< A system driver error occurred. */
   RTAUDIO_ERROR_SYSTEM_ERROR,      /*!< A system error occurred. */
   RTAUDIO_ERROR_THREAD_ERROR,      /*!< A thread error occurred. */
-} rtaudio_error_t;
+};
+typedef int rtaudio_error_t;
 
 //! RtAudio error callback function prototype.
 /*!
@@ -137,7 +138,7 @@ typedef enum rtaudio_error {
 typedef void (*rtaudio_error_cb_t)(rtaudio_error_t err, const char *msg);
 
 //! Audio API specifier.  See \ref RtAudio::Api.
-typedef enum rtaudio_api {
+enum rtaudio_api {
   RTAUDIO_API_UNSPECIFIED,    /*!< Search for a working compiled API. */
   RTAUDIO_API_MACOSX_CORE,    /*!< Macintosh OS-X Core Audio API. */
   RTAUDIO_API_LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
@@ -149,7 +150,8 @@ typedef enum rtaudio_api {
   RTAUDIO_API_WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
   RTAUDIO_API_DUMMY,          /*!< A compilable but non-functional API. */
   RTAUDIO_API_NUM,            /*!< Number of values in this enum. */
-} rtaudio_api_t;
+};
+typedef int rtaudio_api_t;
 
 #define NUM_SAMPLE_RATES 16
 #define MAX_NAME_LENGTH 512
@@ -168,7 +170,7 @@ typedef struct rtaudio_device_info {
   rtaudio_format_t native_formats;
 
   unsigned int preferred_sample_rate;
-  int sample_rates[NUM_SAMPLE_RATES];
+  unsigned int sample_rates[NUM_SAMPLE_RATES];
 
   char name[MAX_NAME_LENGTH];
 } rtaudio_device_info_t;
@@ -242,7 +244,7 @@ RTAUDIOAPI int rtaudio_device_count(rtaudio_t audio);
 //! Note that a return value of 0 is invalid, which will occur if the
 //! index value is out of bounds or no devices are found. See \ref
 //! RtAudio::getDeviceIds().
-RTAUDIOAPI int rtaudio_get_device_id(rtaudio_t audio, int i);
+RTAUDIOAPI unsigned int rtaudio_get_device_id(rtaudio_t audio, int i);
 
 //! Return a struct rtaudio_device_info for a specified device number.
 //! See \ref RtAudio::getDeviceInfo().
@@ -259,7 +261,7 @@ RTAUDIOAPI unsigned int rtaudio_get_default_input_device(rtaudio_t audio);
 
 //! Opens a stream with the specified parameters.  See \ref RtAudio::openStream().
 //! \return an \ref rtaudio_error.
-RTAUDIOAPI int
+RTAUDIOAPI rtaudio_error_t
 rtaudio_open_stream(rtaudio_t audio, rtaudio_stream_parameters_t *output_params,
                     rtaudio_stream_parameters_t *input_params,
                     rtaudio_format_t format, unsigned int sample_rate,
@@ -271,15 +273,15 @@ rtaudio_open_stream(rtaudio_t audio, rtaudio_stream_parameters_t *output_params,
 RTAUDIOAPI void rtaudio_close_stream(rtaudio_t audio);
 
 //! Starts a stream.  See \ref RtAudio::startStream().
-RTAUDIOAPI int rtaudio_start_stream(rtaudio_t audio);
+RTAUDIOAPI rtaudio_error_t rtaudio_start_stream(rtaudio_t audio);
 
 //! Stop a stream, allowing any samples remaining in the output queue
 //! to be played.  See \ref RtAudio::stopStream().
-RTAUDIOAPI int rtaudio_stop_stream(rtaudio_t audio);
+RTAUDIOAPI rtaudio_error_t rtaudio_stop_stream(rtaudio_t audio);
 
 //! Stop a stream, discarding any samples remaining in the
 //! input/output queue.  See \ref RtAudio::abortStream().
-RTAUDIOAPI int rtaudio_abort_stream(rtaudio_t audio);
+RTAUDIOAPI rtaudio_error_t rtaudio_abort_stream(rtaudio_t audio);
 
 //! Returns 1 if a stream is open and false if not.  See \ref RtAudio::isStreamOpen().
 RTAUDIOAPI int rtaudio_is_stream_open(rtaudio_t audio);
@@ -298,7 +300,7 @@ RTAUDIOAPI void rtaudio_set_stream_time(rtaudio_t audio, double time);
 
 //! Returns the internal stream latency in sample frames.  See \ref
 //! RtAudio::getStreamLatency().
-RTAUDIOAPI int rtaudio_get_stream_latency(rtaudio_t audio);
+RTAUDIOAPI long rtaudio_get_stream_latency(rtaudio_t audio);
 
 //! Returns actual sample rate in use by the stream.  See \ref
 //! RtAudio::getStreamSampleRate().
