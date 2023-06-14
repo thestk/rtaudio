@@ -3450,6 +3450,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
 
   ASIOError result = ASIOInit( &driverInfo );
   if ( result != ASE_OK ) {
+    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") initializing driver (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -3460,6 +3461,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
   long inputChannels, outputChannels;
   result = ASIOGetChannels( &inputChannels, &outputChannels );
   if ( result != ASE_OK ) {
+    ASIOExit();
     drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") getting channel count (" << info.name << ").";
     errorText_ = errorStream_.str();
@@ -3491,6 +3493,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
   if ( info.inputChannels <= 0 ) channelInfo.isInput = false;
   result = ASIOGetChannelInfo( &channelInfo );
   if ( result != ASE_OK ) {
+    ASIOExit();
     drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") getting driver channel info (" << info.name << ").";
     errorText_ = errorStream_.str();
@@ -3510,6 +3513,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
   else if ( channelInfo.type == ASIOSTInt24MSB || channelInfo.type == ASIOSTInt24LSB )
     info.nativeFormats |= RTAUDIO_SINT24;
 
+  ASIOExit();
   drivers.removeCurrentDriver();
   return true;
 }
@@ -3561,6 +3565,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
     result = ASIOInit( &driverInfo );
     if ( result != ASE_OK ) {
+      drivers.removeCurrentDriver();
       errorStream_ << "RtApiAsio::probeDeviceOpen: error (" << getAsioErrorString( result ) << ") initializing driver (" << driverName << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -3881,6 +3886,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     if ( buffersAllocated )
       ASIODisposeBuffers();
 
+    ASIOExit();
     drivers.removeCurrentDriver();
 
     if ( handle ) {
@@ -3920,6 +3926,7 @@ void RtApiAsio :: closeStream()
     ASIOStop();
   }
   ASIODisposeBuffers();
+  ASIOExit();
   drivers.removeCurrentDriver();
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
@@ -3943,6 +3950,13 @@ void RtApiAsio :: closeStream()
     stream_.deviceBuffer = 0;
   }
 
+  CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+  if ( info->deviceDisconnected ) {
+    // This could be either a disconnect or a sample rate change.
+    errorText_ = "RtApiAsio: the streaming device was disconnected or the sample rate changed, closing stream!";
+    error( RTAUDIO_DEVICE_DISCONNECT );
+  }
+  
   clearStreamInfo();
   streamOpen = false;
   //stream_.mode = UNINITIALIZED;
@@ -4216,18 +4230,17 @@ static void sampleRateChanged( ASIOSampleRate sRate )
   // audio device.
 
   RtApi *object = (RtApi *) asioCallbackInfo->object;
-  if ( object->stopStream() ) {
-    std::cerr << "\nRtApiAsio: sampleRateChanged() error (" << /*TODO object->errorText_ <<*/ ")!\n" << std::endl;
-    return;
+  if ( object->getStreamSampleRate() != sRate ) {
+    asioCallbackInfo->deviceDisconnected = true; // flag for either rate change or disconnect
+    object->closeStream();
   }
-
-  std::cerr << "\nRtApiAsio: driver reports sample rate changed to " << sRate << " ... stream stopped!!!\n" << std::endl;
 }
 
 static long asioMessages( long selector, long value, void* /*message*/, double* /*opt*/ )
 {
   long ret = 0;
-
+  RtApi *object = (RtApi *) asioCallbackInfo->object;
+  
   switch( selector ) {
   case kAsioSelectorSupported:
     if ( value == kAsioResetRequest
@@ -4248,7 +4261,9 @@ static long asioMessages( long selector, long value, void* /*message*/, double* 
     // done by completely destruct is. I.e. ASIOStop(),
     // ASIODisposeBuffers(), Destruction Afterwards you initialize the
     // driver again.
-    std::cerr << "\nRtApiAsio: driver reset requested!!!" << std::endl;
+    asioCallbackInfo->deviceDisconnected = true; // flag for either rate change or disconnect
+    object->closeStream();
+    //std::cerr << "\nRtApiAsio: driver reset requested!!!" << std::endl;
     ret = 1L;
     break;
   case kAsioResyncRequest:
@@ -7966,31 +7981,23 @@ void RtApiAlsa :: probeDevices( void )
   }
 
   // Clean removed devices
-  for ( auto it = deviceIdPairs_.begin(); it != deviceIdPairs_.end(); )
-  {
+  for ( auto it = deviceIdPairs_.begin(); it != deviceIdPairs_.end(); ) {
     bool found = false;
-    for(auto& d: deviceID_prettyName)
-    {
-      if(d.first == (*it).first)
-      {
+    for ( auto& d: deviceID_prettyName ) {
+      if ( d.first == (*it).first ) {
         found = true;
         break;
       }
     }
 
-    if(found)
-    {
+    if ( found )
       ++it;
-    }
     else
-    {
       it = deviceIdPairs_.erase(it);
-    }
   }
 
   // Fill or update the deviceList_ and also save a corresponding list of Ids.
-  for (auto& d : deviceID_prettyName) 
-  {
+  for ( auto& d : deviceID_prettyName ) {
     bool found = false;
     for ( auto& dID : deviceIdPairs_ ) {
       if ( d.first == dID.first ) {
@@ -7999,7 +8006,7 @@ void RtApiAlsa :: probeDevices( void )
       }
     }
 
-    if(found)
+    if ( found )
       continue;
 
     // new device
@@ -8028,15 +8035,12 @@ void RtApiAlsa :: probeDevices( void )
       ++itID;
     }
 
-    if( itID == deviceIdPairs_.end() )
-    {
-        // not found so remove it from our list
-        it = deviceList_.erase( it );
+    if ( itID == deviceIdPairs_.end() ) {
+      // not found so remove it from our list
+      it = deviceList_.erase( it );
     }
     else
-    {
       ++it;
-    }
   }
 }
 
