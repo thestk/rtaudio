@@ -246,10 +246,10 @@ RTAUDIOAPI int rtaudio_device_count(rtaudio_t audio);
 //! RtAudio::getDeviceIds().
 RTAUDIOAPI unsigned int rtaudio_get_device_id(rtaudio_t audio, int i);
 
-//! Return a struct rtaudio_device_info for a specified device number.
+//! Return a struct rtaudio_device_info for a specified device ID.
 //! See \ref RtAudio::getDeviceInfo().
 RTAUDIOAPI rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio,
-                                                         int i);
+                                                         unsigned int id);
 
 //! Returns the device id of the default output device.  See \ref
 //! RtAudio::getDefaultOutputDevice().

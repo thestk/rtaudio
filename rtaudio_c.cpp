@@ -89,12 +89,12 @@ unsigned int rtaudio_get_device_id(rtaudio_t audio, int i) {
     return 0;
 }
 
-rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, int i) {
+rtaudio_device_info_t rtaudio_get_device_info(rtaudio_t audio, unsigned int id) {
   rtaudio_device_info_t result;
   std::memset(&result, 0, sizeof(result));
 
   audio->errtype = RTAUDIO_ERROR_NONE;
-  RtAudio::DeviceInfo info = audio->audio->getDeviceInfo(i);
+  RtAudio::DeviceInfo info = audio->audio->getDeviceInfo(id);
   if (audio->errtype != RTAUDIO_ERROR_NONE)
       return result;
 
