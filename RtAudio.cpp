@@ -3925,6 +3925,15 @@ void RtApiAsio :: closeStream()
     stream_.state = STREAM_STOPPED;
     ASIOStop();
   }
+
+  stream_.state = STREAM_CLOSED;
+  CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+  if ( info->deviceDisconnected ) {
+    // This could be either a disconnect or a sample rate change.
+    errorText_ = "RtApiAsio: the streaming device was disconnected or the sample rate changed, closing stream!";
+    error( RTAUDIO_DEVICE_DISCONNECT );
+  }
+  
   ASIODisposeBuffers();
   ASIOExit();
   drivers.removeCurrentDriver();
@@ -3949,21 +3958,12 @@ void RtApiAsio :: closeStream()
     free( stream_.deviceBuffer );
     stream_.deviceBuffer = 0;
   }
-
-  CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
-  if ( info->deviceDisconnected ) {
-    // This could be either a disconnect or a sample rate change.
-    errorText_ = "RtApiAsio: the streaming device was disconnected or the sample rate changed, closing stream!";
-    error( RTAUDIO_DEVICE_DISCONNECT );
-  }
   
   clearStreamInfo();
   streamOpen = false;
   //stream_.mode = UNINITIALIZED;
   //stream_.state = STREAM_CLOSED;
 }
-
-bool stopThreadCalled = false;
 
 RtAudioErrorType RtApiAsio :: startStream()
 {
@@ -3996,8 +3996,6 @@ RtAudioErrorType RtApiAsio :: startStream()
   asioXRun = false;
 
  unlock:
-  stopThreadCalled = false;
-
   if ( result == ASE_OK ) return RTAUDIO_NO_ERROR;
   return error( RTAUDIO_SYSTEM_ERROR );
 }
@@ -4052,17 +4050,23 @@ RtAudioErrorType RtApiAsio :: abortStream()
   return RTAUDIO_NO_ERROR;
 }
 
-// This function will be called by a spawned thread when the user
+// This function will be called by a spawned thread when: 1. The user
 // callback function signals that the stream should be stopped or
-// aborted.  It is necessary to handle it this way because the
-// callbackEvent() function must return before the ASIOStop()
-// function will return.
+// aborted; or 2. When a signal is received indicating that the device
+// sample rate has changed or it has been disconnected.  It is
+// necessary to handle it this way because the callbackEvent() or
+// signaling function must return before the ASIOStop() function will
+// return (or the driver can be removed).
 static unsigned __stdcall asioStopStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiAsio *object = (RtApiAsio *) info->object;
 
-  object->stopStream();
+  if ( info->deviceDisconnected == false )
+    object->stopStream(); // drain the stream
+  else
+    object->closeStream(); // disconnect or sample rate change ... close the stream
+
   _endthreadex( 0 );
   return 0;
 }
@@ -4232,14 +4236,15 @@ static void sampleRateChanged( ASIOSampleRate sRate )
   RtApi *object = (RtApi *) asioCallbackInfo->object;
   if ( object->getStreamSampleRate() != sRate ) {
     asioCallbackInfo->deviceDisconnected = true; // flag for either rate change or disconnect
-    object->closeStream();
+    unsigned threadId;
+    asioCallbackInfo->thread = _beginthreadex( NULL, 0, &asioStopStream,
+                                               asioCallbackInfo, 0, &threadId );
   }
 }
 
 static long asioMessages( long selector, long value, void* /*message*/, double* /*opt*/ )
 {
   long ret = 0;
-  RtApi *object = (RtApi *) asioCallbackInfo->object;
   
   switch( selector ) {
   case kAsioSelectorSupported:
@@ -4255,14 +4260,18 @@ static long asioMessages( long selector, long value, void* /*message*/, double* 
       ret = 1L;
     break;
   case kAsioResetRequest:
-    // Defer the task and perform the reset of the driver during the
-    // next "safe" situation.  You cannot reset the driver right now,
-    // as this code is called from the driver.  Reset the driver is
-    // done by completely destruct is. I.e. ASIOStop(),
-    // ASIODisposeBuffers(), Destruction Afterwards you initialize the
-    // driver again.
+    // This message is received when a device is disconnected (and
+    // perhaps when the sample rate changes). It indicates that the
+    // driver should be reset, which is accomplished by calling
+    // ASIOStop(), ASIODisposeBuffers() and removing the driver. But
+    // since this message comes from the driver, we need to let this
+    // function return before attempting to close the stream and
+    // remove the driver. Thus, we invoke a thread to initiate the
+    // stream closing.
     asioCallbackInfo->deviceDisconnected = true; // flag for either rate change or disconnect
-    object->closeStream();
+    unsigned threadId;
+    asioCallbackInfo->thread = _beginthreadex( NULL, 0, &asioStopStream,
+                                               asioCallbackInfo, 0, &threadId );
     //std::cerr << "\nRtApiAsio: driver reset requested!!!" << std::endl;
     ret = 1L;
     break;
