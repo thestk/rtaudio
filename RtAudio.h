@@ -11,7 +11,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2022 Gary P. Scavone
+    Copyright (c) 2001-2023 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -49,7 +49,7 @@
 #define RTAUDIO_VERSION_MAJOR 6
 #define RTAUDIO_VERSION_MINOR 0
 #define RTAUDIO_VERSION_PATCH 0
-#define RTAUDIO_VERSION_BETA  1
+#define RTAUDIO_VERSION_BETA  0
 
 #define RTAUDIO_TOSTRING2(n) #n
 #define RTAUDIO_TOSTRING(n) RTAUDIO_TOSTRING2(n)

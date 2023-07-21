@@ -17,14 +17,14 @@ RtAudio incorporates the concept of audio streams, which represent audio output 
 
 Changes in this release include:
 
-- complete rewrite of device enumeration scheme for all APIs to provide persistent IDs (significant API change)
+- complete rewrite of device enumeration scheme for all APIs to provide persistent IDs within a given instance (significant API change)
 - discontinued use of C++ exceptions, switched to error code return values from various functions (significant API change)
 - corresponding updates to test programs and documentation
 - see git history for complete list of changes
 
 \section download Download
 
-Latest Release (?? 2022): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-6.0.0.tar.gz">Version 6.0.0</A>
+Latest Release (21 July 2023): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-6.0.0.tar.gz">Version 6.0.0</A>
 
 \section documentation Documentation Links
 
