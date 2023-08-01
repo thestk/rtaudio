@@ -13,9 +13,9 @@ RtAudio is a set of C++ classes that provide a common API (Application Programmi
 
 RtAudio incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording).  Available audio devices and their capabilities can be enumerated and then specified when opening a stream.  Where applicable, multiple API support can be compiled and a particular API specified when creating an RtAudio instance.  See the \ref apinotes section for information specific to each of the supported audio APIs.
 
-\section whatsnew Latest Updates (Version 6.0.0)
+\section whatsnew Latest Updates (Version 6.0.1)
 
-Changes in this release include:
+Changes in this release (from 6.0.0) include:
 
 - complete rewrite of device enumeration scheme for all APIs to provide persistent IDs within a given instance (significant API change)
 - discontinued use of C++ exceptions, switched to error code return values from various functions (significant API change)
@@ -24,7 +24,7 @@ Changes in this release include:
 
 \section download Download
 
-Latest Release (21 July 2023): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-6.0.0.tar.gz">Version 6.0.0</A>
+Latest Release (1 August 2023): <A href="http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-6.0.1.tar.gz">Version 6.0.1</A>
 
 \section documentation Documentation Links
 

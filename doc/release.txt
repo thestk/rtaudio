@@ -2,6 +2,9 @@ RtAudio - a set of C++ classes that provide a common API for realtime audio inpu
 
 By Gary P. Scavone, 2001-2023.
 
+v.6.0.1: (1 August 2023)
+- soversion bump to 7
+
 v.6.0.0: (21 July 2023)
 - see git history for complete list of changes
 - major API changes concerning device selection / specification

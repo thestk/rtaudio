@@ -1,5 +1,5 @@
 project('RtAudio', 'cpp',
-	version: '6.0.0',
+	version: '6.0.1',
 
 	default_options: ['warning_level=3',
 			'c_std=c99',

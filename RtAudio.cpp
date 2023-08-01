@@ -39,7 +39,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 6.0.0
+// RtAudio: Version 6.0.1
 
 #include "RtAudio.h"
 #include <iostream>
