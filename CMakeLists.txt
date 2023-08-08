@@ -31,6 +31,7 @@ endif()
 # Necessary for Windows
 if(MINGW)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  set(NEED_PTHREAD ON)
 endif()
 
 # Standard CMake options
