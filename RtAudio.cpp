@@ -9521,7 +9521,10 @@ bool RtApiPulse::probeDeviceOpen( unsigned int deviceId, StreamMode mode,
     pa_buffer_attr buffer_attr;
   case INPUT:
     buffer_attr.fragsize = bufferBytes;
-    buffer_attr.maxlength = -1;
+    if ( options && options->numberOfBuffers > 0 )
+      buffer_attr.maxlength = bufferBytes * (options->numberOfBuffers + 1);
+    else
+      buffer_attr.maxlength = bufferBytes * 4;
 
     pah->s_rec = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_RECORD,
                                 dev_input, "Record", &ss, NULL, &buffer_attr, &error );
