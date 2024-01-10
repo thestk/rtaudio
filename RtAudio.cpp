@@ -1981,7 +1981,7 @@ void RtApiCore :: closeStream( void )
         }
       }
 
-      if ( handle->disconnectListenerAdded[0] ) {
+      if ( handle->disconnectListenerAdded[1] ) {
         property.mSelector = kAudioDevicePropertyDeviceIsAlive;
         if (AudioObjectRemovePropertyListener( handle->id[1], &property, streamDisconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
           errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
