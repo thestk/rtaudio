@@ -25,7 +25,7 @@ typedef signed short MY_TYPE;
 typedef S24 MY_TYPE;
 #define FORMAT RTAUDIO_SINT24
 
-typedef signed long MY_TYPE;
+typedef int32_t MY_TYPE;
 #define FORMAT RTAUDIO_SINT32
 
 typedef float MY_TYPE;
