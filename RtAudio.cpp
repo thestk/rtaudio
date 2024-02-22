@@ -1782,7 +1782,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   stream_.deviceFormat[mode] = RTAUDIO_FLOAT32;
 
   if ( streamCount == 1 )
-    stream_.nDeviceChannels[mode] = description.mChannelsPerFrame;
+    stream_.nDeviceChannels[mode] = streamChannels;
   else // multiple streams
     stream_.nDeviceChannels[mode] = channels;
   stream_.nUserChannels[mode] = channels;
