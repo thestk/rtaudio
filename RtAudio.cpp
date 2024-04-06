@@ -72,9 +72,24 @@ std::string convertCharPointerToStdString(const char *text)
 }
 
 template<> inline
-std::string convertCharPointerToStdString(const wchar_t *text)
+std::string convertCharPointerToStdString(const wchar_t* text)
 {
+#if defined(_MSC_VER)
+  if (!text)
+    return std::string();
+  const int wchars = (int)wcslen(text);
+  // how many characters are required after conversion?
+  const int nchars = WideCharToMultiByte(CP_UTF8, 0, text, wchars, 0, 0, 0, 0);
+  if (!nchars)
+    return std::string();
+  // create buffer
+  std::string nret(nchars, 0);
+  // do the conversion
+  WideCharToMultiByte(CP_UTF8, 0, text, wchars, &nret[0], nchars, 0, 0);
+  return nret;
+#else
   return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{}.to_bytes(text);
+#endif
 }
 
 #if defined(_MSC_VER)
