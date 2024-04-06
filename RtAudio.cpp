@@ -74,7 +74,7 @@ std::string convertCharPointerToStdString(const char *text)
 template<> inline
 std::string convertCharPointerToStdString(const wchar_t *text)
 {
-#if 1
+#if defined(_MSC_VER)
   if (!text)
     return std::string();
   const int wchars = (int) wcslen(text);
