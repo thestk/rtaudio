@@ -249,6 +249,10 @@ typedef std::function<void(RtAudioErrorType type,
                            const std::string &errorText )>
   RtAudioErrorCallback;
 
+//! RtAudio streamUpdate callback function prototype.
+typedef std::function<void()>
+  RtAudioStreamUpdateCallback;
+
 // **************************************************************** //
 //
 // RtAudio class declaration.
@@ -430,7 +434,9 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     An optional errorCallback function can be specified to
     subsequently receive warning and error messages.
   */
-  RtAudio( RtAudio::Api api=UNSPECIFIED, RtAudioErrorCallback&& errorCallback=0 );
+  RtAudio( RtAudio::Api api=UNSPECIFIED,
+           RtAudioErrorCallback&& errorCallback=0,
+           RtAudioStreamUpdateCallback&& updateCallback=0 );
 
   //! The destructor.
   /*!
@@ -632,6 +638,9 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   //! Set a client-defined function that will be invoked when an error or warning occurs.
   void setErrorCallback( RtAudioErrorCallback errorCallback );
 
+  //! Set a client-defined function that will be invoked if the stream properties change
+  void setStreamUpdateCallback( RtAudioStreamUpdateCallback updateCallback );
+
   //! Specify whether warning messages should be output or not.
   /*!
     The default behaviour is for warning messages to be output,
@@ -772,6 +781,7 @@ public:
   bool isStreamOpen( void ) const { return stream_.state != STREAM_CLOSED; }
   bool isStreamRunning( void ) const { return stream_.state == STREAM_RUNNING; }
   void setErrorCallback( RtAudioErrorCallback errorCallback ) { errorCallback_ = errorCallback; }
+  void setStreamUpdateCallback( RtAudioStreamUpdateCallback updateCallback ) { streamUpdateCallback_ = updateCallback; }
   void showWarnings( bool value ) { showWarnings_ = value; }
 
 
@@ -848,6 +858,7 @@ protected:
   std::ostringstream errorStream_;
   std::string errorText_;
   RtAudioErrorCallback errorCallback_;
+  RtAudioStreamUpdateCallback streamUpdateCallback_;
   bool showWarnings_;
   std::vector<RtAudio::DeviceInfo> deviceList_;
   unsigned int currentDeviceId_;
@@ -925,6 +936,7 @@ inline unsigned int RtAudio :: getStreamSampleRate( void ) { return rtapi_->getS
 inline double RtAudio :: getStreamTime( void ) { return rtapi_->getStreamTime(); }
 inline void RtAudio :: setStreamTime( double time ) { return rtapi_->setStreamTime( time ); }
 inline void RtAudio :: setErrorCallback( RtAudioErrorCallback errorCallback ) { rtapi_->setErrorCallback( errorCallback ); }
+inline void RtAudio :: setStreamUpdateCallback( RtAudioStreamUpdateCallback updateCallback ) { rtapi_->setStreamUpdateCallback ( updateCallback ); }
 inline void RtAudio :: showWarnings( bool value ) { rtapi_->showWarnings( value ); }
 
 #endif
