@@ -87,7 +87,7 @@ AS_IF([test "x${AR}" = "xno" ], [
 ])
 
 # Initialize libtool
-#LT_INIT([win32-dll])
+LT_INIT([win32-dll])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for header files.

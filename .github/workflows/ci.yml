@@ -72,7 +72,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: install dependencies
-      run: brew install autoconf-archive automake cmake meson
+      run: brew install autoconf-archive automake cmake meson libtool
     - name: automake
       run:
         env NOCONFIGURE=1 ./autogen.sh && mkdir bld-automake && cd bld-automake
