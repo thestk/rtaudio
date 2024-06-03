@@ -71,7 +71,7 @@ rtaudio_t rtaudio_create(rtaudio_api_t api) {
   return audio;
 }
 
-void rtaudio_destroy(rtaudio_t audio) { delete audio->audio; }
+void rtaudio_destroy(rtaudio_t audio) { delete audio->audio; delete audio; }
 
 rtaudio_api_t rtaudio_current_api(rtaudio_t audio) {
   return (rtaudio_api_t)audio->audio->getCurrentApi();
