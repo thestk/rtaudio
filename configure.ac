@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(RtAudio, 6.0.1, gary.scavone@mcgill.ca, rtaudio)
+AC_INIT([RtAudio],[6.0.1],[gary.scavone@mcgill.ca],[rtaudio])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR(RtAudio.cpp)
 AC_CONFIG_FILES([rtaudio.pc Makefile tests/Makefile doc/Makefile doc/Doxyfile])
@@ -91,7 +91,6 @@ LT_INIT([win32-dll])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
 
 # Check compiler and use -Wall if gnu
