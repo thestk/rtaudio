@@ -52,8 +52,6 @@
 #include <locale>
 
 #if defined(_WIN32)
-#include <wrl/client.h>
-using Microsoft::WRL::ComPtr;
 #include <windows.h>
 #endif
 
@@ -257,6 +255,8 @@ public:
 #endif
 
 #if defined(__WINDOWS_WASAPI__)
+#include <wrl/client.h>
+using Microsoft::WRL::ComPtr;
 
 struct IMMDeviceEnumerator;
 
@@ -4691,8 +4691,8 @@ public:
       outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
     }
 
-    ComPtr<IMFMediaBuffer> rInBuffer;
-    ComPtr<IMFSample> rInSample;
+    ComPtr<IMFMediaBuffer> rInBuffer = NULL;
+    ComPtr<IMFSample> rInSample = NULL;
     BYTE* rInByteBuffer = NULL;
 
     // 5. Create Sample object from input data
@@ -4749,7 +4749,6 @@ public:
     rOutBuffer->Lock( &rOutByteBuffer, NULL, NULL );
     memcpy( outBuffer, rOutByteBuffer, rBytes );
     rOutBuffer->Unlock();
-    rOutByteBuffer = NULL;
 
     outSampleCount = rBytes / _bytesPerSample / _channelCount;
     SAFE_RELEASE( rOutDataBuffer.pSample );
@@ -5090,6 +5089,8 @@ void RtApiWasapi::probeDevices( void )
   }
 
  Exit:
+  // Release all references
+
   CoTaskMemFree( defaultCaptureId );
   CoTaskMemFree( defaultRenderId );
 
@@ -5236,6 +5237,8 @@ void RtApiWasapi::closeStream( void )
     stopStream();
     MUTEX_LOCK( &stream_.mutex );
   }
+
+  // clean up stream memory
 
   if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent )
     CloseHandle( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent );
@@ -5439,7 +5442,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // If an output device and is configured for loopback (input mode)
   if ( isInput == false && mode == INPUT ) {
     // If renderAudioClient is not initialised, initialise it now
-    ComPtr<IAudioClient> renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+    ComPtr<IAudioClient>& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
     if ( !renderAudioClient ) {
       MUTEX_UNLOCK( &stream_.mutex );
       probeDeviceOpen( deviceId, OUTPUT, channels, firstChannel, sampleRate, format, bufferSize, options );
@@ -5447,7 +5450,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     }
 
     // Retrieve captureAudioClient from our stream handle.
-    ComPtr<IAudioClient> captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
+    ComPtr<IAudioClient>& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
                               NULL, ( void** ) &captureAudioClient );
@@ -5469,7 +5472,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // If output device and is configured for output.
   if ( isInput == false && mode == OUTPUT ) {
     // If renderAudioClient is already initialised, don't initialise it again
-    ComPtr<IAudioClient> renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+    ComPtr<IAudioClient>& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
     if ( renderAudioClient ) {
       methodResult = SUCCESS;
       goto Exit;
