@@ -343,8 +343,8 @@ write_basic_package_version_file(
 
 install(
   FILES
-    ${CMAKE_BINARY_DIR}/RtAudioConfig.cmake
-    ${CMAKE_BINARY_DIR}/RtAudioConfig-version.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig-version.cmake
   DESTINATION
     ${RTAUDIO_CMAKE_DESTINATION}
 )
