@@ -72,9 +72,24 @@ std::string convertCharPointerToStdString(const char *text)
 }
 
 template<> inline
-std::string convertCharPointerToStdString(const wchar_t *text)
+std::string convertCharPointerToStdString(const wchar_t* text)
 {
+#if defined(_MSC_VER)
+  if (!text)
+    return std::string();
+  const int wchars = (int)wcslen(text);
+  // how many characters are required after conversion?
+  const int nchars = WideCharToMultiByte(CP_UTF8, 0, text, wchars, 0, 0, 0, 0);
+  if (!nchars)
+    return std::string();
+  // create buffer
+  std::string nret(nchars, 0);
+  // do the conversion
+  WideCharToMultiByte(CP_UTF8, 0, text, wchars, &nret[0], nchars, 0, 0);
+  return nret;
+#else
   return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{}.to_bytes(text);
+#endif
 }
 
 #if defined(_MSC_VER)
@@ -240,6 +255,8 @@ public:
 #endif
 
 #if defined(__WINDOWS_WASAPI__)
+#include <wrl/client.h>
+using Microsoft::WRL::ComPtr;
 
 struct IMMDeviceEnumerator;
 
@@ -258,7 +275,7 @@ public:
 
 private:
   bool coInitialized_;
-  IMMDeviceEnumerator* deviceEnumerator_;
+  ComPtr<IMMDeviceEnumerator> deviceEnumerator_;
   std::vector< std::pair< std::string, bool> > deviceIds_;
 
   void probeDevices( void ) override;
@@ -1782,7 +1799,7 @@ bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   stream_.deviceFormat[mode] = RTAUDIO_FLOAT32;
 
   if ( streamCount == 1 )
-    stream_.nDeviceChannels[mode] = description.mChannelsPerFrame;
+    stream_.nDeviceChannels[mode] = streamChannels;
   else // multiple streams
     stream_.nDeviceChannels[mode] = channels;
   stream_.nUserChannels[mode] = channels;
@@ -1981,7 +1998,7 @@ void RtApiCore :: closeStream( void )
         }
       }
 
-      if ( handle->disconnectListenerAdded[0] ) {
+      if ( handle->disconnectListenerAdded[1] ) {
         property.mSelector = kAudioDevicePropertyDeviceIsAlive;
         if (AudioObjectRemovePropertyListener( handle->id[1], &property, streamDisconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
           errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
@@ -4689,17 +4706,17 @@ public:
     _mediaType->SetUINT32( MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE );
 
     MFCreateMediaType( &_inputMediaType );
-    _mediaType->CopyAllItems( _inputMediaType );
+    _mediaType->CopyAllItems( _inputMediaType.Get() );
 
-    _transform->SetInputType( 0, _inputMediaType, 0 );
+    _transform->SetInputType( 0, _inputMediaType.Get(), 0 );
 
     MFCreateMediaType( &_outputMediaType );
-    _mediaType->CopyAllItems( _outputMediaType );
+    _mediaType->CopyAllItems( _outputMediaType.Get() );
 
     _outputMediaType->SetUINT32( MF_MT_AUDIO_SAMPLES_PER_SECOND, outSampleRate );
     _outputMediaType->SetUINT32( MF_MT_AUDIO_AVG_BYTES_PER_SECOND, _bytesPerSample * channelCount * outSampleRate );
 
-    _transform->SetOutputType( 0, _outputMediaType, 0 );
+    _transform->SetOutputType( 0, _outputMediaType.Get(), 0 );
 
     // 4. Send stream start messages to Resampler
 
@@ -4718,16 +4735,6 @@ public:
     // 9. Cleanup
 
     MFShutdown();
-
-    SAFE_RELEASE( _transformUnk );
-    SAFE_RELEASE( _transform );
-    SAFE_RELEASE( _mediaType );
-    SAFE_RELEASE( _inputMediaType );
-    SAFE_RELEASE( _outputMediaType );
-
-    #ifdef __IWMResamplerProps_FWD_DEFINED__
-      SAFE_RELEASE( _resamplerProps );
-    #endif
   }
 
   void Convert( char* outBuffer, const char* inBuffer, unsigned int inSampleCount, unsigned int& outSampleCount, int maxOutSampleCount = -1 )
@@ -4751,8 +4758,8 @@ public:
       outputBufferSize = ( unsigned int ) ceilf( inputBufferSize * _sampleRatio ) + ( _bytesPerSample * _channelCount );
     }
 
-    IMFMediaBuffer* rInBuffer;
-    IMFSample* rInSample;
+    ComPtr<IMFMediaBuffer> rInBuffer = NULL;
+    ComPtr<IMFSample> rInSample = NULL;
     BYTE* rInByteBuffer = NULL;
 
     // 5. Create Sample object from input data
@@ -4767,18 +4774,15 @@ public:
     rInBuffer->SetCurrentLength( inputBufferSize );
 
     MFCreateSample( &rInSample );
-    rInSample->AddBuffer( rInBuffer );
+    rInSample->AddBuffer( rInBuffer.Get() );
 
     // 6. Pass input data to Resampler
 
-    _transform->ProcessInput( 0, rInSample, 0 );
-
-    SAFE_RELEASE( rInBuffer );
-    SAFE_RELEASE( rInSample );
+    _transform->ProcessInput( 0, rInSample.Get(), 0 );
 
     // 7. Perform sample rate conversion
 
-    IMFMediaBuffer* rOutBuffer = NULL;
+    ComPtr<IMFMediaBuffer> rOutBuffer = NULL;
     BYTE* rOutByteBuffer = NULL;
 
     MFT_OUTPUT_DATA_BUFFER rOutDataBuffer;
@@ -4790,7 +4794,7 @@ public:
     memset( &rOutDataBuffer, 0, sizeof rOutDataBuffer );
     MFCreateSample( &( rOutDataBuffer.pSample ) );
     MFCreateMemoryBuffer( rBytes, &rOutBuffer );
-    rOutDataBuffer.pSample->AddBuffer( rOutBuffer );
+    rOutDataBuffer.pSample->AddBuffer( rOutBuffer.Get() );
     rOutDataBuffer.dwStreamID = 0;
     rOutDataBuffer.dwStatus = 0;
     rOutDataBuffer.pEvents = NULL;
@@ -4800,24 +4804,20 @@ public:
     if ( _transform->ProcessOutput( 0, 1, &rOutDataBuffer, &rStatus ) == MF_E_TRANSFORM_NEED_MORE_INPUT )
     {
       outSampleCount = 0;
-      SAFE_RELEASE( rOutBuffer );
       SAFE_RELEASE( rOutDataBuffer.pSample );
       return;
     }
 
     // 7.3 Write output data to outBuffer
 
-    SAFE_RELEASE( rOutBuffer );
     rOutDataBuffer.pSample->ConvertToContiguousBuffer( &rOutBuffer );
     rOutBuffer->GetCurrentLength( &rBytes );
 
     rOutBuffer->Lock( &rOutByteBuffer, NULL, NULL );
     memcpy( outBuffer, rOutByteBuffer, rBytes );
     rOutBuffer->Unlock();
-    rOutByteBuffer = NULL;
 
     outSampleCount = rBytes / _bytesPerSample / _channelCount;
-    SAFE_RELEASE( rOutBuffer );
     SAFE_RELEASE( rOutDataBuffer.pSample );
   }
 
@@ -4826,14 +4826,14 @@ private:
   unsigned int _channelCount;
   float _sampleRatio;
 
-  IUnknown* _transformUnk;
-  IMFTransform* _transform;
-  IMFMediaType* _mediaType;
-  IMFMediaType* _inputMediaType;
-  IMFMediaType* _outputMediaType;
+  ComPtr<IUnknown> _transformUnk;
+  ComPtr<IMFTransform> _transform;
+  ComPtr<IMFMediaType> _mediaType;
+  ComPtr<IMFMediaType> _inputMediaType;
+  ComPtr<IMFMediaType> _outputMediaType;
 
   #ifdef __IWMResamplerProps_FWD_DEFINED__
-    IWMResamplerProps* _resamplerProps;
+    ComPtr<IWMResamplerProps> _resamplerProps;
   #endif
 };
 
@@ -4842,10 +4842,10 @@ private:
 // A structure to hold various information related to the WASAPI implementation.
 struct WasapiHandle
 {
-  IAudioClient* captureAudioClient;
-  IAudioClient* renderAudioClient;
-  IAudioCaptureClient* captureClient;
-  IAudioRenderClient* renderClient;
+  ComPtr<IAudioClient> captureAudioClient;
+  ComPtr<IAudioClient> renderAudioClient;
+  ComPtr<IAudioCaptureClient> captureClient;
+  ComPtr<IAudioRenderClient> renderClient;
   HANDLE captureEvent;
   HANDLE renderEvent;
 
@@ -4872,10 +4872,6 @@ RtApiWasapi::RtApiWasapi()
   hr = CoCreateInstance( __uuidof( MMDeviceEnumerator ), NULL,
                          CLSCTX_ALL, __uuidof( IMMDeviceEnumerator ),
                          ( void** ) &deviceEnumerator_ );
-
-  // If this runs on an old Windows, it will fail. Ignore and proceed.
-  if ( FAILED( hr ) )
-    deviceEnumerator_ = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -4890,8 +4886,6 @@ RtApiWasapi::~RtApiWasapi()
     MUTEX_LOCK( &stream_.mutex );
   }
 
-  SAFE_RELEASE( deviceEnumerator_ );
-
   // If this object previously called CoInitialize()
   if ( coInitialized_ )
     CoUninitialize();
@@ -4902,7 +4896,7 @@ RtApiWasapi::~RtApiWasapi()
 
 unsigned int RtApiWasapi::getDefaultInputDevice( void )
 {
-  IMMDevice* devicePtr = NULL;
+  ComPtr<IMMDevice> devicePtr = NULL;
   LPWSTR defaultId = NULL;
   std::string id;
   
@@ -4924,7 +4918,6 @@ unsigned int RtApiWasapi::getDefaultInputDevice( void )
   id = convertCharPointerToStdString( defaultId );
 
  Release:
-  SAFE_RELEASE( devicePtr );
   CoTaskMemFree( defaultId );
 
   if ( !errorText_.empty() ) {
@@ -4959,7 +4952,7 @@ unsigned int RtApiWasapi::getDefaultInputDevice( void )
 
 unsigned int RtApiWasapi::getDefaultOutputDevice( void )
 {
-  IMMDevice* devicePtr = NULL;
+  ComPtr<IMMDevice> devicePtr = NULL;
   LPWSTR defaultId = NULL;
   std::string id;
   
@@ -4981,7 +4974,6 @@ unsigned int RtApiWasapi::getDefaultOutputDevice( void )
   id = convertCharPointerToStdString( defaultId );
 
  Release:
-  SAFE_RELEASE( devicePtr );
   CoTaskMemFree( defaultId );
 
   if ( !errorText_.empty() ) {
@@ -5019,9 +5011,9 @@ void RtApiWasapi::probeDevices( void )
   unsigned int captureDeviceCount = 0;
   unsigned int renderDeviceCount = 0;
   
-  IMMDeviceCollection* captureDevices = NULL;
-  IMMDeviceCollection* renderDevices = NULL;
-  IMMDevice* devicePtr = NULL;
+  ComPtr<IMMDeviceCollection> captureDevices = NULL;
+  ComPtr<IMMDeviceCollection> renderDevices = NULL;
+  ComPtr<IMMDevice> devicePtr = NULL;
 
   LPWSTR defaultCaptureId = NULL;
   LPWSTR defaultRenderId = NULL;
@@ -5080,7 +5072,6 @@ void RtApiWasapi::probeDevices( void )
   }
 
   // Get the default render device Id.
-  SAFE_RELEASE( devicePtr );
   hr = deviceEnumerator_->GetDefaultAudioEndpoint( eRender, eConsole, &devicePtr );
   if ( SUCCEEDED( hr) ) {
     hr = devicePtr->GetId( &defaultRenderId );
@@ -5093,7 +5084,6 @@ void RtApiWasapi::probeDevices( void )
   
   // Collect device IDs with mode.
   for ( unsigned int n=0; n<nDevices; n++ ) {
-    SAFE_RELEASE( devicePtr );
     if ( n < renderDeviceCount ) {
       hr = renderDevices->Item( n, &devicePtr );
       if ( FAILED( hr ) ) {
@@ -5167,9 +5157,6 @@ void RtApiWasapi::probeDevices( void )
 
  Exit:
   // Release all references
-  SAFE_RELEASE( captureDevices );
-  SAFE_RELEASE( renderDevices );
-  SAFE_RELEASE( devicePtr );
 
   CoTaskMemFree( defaultCaptureId );
   CoTaskMemFree( defaultRenderId );
@@ -5187,9 +5174,9 @@ void RtApiWasapi::probeDevices( void )
 bool RtApiWasapi::probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, bool isCaptureDevice )
 {
   PROPVARIANT deviceNameProp;
-  IMMDevice* devicePtr = NULL;
-  IAudioClient* audioClient = NULL;
-  IPropertyStore* devicePropStore = NULL;
+  ComPtr<IMMDevice> devicePtr = NULL;
+  ComPtr<IAudioClient> audioClient = NULL;
+  ComPtr<IPropertyStore> devicePropStore = NULL;
 
   WAVEFORMATEX* deviceFormat = NULL;
   WAVEFORMATEX* closestMatchFormat = NULL;
@@ -5291,10 +5278,6 @@ bool RtApiWasapi::probeDeviceInfo( RtAudio::DeviceInfo &info, LPWSTR deviceId, b
   // Release all references
   PropVariantClear( &deviceNameProp );
 
-  SAFE_RELEASE( devicePtr );
-  SAFE_RELEASE( audioClient );
-  SAFE_RELEASE( devicePropStore );
-
   CoTaskMemFree( deviceFormat );
   CoTaskMemFree( closestMatchFormat );
 
@@ -5323,11 +5306,6 @@ void RtApiWasapi::closeStream( void )
   }
 
   // clean up stream memory
-  SAFE_RELEASE(((WasapiHandle*)stream_.apiHandle)->captureClient)
-  SAFE_RELEASE(((WasapiHandle*)stream_.apiHandle)->renderClient)
-
-  SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient )
-  SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient )
 
   if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent )
     CloseHandle( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent );
@@ -5464,7 +5442,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 {
   MUTEX_LOCK( &stream_.mutex );
   bool methodResult = FAILURE;
-  IMMDevice* devicePtr = NULL;
+  ComPtr<IMMDevice> devicePtr = NULL;
   WAVEFORMATEX* deviceFormat = NULL;
   unsigned int bufferBytes;
   stream_.state = STREAM_STOPPED;
@@ -5509,7 +5487,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     stream_.apiHandle = ( void* ) new WasapiHandle();
 
   if ( isInput ) {
-    IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
+    ComPtr<IAudioClient> captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
                               NULL, ( void** ) &captureAudioClient );
@@ -5531,7 +5509,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // If an output device and is configured for loopback (input mode)
   if ( isInput == false && mode == INPUT ) {
     // If renderAudioClient is not initialised, initialise it now
-    IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+    ComPtr<IAudioClient>& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
     if ( !renderAudioClient ) {
       MUTEX_UNLOCK( &stream_.mutex );
       probeDeviceOpen( deviceId, OUTPUT, channels, firstChannel, sampleRate, format, bufferSize, options );
@@ -5539,7 +5517,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     }
 
     // Retrieve captureAudioClient from our stream handle.
-    IAudioClient*& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
+    ComPtr<IAudioClient>& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
                               NULL, ( void** ) &captureAudioClient );
@@ -5561,7 +5539,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // If output device and is configured for output.
   if ( isInput == false && mode == OUTPUT ) {
     // If renderAudioClient is already initialised, don't initialise it again
-    IAudioClient*& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+    ComPtr<IAudioClient>& renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
     if ( renderAudioClient ) {
       methodResult = SUCCESS;
       goto Exit;
@@ -5644,7 +5622,6 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
  Exit:
   //clean up
-  SAFE_RELEASE( devicePtr );
   CoTaskMemFree( deviceFormat );
 
   // if method failed, close the stream
@@ -5697,10 +5674,10 @@ void RtApiWasapi::wasapiThread()
 
   HRESULT hr;
 
-  IAudioClient* captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
-  IAudioClient* renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
-  IAudioCaptureClient* captureClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureClient;
-  IAudioRenderClient* renderClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderClient;
+  ComPtr<IAudioClient> captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
+  ComPtr<IAudioClient> renderAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient;
+  ComPtr<IAudioCaptureClient> captureClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureClient;
+  ComPtr<IAudioRenderClient> renderClient = ( ( WasapiHandle* ) stream_.apiHandle )->renderClient;
   HANDLE captureEvent = ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent;
   HANDLE renderEvent = ( ( WasapiHandle* ) stream_.apiHandle )->renderEvent;
 
@@ -5760,7 +5737,7 @@ void RtApiWasapi::wasapiThread()
     captureSrRatio = ( ( float ) captureFormat->nSamplesPerSec / stream_.sampleRate );
 
     if ( !captureClient ) {
-      IAudioClient3* captureAudioClient3 = nullptr;
+      ComPtr<IAudioClient3> captureAudioClient3 = nullptr;
       captureAudioClient->QueryInterface( __uuidof( IAudioClient3 ), ( void** ) &captureAudioClient3 );
       if ( captureAudioClient3 && !loopbackEnabled )
       {
@@ -5780,7 +5757,6 @@ void RtApiWasapi::wasapiThread()
                                                                MinPeriodInFrames,
                                                                captureFormat,
                                                                NULL );
-        SAFE_RELEASE(captureAudioClient3);
       }
       else
       {
@@ -5872,7 +5848,7 @@ void RtApiWasapi::wasapiThread()
     renderSrRatio = ( ( float ) renderFormat->nSamplesPerSec / stream_.sampleRate );
 
     if ( !renderClient ) {
-      IAudioClient3* renderAudioClient3 = nullptr;
+      ComPtr<IAudioClient3> renderAudioClient3 = nullptr;
       renderAudioClient->QueryInterface( __uuidof( IAudioClient3 ), ( void** ) &renderAudioClient3 );
       if ( renderAudioClient3 )
       {
@@ -5892,7 +5868,6 @@ void RtApiWasapi::wasapiThread()
                                                               MinPeriodInFrames,
                                                               renderFormat,
                                                               NULL );
-        SAFE_RELEASE(renderAudioClient3);
       }
       else
       {
@@ -9588,7 +9563,10 @@ bool RtApiPulse::probeDeviceOpen( unsigned int deviceId, StreamMode mode,
     pa_buffer_attr buffer_attr;
   case INPUT:
     buffer_attr.fragsize = bufferBytes;
-    buffer_attr.maxlength = -1;
+    if ( options && options->numberOfBuffers > 0 )
+      buffer_attr.maxlength = bufferBytes * (options->numberOfBuffers + 1);
+    else
+      buffer_attr.maxlength = bufferBytes * 4;
 
     pah->s_rec = pa_simple_new( NULL, streamName.c_str(), PA_STREAM_RECORD,
                                 dev_input, "Record", &ss, NULL, &buffer_attr, &error );

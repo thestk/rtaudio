@@ -6,7 +6,7 @@ jobs:
   Tarball:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: install dependencies
@@ -18,7 +18,7 @@ jobs:
         (./autogen.sh || (cat config.log; false))
         && make distcheck && make clean
     - name: Archive dist tarball artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: rtaudio-dev-tarball
         path: rtaudio-*.tar.gz
@@ -72,7 +72,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: install dependencies
-      run: brew install autoconf-archive automake cmake meson
+      run: brew install autoconf-archive automake cmake meson libtool
     - name: automake
       run:
         env NOCONFIGURE=1 ./autogen.sh && mkdir bld-automake && cd bld-automake

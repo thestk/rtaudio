@@ -16,18 +16,18 @@
 #include <stdio.h>
 
 /*
-typedef char MY_TYPE;
+typedef int8_t MY_TYPE;
 #define FORMAT RTAUDIO_SINT8
 */
 
-typedef signed short MY_TYPE;
+typedef int16_t MY_TYPE;
 #define FORMAT RTAUDIO_SINT16
 
 /*
 typedef S24 MY_TYPE;
 #define FORMAT RTAUDIO_SINT24
 
-typedef signed long MY_TYPE;
+typedef int32_t MY_TYPE;
 #define FORMAT RTAUDIO_SINT32
 
 typedef float MY_TYPE;

@@ -27,9 +27,8 @@ int main()
     info = audio.getDeviceInfo( ids[n] );
 
     // Print, for example, the name and maximum number of output channels for each device
-      std::cout << "device name = " << info.name << std::endl;
-      std::cout << ": maximum output channels = " << info.outputChannels << std::endl;
-    }
+    std::cout << "device name = " << info.name << std::endl;
+    std::cout << ": maximum output channels = " << info.outputChannels << std::endl;
   }
 
   return 0;
