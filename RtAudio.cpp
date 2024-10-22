@@ -48,10 +48,10 @@
 #include <climits>
 #include <cmath>
 #include <algorithm>
-#include <codecvt>
 #include <locale>
 
 #if defined(_WIN32)
+#include <codecvt>
 #include <windows.h>
 #endif
 
@@ -71,6 +71,7 @@ std::string convertCharPointerToStdString(const char *text)
   return text;
 }
 
+#ifdef __WIN32__
 template<> inline
 std::string convertCharPointerToStdString(const wchar_t* text)
 {
@@ -91,6 +92,7 @@ std::string convertCharPointerToStdString(const wchar_t* text)
   return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{}.to_bytes(text);
 #endif
 }
+#endif
 
 #if defined(_MSC_VER)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
@@ -403,7 +405,7 @@ class RtApiDummy: public RtApi
 {
 public:
 
-  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RTAUDIO_WARNING ); }
+  RtApiDummy() { /*errorText_ = "RtApiDummy: This class provides no functionality."; error( RTAUDIO_WARNING ); */}
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::RTAUDIO_DUMMY; }
   void closeStream( void ) override {}
   RtAudioErrorType startStream( void ) override { return RTAUDIO_NO_ERROR; }
@@ -1230,8 +1232,8 @@ bool RtApiCore :: probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo& info )
 #else
   CFStringGetCString(cfname, mname, length * 3 + 1, CFStringGetSystemEncoding());
 #endif
-  info.name.append( (const char *)mname, strlen(mname) );
-  info.name.append( ": " );
+//  info.name.append( (const char *)mname, strlen(mname) );
+//  info.name.append( ": " );
   CFRelease( cfname );
   free(mname);
 
