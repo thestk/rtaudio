@@ -45,10 +45,10 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <climits>
 #include <cmath>
 #include <algorithm>
-#include <codecvt>
 #include <locale>
 
 #if defined(_WIN32)
@@ -88,7 +88,20 @@ std::string convertCharPointerToStdString(const wchar_t* text)
   WideCharToMultiByte(CP_UTF8, 0, text, wchars, &nret[0], nchars, 0, 0);
   return nret;
 #else
-  return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{}.to_bytes(text);
+  std::string result;
+  char dest[MB_CUR_MAX];
+  // get number of wide characters in text
+  size_t length = wcslen(text);
+  for (size_t i = 0; i < length; i++) {
+    // get number of converted bytes
+    int bytes = wctomb(dest, text[i]);
+    // protect against buffer overflow from conversion errors,
+    // or if the buffer is full and therefore not null-terminated
+    for (int i = 0; i < bytes; i++) {
+      result += dest[i];
+    }
+  }
+  return result;
 #endif
 }
 
