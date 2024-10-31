@@ -74,9 +74,9 @@ std::string convertCharPointerToStdString(const char *text)
 template<> inline
 std::string convertCharPointerToStdString(const wchar_t* text)
 {
-#if defined(_MSC_VER)
   if (!text)
     return std::string();
+#if defined(_MSC_VER)
   const int wchars = (int)wcslen(text);
   // how many characters are required after conversion?
   const int nchars = WideCharToMultiByte(CP_UTF8, 0, text, wchars, 0, 0, 0, 0);
@@ -91,10 +91,10 @@ std::string convertCharPointerToStdString(const wchar_t* text)
   std::string result;
   char dest[MB_CUR_MAX];
   // get number of wide characters in text
-  size_t length = wcslen(text);
+  const size_t length = wcslen(text);
   for (size_t i = 0; i < length; i++) {
     // get number of converted bytes
-    int bytes = wctomb(dest, text[i]);
+    const int bytes = wctomb(dest, text[i]);
     // protect against buffer overflow from conversion errors,
     // or if the buffer is full and therefore not null-terminated
     for (int j = 0; j < bytes; j++) {
