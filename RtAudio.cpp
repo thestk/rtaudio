@@ -97,8 +97,8 @@ std::string convertCharPointerToStdString(const wchar_t* text)
     int bytes = wctomb(dest, text[i]);
     // protect against buffer overflow from conversion errors,
     // or if the buffer is full and therefore not null-terminated
-    for (int i = 0; i < bytes; i++) {
-      result += dest[i];
+    for (int j = 0; j < bytes; j++) {
+      result += dest[j];
     }
   }
   return result;
