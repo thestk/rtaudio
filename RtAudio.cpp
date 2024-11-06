@@ -5420,7 +5420,7 @@ bool RtApiWasapi::probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     stream_.apiHandle = ( void* ) new WasapiHandle();
 
   if ( isInput ) {
-    ComPtr<IAudioClient> captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
+    ComPtr<IAudioClient>& captureAudioClient = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient;
 
     hr = devicePtr->Activate( __uuidof( IAudioClient ), CLSCTX_ALL,
                               NULL, ( void** ) &captureAudioClient );
