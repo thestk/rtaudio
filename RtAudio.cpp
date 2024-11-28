@@ -7897,6 +7897,7 @@ void RtApiAlsa :: probeDevices( void )
     deviceID_prettyName.push_back({"default", "Default ALSA Device"});
     defaultDeviceName = deviceID_prettyName[0].second;
     snd_ctl_close( handle );
+    snd_config_update_free_global();
   }
 
   // Add the Pulse interface if available.
@@ -7904,6 +7905,7 @@ void RtApiAlsa :: probeDevices( void )
   if (result == 0) {
     deviceID_prettyName.push_back({"pulse",  "PulseAudio Sound Server"});
     snd_ctl_close( handle );
+    snd_config_update_free_global();
   }
   
   // Count cards and devices and get ascii identifiers.
@@ -7966,8 +7968,10 @@ void RtApiAlsa :: probeDevices( void )
         defaultDeviceName = name;
     }
   nextcard:
-    if ( handle )
+    if ( handle ) {
       snd_ctl_close( handle );
+      snd_config_update_free_global();
+    }
     snd_card_next( &card );
   }
 
@@ -8066,6 +8070,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   result = snd_pcm_hw_params_any( phandle, params );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8077,6 +8082,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   result = snd_pcm_hw_params_get_channels_max( params, &value );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: error getting device (" << name << ") output channels, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8084,6 +8090,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   }
   info.outputChannels = value;
   snd_pcm_close( phandle );
+  snd_config_update_free_global();
 
  captureProbe:
   stream = SND_PCM_STREAM_CAPTURE;
@@ -8102,6 +8109,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   result = snd_pcm_hw_params_any( phandle, params );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8112,6 +8120,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   result = snd_pcm_hw_params_get_channels_max( params, &value );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: error getting device (" << name << ") input channels, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8120,6 +8129,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   }
   info.inputChannels = value;
   snd_pcm_close( phandle );
+  snd_config_update_free_global();
 
   // If device opens for both playback and capture, we determine the channels.
   if ( info.outputChannels > 0 && info.inputChannels > 0 )
@@ -8149,6 +8159,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   result = snd_pcm_hw_params_any( phandle, params );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: snd_pcm_hw_params error for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8167,6 +8178,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   }
   if ( info.sampleRates.size() == 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: no supported sample rates found for device (" << name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8198,6 +8210,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   // Check that we have at least one supported format
   if ( info.nativeFormats == 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceInfo: pcm device (" << name << ") data format not supported by RtAudio.";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -8206,6 +8219,7 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
 
   // Close the device and return
   snd_pcm_close( phandle );
+  snd_config_update_free_global();
   return true;
 }
 
@@ -8256,6 +8270,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_any( phandle, hw_params );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error getting pcm device (" << name << ") parameters, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8290,6 +8305,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting pcm device (" << name << ") access, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8356,6 +8372,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
   // If we get here, no supported format was found.
   snd_pcm_close( phandle );
+  snd_config_update_free_global();
   errorStream_ << "RtApiAlsa::probeDeviceOpen: pcm device (" << name << ") data format not supported by RtAudio.";
   errorText_ = errorStream_.str();
   return FAILURE;
@@ -8364,6 +8381,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_set_format( phandle, hw_params, deviceFormat );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting pcm device (" << name << ") data format, " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8377,6 +8395,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
       stream_.doByteSwap[mode] = true;
     else if (result < 0) {
       snd_pcm_close( phandle );
+      snd_config_update_free_global();
       errorStream_ << "RtApiAlsa::probeDeviceOpen: error getting pcm device (" << name << ") endian-ness, " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -8387,6 +8406,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_set_rate_near( phandle, hw_params, (unsigned int*) &sampleRate, 0 );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting sample rate on device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8400,6 +8420,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   unsigned int deviceChannels = value;
   if ( result < 0 || deviceChannels < channels + firstChannel ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: requested channel parameters not supported by device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8408,6 +8429,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_get_channels_min( hw_params, &value );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error getting minimum channels for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8420,6 +8442,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_set_channels( phandle, hw_params, deviceChannels );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting channels for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8431,6 +8454,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_set_period_size_near( phandle, hw_params, &periodSize, &dir );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting period size for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8445,6 +8469,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params_set_periods_near( phandle, hw_params, &periods, &dir );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error setting periods for device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8454,6 +8479,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // MUST be the same in both directions!
   if ( stream_.mode == OUTPUT && mode == INPUT && *bufferSize != stream_.bufferSize ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: system error setting buffer size for duplex stream on device (" << name << ").";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8465,6 +8491,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_hw_params( phandle, hw_params );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error installing hardware configuration on device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8496,6 +8523,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   result = snd_pcm_sw_params( phandle, sw_params );
   if ( result < 0 ) {
     snd_pcm_close( phandle );
+    snd_config_update_free_global();
     errorStream_ << "RtApiAlsa::probeDeviceOpen: error installing software configuration on device (" << name << "), " << snd_strerror( result ) << ".";
     errorText_ = errorStream_.str();
     return FAILURE;
@@ -8647,18 +8675,32 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     }
   }
 
+  snd_config_update_free_global();
   return SUCCESS;
 
  error:
   if ( apiInfo ) {
     pthread_cond_destroy( &apiInfo->runnable_cv );
-    if ( apiInfo->handles[0] ) snd_pcm_close( apiInfo->handles[0] );
-    if ( apiInfo->handles[1] ) snd_pcm_close( apiInfo->handles[1] );
+    bool pcm_closed = false;
+    if ( apiInfo->handles[0] ) {
+      snd_pcm_close( apiInfo->handles[0] );
+      pcm_closed = true;
+    }
+    if ( apiInfo->handles[1] ) {
+      snd_pcm_close( apiInfo->handles[1] );
+      pcm_closed = true;
+    }
+    if ( pcm_closed ) {
+      snd_config_update_free_global();
+    }
     delete apiInfo;
     stream_.apiHandle = 0;
   }
 
-  if ( phandle) snd_pcm_close( phandle );
+  if ( phandle) {
+    snd_pcm_close( phandle );
+    snd_config_update_free_global();
+  } 
 
   for ( int i=0; i<2; i++ ) {
     if ( stream_.userBuffer[i] ) {
@@ -8704,8 +8746,18 @@ void RtApiAlsa :: closeStream()
 
   if ( apiInfo ) {
     pthread_cond_destroy( &apiInfo->runnable_cv );
-    if ( apiInfo->handles[0] ) snd_pcm_close( apiInfo->handles[0] );
-    if ( apiInfo->handles[1] ) snd_pcm_close( apiInfo->handles[1] );
+    bool pcm_closed = false;
+    if ( apiInfo->handles[0] ){
+      snd_pcm_close( apiInfo->handles[0] );
+      pcm_closed = true;
+    }
+    if ( apiInfo->handles[1] ){
+      snd_pcm_close( apiInfo->handles[1] );
+      pcm_closed = true;
+    }
+    if ( pcm_closed ) {
+      snd_config_update_free_global();
+    }
     delete apiInfo;
     stream_.apiHandle = 0;
   }
