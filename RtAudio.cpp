@@ -8197,6 +8197,9 @@ bool RtApiAlsa :: probeDeviceInfo( RtAudio::DeviceInfo& info, std::string name )
   format = SND_PCM_FORMAT_S24;
   if ( snd_pcm_hw_params_test_format( phandle, params, format ) == 0 )
     info.nativeFormats |= RTAUDIO_SINT24;
+  format = SND_PCM_FORMAT_S24_3LE;
+  if ( snd_pcm_hw_params_test_format( phandle, params, format ) == 0 )
+    info.nativeFormats |= RTAUDIO_SINT24;
   format = SND_PCM_FORMAT_S32;
   if ( snd_pcm_hw_params_test_format( phandle, params, format ) == 0 )
     info.nativeFormats |= RTAUDIO_SINT32;
