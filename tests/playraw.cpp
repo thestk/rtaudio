@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdio.h>
+#include <cstdint>
 
 /*
 typedef int8_t MY_TYPE;

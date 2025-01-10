@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <signal.h>
+#include <cstdint>
 
 /*
 typedef int8_t MY_TYPE;

@@ -12,7 +12,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
-
+#include <cstdint>
 /*
 typedef int8_t MY_TYPE;
 #define FORMAT RTAUDIO_SINT8
