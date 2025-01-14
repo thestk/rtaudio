@@ -19,7 +19,7 @@ AM_INIT_AUTOMAKE([1.14 -Wall -Werror foreign subdir-objects])
 #
 # If any interfaces have been removed since the last public release, then set
 # age to 0.
-m4_define([lt_current], 7)
+m4_define([lt_current], 8)
 m4_define([lt_revision], 0)
 m4_define([lt_age], 0)
 

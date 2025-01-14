@@ -10979,12 +10979,10 @@ unsigned int RtApi :: formatBytes( RtAudioFormat format )
 {
   if ( format == RTAUDIO_SINT16 )
     return 2;
-  else if ( format == RTAUDIO_SINT32 || format == RTAUDIO_FLOAT32 )
+  else if ( format == RTAUDIO_SINT32 || format == RTAUDIO_FLOAT32 || format == RTAUDIO_SINT24)
     return 4;
   else if ( format == RTAUDIO_FLOAT64 )
     return 8;
-  else if ( format == RTAUDIO_SINT24 )
-    return 3;
   else if ( format == RTAUDIO_SINT8 )
     return 1;
 

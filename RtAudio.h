@@ -711,7 +711,7 @@ struct CallbackInfo {
 class S24 {
 
  protected:
-  unsigned char c3[3];
+  unsigned char c3[4];
 
  public:
   S24() {}
