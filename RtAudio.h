@@ -219,11 +219,12 @@ static const RtAudioStreamStatus RTAUDIO_OUTPUT_UNDERFLOW = 0x2;  // The output 
    output buffer, the function should return a value of one.  To abort
    the stream immediately, the client should return a value of two.
  */
-typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
-                                unsigned int nFrames,
-                                double streamTime,
-                                RtAudioStreamStatus status,
-                                void *userData );
+
+typedef std::function<int(void* outputBuffer, void* inputBuffer,
+                          unsigned int nFrames,
+                          double streamTime,
+                          RtAudioStreamStatus status,
+                          void* userData)> RtAudioCallback;
 
 enum RtAudioErrorType {
   RTAUDIO_NO_ERROR = 0,      /*!< No error. */
@@ -684,7 +685,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 struct CallbackInfo {
   void *object{};    // Used as a "this" pointer.
   ThreadHandle thread{};
-  void *callback{};
+  RtAudioCallback callback{};
   void *userData{};
   void *apiInfo{};   // void pointer for API specific callback information
   bool isRunning{false};
