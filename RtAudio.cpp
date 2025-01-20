@@ -760,7 +760,7 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
       return error( RTAUDIO_SYSTEM_ERROR );
   }
 
-  stream_.callbackInfo.callback = (void *) callback;
+  stream_.callbackInfo.callback = callback;
   stream_.callbackInfo.userData = userData;
 
   if ( options ) options->numberOfBuffers = stream_.nBuffers;
@@ -2235,7 +2235,7 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
   // draining stream or duplex mode AND the input/output devices are
   // different AND this function is called for the input device.
   if ( handle->drainCounter == 0 && ( stream_.mode != DUPLEX || deviceId == outputDevice ) ) {
-    RtAudioCallback callback = (RtAudioCallback) info->callback;
+    RtAudioCallback callback = info->callback;
     double streamTime = getStreamTime();
     RtAudioStreamStatus status = 0;
     if ( stream_.mode != INPUT && handle->xrun[0] == true ) {
@@ -3241,7 +3241,7 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
 
   // Invoke user callback first, to get fresh output data.
   if ( handle->drainCounter == 0 ) {
-    RtAudioCallback callback = (RtAudioCallback) info->callback;
+    RtAudioCallback callback = info->callback;
     double streamTime = getStreamTime();
     RtAudioStreamStatus status = 0;
     if ( stream_.mode != INPUT && handle->xrun[0] == true ) {
@@ -4130,7 +4130,7 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
   // Invoke user callback to get fresh output data UNLESS we are
   // draining stream.
   if ( handle->drainCounter == 0 ) {
-    RtAudioCallback callback = (RtAudioCallback) info->callback;
+    RtAudioCallback callback = info->callback;
     double streamTime = getStreamTime();
     RtAudioStreamStatus status = 0;
     if ( stream_.mode != INPUT && asioXRun == true ) {
@@ -5637,7 +5637,7 @@ void RtApiWasapi::wasapiThread()
   WasapiResampler* renderResampler = NULL;
 
   // declare local stream variables
-  RtAudioCallback callback = ( RtAudioCallback ) stream_.callbackInfo.callback;
+  RtAudioCallback callback = stream_.callbackInfo.callback;
   BYTE* streamBuffer = NULL;
   DWORD captureFlags = 0;
   unsigned int bufferFrameCount = 0;
@@ -7330,7 +7330,7 @@ void RtApiDs :: callbackEvent()
   // Invoke user callback to get fresh output data UNLESS we are
   // draining stream.
   if ( handle->drainCounter == 0 ) {
-    RtAudioCallback callback = (RtAudioCallback) info->callback;
+    RtAudioCallback callback = info->callback;
     double streamTime = getStreamTime();
     RtAudioStreamStatus status = 0;
     if ( stream_.mode != INPUT && handle->xrun[0] == true ) {
@@ -8949,7 +8949,7 @@ void RtApiAlsa :: callbackEvent()
   }
 
   int doStopStream = 0;
-  RtAudioCallback callback = (RtAudioCallback) stream_.callbackInfo.callback;
+  RtAudioCallback callback = stream_.callbackInfo.callback;
   double streamTime = getStreamTime();
   RtAudioStreamStatus status = 0;
   if ( stream_.mode != INPUT && apiInfo->xrun[0] == true ) {
@@ -9753,7 +9753,7 @@ void RtApiPulse::callbackEvent( void )
     return;
   }
 
-  RtAudioCallback callback = (RtAudioCallback) stream_.callbackInfo.callback;
+  RtAudioCallback callback = stream_.callbackInfo.callback;
   double streamTime = getStreamTime();
   RtAudioStreamStatus status = 0;
   int doStopStream = callback( stream_.userBuffer[OUTPUT], stream_.userBuffer[INPUT],
@@ -10766,7 +10766,7 @@ void RtApiOss :: callbackEvent()
 
   // Invoke user callback to get fresh output data.
   int doStopStream = 0;
-  RtAudioCallback callback = (RtAudioCallback) stream_.callbackInfo.callback;
+  RtAudioCallback callback = stream_.callbackInfo.callback;
   double streamTime = getStreamTime();
   RtAudioStreamStatus status = 0;
   if ( stream_.mode != INPUT && handle->xrun[0] == true ) {
