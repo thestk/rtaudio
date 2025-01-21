@@ -8,9 +8,6 @@
 struct rtaudio {
   RtAudio *audio;
 
-  rtaudio_cb_t cb;
-  void *userdata;
-
   rtaudio_error_t errtype;
   char errmsg[MAX_ERROR_MESSAGE_LENGTH];
 };
@@ -163,8 +160,7 @@ rtaudio_error_t rtaudio_open_stream(rtaudio_t audio,
     }
     opts = &stream_opts;
   }
-  //audio->cb = cb;
-  //audio->userdata = userdata;
+
   audio->audio->openStream(out, in, (RtAudioFormat)format, sample_rate,
                            buffer_frames, cb, (void *)userdata, opts); //,  NULL);
   return audio->errtype;
