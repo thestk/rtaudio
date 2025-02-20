@@ -183,6 +183,16 @@ public:
   // which is not a member of RtAudio.  External use of this function
   // will most likely produce highly undesirable results!
   bool callbackEvent( unsigned long nframes );
+  
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal buffer size callback
+  // handler, which is not a member of RtAudio.
+  bool bufferSizeCallbackEvent( unsigned long nframes );
+
+  // This function is intended for internal use only.  It must be
+  // public because it is called by the internal sample rate callback
+  // handler, which is not a member of RtAudio.
+  bool sampleRateCallbackEvent( unsigned long sampleRate );
 
   private:
   void probeDevices( void ) override;
@@ -762,6 +772,12 @@ RtAudioErrorType RtApi :: openStream( RtAudio::StreamParameters *oParams,
 
   stream_.callbackInfo.callback = (void *) callback;
   stream_.callbackInfo.userData = userData;
+
+  stream_.bufferSizeCallbackInfo.callback = (void *) options->bufferSizeCallback;
+  stream_.bufferSizeCallbackInfo.userData = options->bufferSizeCallbackUserData;
+
+  stream_.sampleRateCallbackInfo.callback = (void *) options->sampleRateCallback;
+  stream_.sampleRateCallbackInfo.userData = options->sampleRateCallbackUserData;
 
   if ( options ) options->numberOfBuffers = stream_.nBuffers;
   stream_.state = STREAM_STOPPED;
@@ -2736,6 +2752,24 @@ static int jackCallbackHandler( jack_nframes_t nframes, void *infoPointer )
   return 0;
 }
 
+static int jackBufferSizeCallbackHandler( jack_nframes_t nframes, void *infoPointer )
+{
+  CallbackInfo *info = (CallbackInfo *) infoPointer;
+
+  RtApiJack *object = (RtApiJack *) info->object;
+  if ( object->bufferSizeCallbackEvent( (unsigned long) nframes ) == false ) return 1;
+  return 0;
+}
+
+static int jackSampleRateCallbackHandler( jack_nframes_t nframes, void *infoPointer )
+{
+  CallbackInfo *info = (CallbackInfo *) infoPointer;
+
+  RtApiJack *object = (RtApiJack *) info->object;
+  if ( object->sampleRateCallbackEvent( (unsigned long) nframes ) == false ) return 1;
+  return 0;
+}
+
 // This function will be called by a spawned thread when the Jack
 // server signals that it is shutting down.  It is necessary to handle
 // it this way because the jackShutdown() function must return before
@@ -2968,6 +3002,8 @@ bool RtApiJack :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   else {
     stream_.mode = mode;
     jack_set_process_callback( handle->client, jackCallbackHandler, (void *) &stream_.callbackInfo );
+    jack_set_buffer_size_callback( handle->client, jackBufferSizeCallbackHandler, (void *) &stream_.callbackInfo);
+    jack_set_sample_rate_callback( handle->client, jackSampleRateCallbackHandler, (void *) &stream_.callbackInfo);
     jack_set_xrun_callback( handle->client, jackXrun, (void *) &stream_.apiHandle );
     jack_on_shutdown( handle->client, jackShutdown, (void *) &stream_.callbackInfo );
     //jack_set_client_registration_callback( handle->client, jackClientChange, (void *) &stream_.callbackInfo );
@@ -3323,6 +3359,90 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
   RtApi::tickStreamTime();
   return SUCCESS;
 }
+
+bool RtApiJack :: bufferSizeCallbackEvent ( unsigned long nframes )
+{
+  if ( stream_.bufferSize == (unsigned int) nframes ) return true;
+
+  bool isRunning = stream_.state == STREAM_RUNNING;
+  if ( isRunning ) {
+    jack_client_t *client = ((JackHandle *) stream_.apiHandle)->client;
+    std::cout << "bufferSizeCallbackEvent: stopping stream." << std::endl;
+    jack_deactivate( client );
+    std::cout << "Client deactivated" << std::endl;
+    stream_.state = STREAM_STOPPED;
+  }
+  // Set the new buffer size
+  stream_.bufferSize = (unsigned int) nframes;
+
+  // TODO - Adapt for all modes
+  int mode = stream_.mode;
+
+  // Allocate necessary internal buffers.
+  unsigned long bufferBytes;
+  bufferBytes = stream_.nUserChannels[mode] * stream_.bufferSize * formatBytes( stream_.userFormat );
+
+  if ( stream_.userBuffer[mode] ) free( stream_.userBuffer[mode] );
+  stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
+  if ( stream_.userBuffer[mode] == NULL ) {
+    errorText_ = "RtApiJack::probeDeviceOpen: error allocating user buffer memory.";
+  }
+
+  if ( stream_.doConvertBuffer[mode] ) {
+    
+    bool makeBuffer = true;
+    if ( mode == OUTPUT )
+      bufferBytes = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
+    else { // mode == INPUT
+      bufferBytes = stream_.nDeviceChannels[1] * formatBytes( stream_.deviceFormat[1] );
+      if ( stream_.mode == OUTPUT && stream_.deviceBuffer ) {
+        unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes(stream_.deviceFormat[0]);
+        if ( bufferBytes < bytesOut ) makeBuffer = false;
+      }
+    }
+
+    if ( makeBuffer ) {
+      bufferBytes *= stream_.bufferSize;
+      if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
+      stream_.deviceBuffer = (char *) calloc( bufferBytes, 1 );
+      if ( stream_.deviceBuffer == NULL ) {
+        errorText_ = "RtApiJack::probeDeviceOpen: error allocating device buffer memory.";
+      }
+    }
+  }
+
+  BufferSizeCallbackInfo *info = (BufferSizeCallbackInfo *) &stream_.bufferSizeCallbackInfo;
+
+  if ( info->callback ) {
+    RtAudioBufferSizeCallback callback = (RtAudioBufferSizeCallback) info->callback;
+    if ( callback ) {
+      callback( &stream_.bufferSize, info->userData );
+    }
+  }
+
+  if ( isRunning ) {
+    startStream();
+  }
+
+  return true;
+}
+
+bool RtApiJack :: sampleRateCallbackEvent ( unsigned long sampleRate )
+{
+  if ( stream_.sampleRate == (unsigned int) sampleRate ) return true;
+  else {
+    stream_.sampleRate = (unsigned int) sampleRate;
+    SampleRateCallbackInfo *info = (SampleRateCallbackInfo *) &stream_.sampleRateCallbackInfo;
+    if ( info->callback ) {
+      RtAudioSampleRateCallback callback = (RtAudioSampleRateCallback) info->callback;
+      if ( callback ) {
+        callback( &stream_.sampleRate, info->userData );
+      }
+    }
+  }
+  return true;
+}
+
   //******************** End of __UNIX_JACK__ *********************//
 #endif
 

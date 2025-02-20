@@ -225,6 +225,44 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
                                 RtAudioStreamStatus status,
                                 void *userData );
 
+//! RtAudio buffer size callback function prototype.
+/*!
+    This function type is used to specify a callback function that
+    will be invoked when the system buffer size changes.  This only
+    occurs when a stream is utilizing a native API that allows
+    dynamic buffer resizing (for now only JACK/Pipewire-JACK).
+
+    \param bufferSize The current system buffer size in sample frames.
+
+    \param userData A pointer to optional data provided by the client
+           when opening the stream (default = NULL). This data is set 
+           by the user in the RtAudio::StreamOptions structure when
+            calling the RtAudio::openStream() function.
+    \return 0 to continue normal stream operation, 1 to stop the stream
+            and drain the output buffer, or 2 to abort the stream
+            immediately.
+ */
+typedef int (*RtAudioBufferSizeCallback)( unsigned int *bufferSize, void *userData );
+
+//! RtAudio sample rate callback function prototype.
+/*!
+    This function type is used to specify a callback function that
+    will be invoked when the system sample rate changes.  This only
+    occurs when a stream is utilizing a native API that allows
+    dynamic sample rate changes (for now only JACK/Pipewire-JACK).
+
+    \param sampleRate The current system sample rate in sample frames per second.
+
+    \param userData A pointer to optional data provided by the client
+           when opening the stream (default = NULL). This data is set 
+           by the user in the RtAudio::StreamOptions structure when
+            calling the RtAudio::openStream() function.
+    \return 0 to continue normal stream operation, 1 to stop the stream
+            and drain the output buffer, or 2 to abort the stream
+            immediately.
+ */
+typedef int (*RtAudioSampleRateCallback)( unsigned int *sampleRate, void *userData );
+
 enum RtAudioErrorType {
   RTAUDIO_NO_ERROR = 0,      /*!< No error. */
   RTAUDIO_WARNING,           /*!< A non-critical error. */
@@ -370,6 +408,10 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     unsigned int numberOfBuffers{};  /*!< Number of stream buffers. */
     std::string streamName;        /*!< A stream name (currently used only in Jack). */
     int priority{};                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
+    RtAudioBufferSizeCallback bufferSizeCallback{nullptr}; /*!< Callback function to handle buffer size changes. */
+    void *bufferSizeCallbackUserData; /*!< User data for buffer size callback. */
+    RtAudioSampleRateCallback sampleRateCallback{nullptr}; /*!< Callback function to handle sample rate changes. */
+    void *sampleRateCallbackUserData; /*!< User data for sample rate callback. */
   };
 
   //! A static function to determine the current RtAudio version.
@@ -693,6 +735,22 @@ struct CallbackInfo {
   bool deviceDisconnected{false};
 };
 
+// This global structure type is used to pass the buffer size callback
+// information between the private RtAudio stream structure and the
+// global buffer size callback handling function.
+struct BufferSizeCallbackInfo {
+  void *callback{nullptr};
+  void *userData{};
+};
+
+// This global structure type is used to pass the sample rate callback
+// information between the private RtAudio stream structure and the
+// global sample rate callback handling function.
+struct SampleRateCallbackInfo {
+  void *callback{nullptr};
+  void *userData{};
+};
+
 // **************************************************************** //
 //
 // RtApi class declaration.
@@ -828,6 +886,8 @@ protected:
     RtAudioFormat deviceFormat[2];    // Playback and record, respectively.
     StreamMutex mutex;
     CallbackInfo callbackInfo;
+    BufferSizeCallbackInfo bufferSizeCallbackInfo;
+    SampleRateCallbackInfo sampleRateCallbackInfo;
     ConvertInfo convertInfo[2];
     double streamTime;         // Number of elapsed seconds since the stream started.
 
