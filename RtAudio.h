@@ -230,7 +230,8 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
     This function type is used to specify a callback function that
     will be invoked when the system buffer size changes.  This only
     occurs when a stream is utilizing a native API that allows
-    dynamic buffer resizing (for now only JACK/Pipewire-JACK).
+    dynamic buffer resizing (i.e., ASIO, JACK). At the moment, this
+    is only implemented for the JACK API.
 
     \param bufferSize The current system buffer size in sample frames.
 
@@ -238,6 +239,7 @@ typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
            when opening the stream (default = NULL). This data is set 
            by the user in the RtAudio::StreamOptions structure when
             calling the RtAudio::openStream() function.
+            
     \return 0 to continue normal stream operation, 1 to stop the stream
             and drain the output buffer, or 2 to abort the stream
             immediately.
@@ -249,14 +251,17 @@ typedef int (*RtAudioBufferSizeCallback)( unsigned int *bufferSize, void *userDa
     This function type is used to specify a callback function that
     will be invoked when the system sample rate changes.  This only
     occurs when a stream is utilizing a native API that allows
-    dynamic sample rate changes (for now only JACK/Pipewire-JACK).
+    dynamic sample rate changes (i.e., ASIO, JACK). At the moment, this
+    is only implemented for the JACK API.
 
-    \param sampleRate The current system sample rate in sample frames per second.
+    \param sampleRate The current system sample rate in sample frames
+    per second.
 
     \param userData A pointer to optional data provided by the client
            when opening the stream (default = NULL). This data is set 
            by the user in the RtAudio::StreamOptions structure when
             calling the RtAudio::openStream() function.
+
     \return 0 to continue normal stream operation, 1 to stop the stream
             and drain the output buffer, or 2 to abort the stream
             immediately.
@@ -402,6 +407,38 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     However, if you wish to create multiple instances of RtAudio with
     Jack, each instance must have a unique client name. The default
     Pulse application name is set to "RtAudio."
+
+    The \c bufferSizeCallback parameter can be used to set a function
+    that will be called when the system buffer size changes. This only
+    occurs when a stream is utilizing a native API that allows dynamic
+    buffer resizing (i.e., ASIO, JACK). At the moment, this is only
+    implemented for the JACK API. The function should have the 
+    following signature:
+    \c int (*callback)(unsigned int *bufferSize, void *userData).
+    The \c bufferSize parameter will be set to the current system buffer
+    size in sample frames. If the stream is open, the return value will
+    control the behavior of the stream. The function should return 0 to
+    continue normal stream operation, 1 to stop the stream and drain the
+    output buffer, or 2 to abort the stream immediately. The \c userData
+    parameter is an optional pointer to data that can be passed with the
+    \c bufferSizeCallbackUserData parameter, which will be passed to the
+    callback function.
+
+    The \c sampleRateCallback parameter can be used to set a function
+    that will be called when the system sample rate changes. This only
+    occurs when a stream is utilizing a native API that allows dynamic
+    sample rate changes (i.e., ASIO, JACK). At the moment, this is only
+    implemented for the JACK API. The function should have the
+    following signature:
+    \c int (*callback)(unsigned int *sampleRate, void *userData).
+    The \c sampleRate parameter will be set to the current system sample
+    rate in sample frames per second. If the stream is open, the return
+    value will control the behavior of the stream. The function should
+    return 0 to continue normal stream operation, 1 to stop the stream
+    and drain the output buffer, or 2 to abort the stream immediately.
+    The \c userData parameter is an optional pointer to data that can be
+    passed with the \c sampleRateCallbackUserData parameter, which will
+    be passed to the callback function.
   */
   struct StreamOptions {
     RtAudioStreamFlags flags{};      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */

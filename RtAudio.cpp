@@ -3370,83 +3370,134 @@ bool RtApiJack :: bufferSizeCallbackEvent ( unsigned long nframes )
 {
   if ( stream_.bufferSize == (unsigned int) nframes ) return true;
 
-  bool isRunning = stream_.state == STREAM_RUNNING;
-  if ( isRunning ) {
-    jack_client_t *client = ((JackHandle *) stream_.apiHandle)->client;
-    std::cout << "bufferSizeCallbackEvent: stopping stream." << std::endl;
-    jack_deactivate( client );
-    std::cout << "Client deactivated" << std::endl;
-    stream_.state = STREAM_STOPPED;
-  }
-  // Set the new buffer size
+  JackHandle *handle = (JackHandle *) stream_.apiHandle;
+  BufferSizeCallbackInfo *bufferSizeCallbackInfo = (BufferSizeCallbackInfo *) &stream_.bufferSizeCallbackInfo;
   stream_.bufferSize = (unsigned int) nframes;
 
-  // TODO - Adapt for all modes
-  int mode = stream_.mode;
+  std::vector<int> modes = {};
+  if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) modes.push_back(0);
+  if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) modes.push_back(1);
 
-  // Allocate necessary internal buffers.
-  unsigned long bufferBytes;
-  bufferBytes = stream_.nUserChannels[mode] * stream_.bufferSize * formatBytes( stream_.userFormat );
-
-  if ( stream_.userBuffer[mode] ) free( stream_.userBuffer[mode] );
-  stream_.userBuffer[mode] = (char *) calloc( bufferBytes, 1 );
-  if ( stream_.userBuffer[mode] == NULL ) {
-    errorText_ = "RtApiJack::probeDeviceOpen: error allocating user buffer memory.";
-  }
-
-  if ( stream_.doConvertBuffer[mode] ) {
-    
-    bool makeBuffer = true;
-    if ( mode == OUTPUT )
-      bufferBytes = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
-    else { // mode == INPUT
-      bufferBytes = stream_.nDeviceChannels[1] * formatBytes( stream_.deviceFormat[1] );
-      if ( stream_.mode == OUTPUT && stream_.deviceBuffer ) {
-        unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes(stream_.deviceFormat[0]);
-        if ( bufferBytes < bytesOut ) makeBuffer = false;
-      }
+  for ( size_t i = 0; i < modes.size(); i++ ) {
+    // Allocate necessary internal buffers.
+    unsigned long bufferBytes;
+    bufferBytes = stream_.nUserChannels[modes[i]] * nframes * formatBytes( stream_.userFormat );
+    stream_.userBuffer[modes[i]] = (char *) calloc( bufferBytes, 1 );
+    if ( stream_.userBuffer[modes[i]] == NULL ) {
+      errorText_ = "RtApiJack::probeDeviceOpen: error allocating user buffer memory.";
+      goto error;
     }
 
-    if ( makeBuffer ) {
-      bufferBytes *= stream_.bufferSize;
-      if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
-      stream_.deviceBuffer = (char *) calloc( bufferBytes, 1 );
-      if ( stream_.deviceBuffer == NULL ) {
-        errorText_ = "RtApiJack::probeDeviceOpen: error allocating device buffer memory.";
+    if ( stream_.doConvertBuffer[modes[i]] ) {
+
+      bool makeBuffer = true;
+      if ( modes[i] == OUTPUT )
+        bufferBytes = stream_.nDeviceChannels[0] * formatBytes( stream_.deviceFormat[0] );
+      else { // modes[i] == INPUT
+        bufferBytes = stream_.nDeviceChannels[1] * formatBytes( stream_.deviceFormat[1] );
+        if ( modes.size() == 2 && stream_.deviceBuffer ) {
+          unsigned long bytesOut = stream_.nDeviceChannels[0] * formatBytes(stream_.deviceFormat[0]);
+          if ( bufferBytes < bytesOut ) makeBuffer = false;
+        }
+      }
+  
+      if ( makeBuffer ) {
+        bufferBytes *= nframes;
+        if ( stream_.deviceBuffer ) free( stream_.deviceBuffer );
+        stream_.deviceBuffer = (char *) calloc( bufferBytes, 1 );
+        if ( stream_.deviceBuffer == NULL ) {
+          errorText_ = "RtApiJack::probeDeviceOpen: error allocating device buffer memory.";
+          goto error;
+        }
       }
     }
   }
 
-  BufferSizeCallbackInfo *info = (BufferSizeCallbackInfo *) &stream_.bufferSizeCallbackInfo;
-
-  if ( info->callback ) {
-    RtAudioBufferSizeCallback callback = (RtAudioBufferSizeCallback) info->callback;
+  int cbReturnValue;
+  if ( bufferSizeCallbackInfo->callback ) {
+    RtAudioBufferSizeCallback callback = (RtAudioBufferSizeCallback) bufferSizeCallbackInfo->callback;
     if ( callback ) {
-      callback( &stream_.bufferSize, info->userData );
+      cbReturnValue = callback( &stream_.bufferSize, bufferSizeCallbackInfo->userData );
+    }
+  } else {
+    cbReturnValue = 0;
+  }
+  
+
+  if ( stream_.state == STREAM_RUNNING && cbReturnValue != 0 ) {
+    if ( cbReturnValue == 2 ) {
+      stream_.state = STREAM_STOPPING;
+      handle->drainCounter = 2;
+      ThreadHandle id;
+      CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+      pthread_create( &id, NULL, jackStopStream, info );
+    }
+    else if ( cbReturnValue == 1 ) {
+      handle->drainCounter = 1;
+      handle->internalDrain = true;
     }
   }
 
-  if ( isRunning ) {
-    startStream();
+  return SUCCESS;
+
+  error:
+  if ( handle ) {
+    pthread_cond_destroy( &handle->condition );
+    jack_client_close( handle->client );
+
+    if ( handle->ports[0] ) free( handle->ports[0] );
+    if ( handle->ports[1] ) free( handle->ports[1] );
+
+    delete handle;
+    stream_.apiHandle = 0;
   }
 
-  return true;
+  for ( int i=0; i<2; i++ ) {
+    if ( stream_.userBuffer[i] ) {
+      free( stream_.userBuffer[i] );
+      stream_.userBuffer[i] = 0;
+    }
+  }
+
+  if ( stream_.deviceBuffer ) {
+    free( stream_.deviceBuffer );
+    stream_.deviceBuffer = 0;
+  }
+
+  return FAILURE;
 }
 
 bool RtApiJack :: sampleRateCallbackEvent ( unsigned long sampleRate )
 {
-  if ( stream_.sampleRate == (unsigned int) sampleRate ) return true;
-  else {
-    stream_.sampleRate = (unsigned int) sampleRate;
-    SampleRateCallbackInfo *info = (SampleRateCallbackInfo *) &stream_.sampleRateCallbackInfo;
-    if ( info->callback ) {
-      RtAudioSampleRateCallback callback = (RtAudioSampleRateCallback) info->callback;
-      if ( callback ) {
-        callback( &stream_.sampleRate, info->userData );
-      }
+  if ( stream_.sampleRate == (unsigned int) sampleRate ) return SUCCESS;
+
+  stream_.sampleRate = (unsigned int) sampleRate;
+  SampleRateCallbackInfo *sampleRateCallbackInfo = (SampleRateCallbackInfo *) &stream_.sampleRateCallbackInfo;
+  
+  int cbReturnValue = 0;
+  if ( sampleRateCallbackInfo->callback ) {
+    RtAudioSampleRateCallback callback = (RtAudioSampleRateCallback) sampleRateCallbackInfo->callback;
+    if ( callback ) {
+      cbReturnValue = callback( &stream_.sampleRate, sampleRateCallbackInfo->userData );
     }
   }
-  return true;
+
+  if ( stream_.state == STREAM_RUNNING && cbReturnValue != 0 ) {
+    JackHandle *handle = (JackHandle *) stream_.apiHandle;
+    if ( cbReturnValue == 2 ) {
+      stream_.state = STREAM_STOPPING;
+      handle->drainCounter = 2;
+      ThreadHandle id;
+      CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+      pthread_create( &id, NULL, jackStopStream, info );
+    }
+    else if ( cbReturnValue == 1 ) {
+      handle->drainCounter = 1;
+      handle->internalDrain = true;
+    }
+  }
+  
+  return SUCCESS;
 }
 
   //******************** End of __UNIX_JACK__ *********************//
@@ -11080,6 +11131,10 @@ void RtApi :: clearStreamInfo()
   stream_.callbackInfo.userData = 0;
   stream_.callbackInfo.isRunning = false;
   stream_.callbackInfo.deviceDisconnected = false;
+  stream_.bufferSizeCallbackInfo.callback = nullptr;
+  stream_.bufferSizeCallbackInfo.userData = nullptr;
+  stream_.sampleRateCallbackInfo.callback = nullptr;
+  stream_.sampleRateCallbackInfo.userData = nullptr;
   for ( int i=0; i<2; i++ ) {
     stream_.deviceId[i] = 11111;
     stream_.doConvertBuffer[i] = false;
