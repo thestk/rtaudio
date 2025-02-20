@@ -2919,9 +2919,15 @@ bool RtApiJack :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
   // Get the buffer size.  The buffer size and number of buffers
   // (periods) is set when the jack server is started.
-  stream_.bufferSize = (int) jack_get_buffer_size( client );
-  *bufferSize = stream_.bufferSize;
-
+  // If the requested buffer_size for the stream is different, 
+  // force the jack or pipewire-jack server to use the requested
+  // buffersize for all clients.
+  if ( *bufferSize != (unsigned int) jack_get_buffer_size( client ) ) {
+    std::cout << "RtApiJack::probeDeviceOpen: JACK server buffer size is different than the requested buffer size - forcing requested buffer size for all clients." << std::endl;
+    jack_set_buffer_size( client, (jack_nframes_t) *bufferSize );
+  }
+  
+  stream_.bufferSize = *bufferSize;
   stream_.nDeviceChannels[mode] = channels;
   stream_.nUserChannels[mode] = channels;
 
