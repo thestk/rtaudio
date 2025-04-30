@@ -8,9 +8,6 @@
 struct rtaudio {
   RtAudio *audio;
 
-  rtaudio_cb_t cb;
-  void *userdata;
-
   rtaudio_error_t errtype;
   char errmsg[MAX_ERROR_MESSAGE_LENGTH];
 };
@@ -123,12 +120,6 @@ unsigned int rtaudio_get_default_input_device(rtaudio_t audio) {
   return audio->audio->getDefaultInputDevice();
 }
 
-static int proxy_cb_func(void *out, void *in, unsigned int nframes, double time,
-                         RtAudioStreamStatus status, void *userdata) {
-  rtaudio_t audio = (rtaudio_t)userdata;
-  return audio->cb(out, in, nframes, time, (rtaudio_stream_status_t)status,
-                   audio->userdata);
-}
 
 rtaudio_error_t rtaudio_open_stream(rtaudio_t audio,
                         rtaudio_stream_parameters_t *output_params,
@@ -169,10 +160,9 @@ rtaudio_error_t rtaudio_open_stream(rtaudio_t audio,
     }
     opts = &stream_opts;
   }
-  audio->cb = cb;
-  audio->userdata = userdata;
+
   audio->audio->openStream(out, in, (RtAudioFormat)format, sample_rate,
-                           buffer_frames, proxy_cb_func, (void *)audio, opts); //,  NULL);
+                           buffer_frames, cb, (void *)userdata, opts); //,  NULL);
   return audio->errtype;
 }
 
