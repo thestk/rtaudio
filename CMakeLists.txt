@@ -1,5 +1,5 @@
 # Set minimum CMake required version for this project.
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 # Define a C++ project.
 project(RtAudio LANGUAGES CXX)
@@ -343,8 +343,8 @@ write_basic_package_version_file(
 
 install(
   FILES
-    ${CMAKE_BINARY_DIR}/RtAudioConfig.cmake
-    ${CMAKE_BINARY_DIR}/RtAudioConfig-version.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/RtAudioConfig-version.cmake
   DESTINATION
     ${RTAUDIO_CMAKE_DESTINATION}
 )

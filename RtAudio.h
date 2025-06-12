@@ -219,11 +219,12 @@ static const RtAudioStreamStatus RTAUDIO_OUTPUT_UNDERFLOW = 0x2;  // The output 
    output buffer, the function should return a value of one.  To abort
    the stream immediately, the client should return a value of two.
  */
-typedef int (*RtAudioCallback)( void *outputBuffer, void *inputBuffer,
-                                unsigned int nFrames,
-                                double streamTime,
-                                RtAudioStreamStatus status,
-                                void *userData );
+
+typedef std::function<int(void* outputBuffer, void* inputBuffer,
+                          unsigned int nFrames,
+                          double streamTime,
+                          RtAudioStreamStatus status,
+                          void* userData)> RtAudioCallback;
 
 enum RtAudioErrorType {
   RTAUDIO_NO_ERROR = 0,      /*!< No error. */
@@ -589,7 +590,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     non-zero RtAudioErrorType is returned by a function. This is the
     same message sent to the user-provided errorCallback function.
   */
-  const std::string getErrorText( void );
+  const std::string &getErrorText(void);
 
   //! Returns true if a stream is open and false if not.
   bool isStreamOpen( void ) const;
@@ -684,7 +685,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 struct CallbackInfo {
   void *object{};    // Used as a "this" pointer.
   ThreadHandle thread{};
-  void *callback{};
+  RtAudioCallback callback{};
   void *userData{};
   void *apiInfo{};   // void pointer for API specific callback information
   bool isRunning{false};
@@ -711,7 +712,7 @@ struct CallbackInfo {
 class S24 {
 
  protected:
-  unsigned char c3[3];
+  unsigned char c3[4];
 
  public:
   S24() {}
@@ -764,7 +765,7 @@ public:
   virtual RtAudioErrorType startStream( void ) = 0;
   virtual RtAudioErrorType stopStream( void ) = 0;
   virtual RtAudioErrorType abortStream( void ) = 0;
-  const std::string getErrorText( void ) const { return errorText_; }
+  const std::string &getErrorText(void) const { return errorText_; }
   long getStreamLatency( void );
   unsigned int getStreamSampleRate( void );
   virtual double getStreamTime( void ) const { return stream_.streamTime; }
@@ -917,7 +918,7 @@ inline void RtAudio :: closeStream( void ) { return rtapi_->closeStream(); }
 inline RtAudioErrorType RtAudio :: startStream( void ) { return rtapi_->startStream(); }
 inline RtAudioErrorType RtAudio :: stopStream( void )  { return rtapi_->stopStream(); }
 inline RtAudioErrorType RtAudio :: abortStream( void ) { return rtapi_->abortStream(); }
-inline const std::string RtAudio :: getErrorText( void ) { return rtapi_->getErrorText(); }
+inline const std::string &RtAudio::getErrorText(void) { return rtapi_->getErrorText(); }
 inline bool RtAudio :: isStreamOpen( void ) const { return rtapi_->isStreamOpen(); }
 inline bool RtAudio :: isStreamRunning( void ) const { return rtapi_->isStreamRunning(); }
 inline long RtAudio :: getStreamLatency( void ) { return rtapi_->getStreamLatency(); }
