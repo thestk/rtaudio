@@ -53,7 +53,7 @@ RtAudio doesn't automatically turn 1-channel output into stereo output with copi
 
 ## Further Reading
 
-For complete documentation on RtAudio, see the doc directory of the distribution or surf to http://www.music.mcgill.ca/~gary/rtaudio/.
+For complete documentation on RtAudio, see the doc directory of the distribution or surf to https://caml.music.mcgill.ca/~gary/rtaudio/index.html.
 
 
 ## Legal and ethical:
