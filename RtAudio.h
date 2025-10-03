@@ -83,6 +83,7 @@
 #include <vector>
 #include <iostream>
 #include <functional>
+#include <memory>
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
