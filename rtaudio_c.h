@@ -192,7 +192,7 @@ typedef struct rtaudio_stream_options {
   char name[MAX_NAME_LENGTH];
 } rtaudio_stream_options_t;
 
-typedef struct rtaudio_struct *rtaudio_t;
+typedef struct rtaudio *rtaudio_t;
 
 //! Determine the current RtAudio version.  See \ref RtAudio::getVersion().
 RTAUDIOAPI const char *rtaudio_version(void);

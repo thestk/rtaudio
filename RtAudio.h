@@ -85,7 +85,8 @@
 #include <functional>
 #include <memory>
 
-inline namespace rtaudio {
+inline namespace rt {
+inline namespace audio {
 
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
@@ -651,6 +652,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 };
 
 }
+}
 
 // Operating system dependent thread functionality.
 #if defined(_MSC_VER)
@@ -662,9 +664,11 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   #include <process.h>
   #include <stdint.h>
 
-inline namespace rtaudio {
+inline namespace rt {
+inline namespace audio {
   typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
+}
 }
 
 #else
@@ -672,9 +676,11 @@ inline namespace rtaudio {
   // Using pthread library for various flavors of unix.
   #include <pthread.h>
 
-inline namespace rtaudio {
+inline namespace rt {
+inline namespace audio {
   typedef pthread_t ThreadHandle;
   typedef pthread_mutex_t StreamMutex;
+}
 }
 
 #endif
@@ -688,7 +694,8 @@ inline namespace rtaudio {
 
 #endif
 
-inline namespace rtaudio {
+inline namespace rt {
+inline namespace audio {
 
 // This global structure type is used to pass callback information
 // between the private RtAudio stream structure and global callback
@@ -749,6 +756,7 @@ class S24 {
 #pragma pack(pop)
 
 }
+}
 
 #if defined( HAVE_GETTIMEOFDAY )
   #include <sys/time.h>
@@ -756,7 +764,9 @@ class S24 {
 
 #include <sstream>
 
-inline namespace rtaudio {
+inline namespace rt {
+inline namespace audio {
+
 class RTAUDIO_DLL_PUBLIC RtApi
 {
 public:
@@ -944,6 +954,7 @@ inline void RtAudio :: showWarnings( bool value ) { rtapi_->showWarnings( value 
 
 #endif
 
+}
 }
 
 // Indentation settings for Vim and Emacs

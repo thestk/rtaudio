@@ -5,7 +5,7 @@
 
 #define MAX_ERROR_MESSAGE_LENGTH 512
 
-struct rtaudio_struct {
+struct rtaudio {
   RtAudio *audio;
 
   rtaudio_error_t errtype;
@@ -58,7 +58,7 @@ rtaudio_error_t rtaudio_error_type(rtaudio_t audio) {
 }
 
 rtaudio_t rtaudio_create(rtaudio_api_t api) {
-  rtaudio_t audio = new struct rtaudio_struct();
+  rtaudio_t audio = new struct rtaudio();
   audio->errtype = RTAUDIO_ERROR_NONE;
   audio->audio = new RtAudio((RtAudio::Api)api,
     [audio](RtAudioErrorType type, const std::string &errorText){

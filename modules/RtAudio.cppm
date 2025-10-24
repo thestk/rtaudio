@@ -1,26 +1,29 @@
 module;
 
-#ifdef RTAUDIO_USE_NAMESPACE
-#define RTAUDIO_NAMESPACE_INLINE inline
-#else
-#define RTAUDIO_NAMESPACE_INLINE
-#endif
-
 #include "RtAudio.h"
 
-export module rtaudio;
+export module rt.audio;
 
-export RTAUDIO_NAMESPACE_INLINE namespace rtaudio {
-    using rtaudio::RtAudioFormat;
-    using rtaudio::RtAudioStreamFlags;
-    using rtaudio::RtAudioStreamStatus;
-    using rtaudio::RtAudioCallback;
-    using rtaudio::RtAudioErrorType;
-    using rtaudio::RtAudioErrorCallback;
-    using rtaudio::RtApi;
-    using rtaudio::RtAudio;
-    using rtaudio::ThreadHandle;
-    using rtaudio::StreamMutex;
-    using rtaudio::CallbackInfo;
-    using rtaudio::S24;
+export
+#ifdef RTAUDIO_USE_NAMESPACE
+inline namespace rt {
+inline namespace audio {
+#else
+namespace rt::audio {
+#endif
+    using rt::audio::RtAudioFormat;
+    using rt::audio::RtAudioStreamFlags;
+    using rt::audio::RtAudioStreamStatus;
+    using rt::audio::RtAudioCallback;
+    using rt::audio::RtAudioErrorType;
+    using rt::audio::RtAudioErrorCallback;
+    using rt::audio::RtApi;
+    using rt::audio::RtAudio;
+    using rt::audio::ThreadHandle;
+    using rt::audio::StreamMutex;
+    using rt::audio::CallbackInfo;
+    using rt::audio::S24;
 }
+#ifdef RTAUDIO_USE_NAMESPACE
+}
+#endif

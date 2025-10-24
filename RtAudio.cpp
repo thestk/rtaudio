@@ -55,7 +55,8 @@
 #include <windows.h>
 #endif
 
-inline namespace rtaudio {
+inline namespace rt {
+inline namespace audio {
 
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
@@ -11554,6 +11555,7 @@ void RtApi :: byteSwapBuffer( char *buffer, unsigned int samples, RtAudioFormat 
   }
 }
 
+}
 }
 
   // Indentation settings for Vim and Emacs
