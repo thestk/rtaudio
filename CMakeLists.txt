@@ -65,6 +65,10 @@ if (HAVE_GETTIMEOFDAY)
     add_definitions(-DHAVE_GETTIMEOFDAY)
 endif ()
 
+# Module options
+option(RTAUDIO_BUILD_MODULES "Build C++ modules for RtAudio" OFF)
+option(RTAUDIO_USE_NAMESPACE "Use namespace rtaudio for module" ON)
+
 # Add -Wall if possible
 if (CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
@@ -278,6 +282,15 @@ target_include_directories(rtaudio
 target_compile_definitions(rtaudio PRIVATE ${API_DEFS})
 target_compile_definitions(rtaudio PRIVATE RTAUDIO_EXPORT)
 target_link_libraries(rtaudio ${LINKLIBS})
+
+if(RTAUDIO_BUILD_MODULES)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.28)
+    message(STATUS "Building rtaudio C++ module")
+    add_subdirectory(modules)
+  else()
+    message(WARNING "Skipping rtaudio C++ module (requires CMake 3.28+, found ${CMAKE_VERSION})")
+  endif()
+endif()
 
 # Subdirs
 
