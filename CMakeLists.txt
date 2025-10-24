@@ -67,7 +67,7 @@ endif ()
 
 # Module options
 option(RTAUDIO_BUILD_MODULES "Build C++ modules for RtAudio" OFF)
-option(RTAUDIO_USE_NAMESPACE "Use namespace rtaudio for module" ON)
+option(RTAUDIO_USE_NAMESPACE "Force usage of namespace rt::audio for modules" ON)
 
 # Add -Wall if possible
 if (CMAKE_COMPILER_IS_GNUCXX)
