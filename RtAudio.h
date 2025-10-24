@@ -85,6 +85,9 @@
 #include <functional>
 #include <memory>
 
+inline namespace rt {
+inline namespace audio {
+
 /*! \typedef typedef unsigned long RtAudioFormat;
     \brief RtAudio data format type.
 
@@ -648,6 +651,9 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   std::shared_ptr<RtApi> rtapi_;
 };
 
+}
+}
+
 // Operating system dependent thread functionality.
 #if defined(_MSC_VER)
 
@@ -658,16 +664,24 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   #include <process.h>
   #include <stdint.h>
 
+inline namespace rt {
+inline namespace audio {
   typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
+}
+}
 
 #else
 
   // Using pthread library for various flavors of unix.
   #include <pthread.h>
 
+inline namespace rt {
+inline namespace audio {
   typedef pthread_t ThreadHandle;
   typedef pthread_mutex_t StreamMutex;
+}
+}
 
 #endif
 
@@ -679,6 +693,9 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   #define __RTAUDIO_DUMMY__
 
 #endif
+
+inline namespace rt {
+inline namespace audio {
 
 // This global structure type is used to pass callback information
 // between the private RtAudio stream structure and global callback
@@ -738,11 +755,17 @@ class S24 {
 };
 #pragma pack(pop)
 
+}
+}
+
 #if defined( HAVE_GETTIMEOFDAY )
   #include <sys/time.h>
 #endif
 
 #include <sstream>
+
+inline namespace rt {
+inline namespace audio {
 
 class RTAUDIO_DLL_PUBLIC RtApi
 {
@@ -930,6 +953,9 @@ inline void RtAudio :: setErrorCallback( RtAudioErrorCallback errorCallback ) { 
 inline void RtAudio :: showWarnings( bool value ) { rtapi_->showWarnings( value ); }
 
 #endif
+
+}
+}
 
 // Indentation settings for Vim and Emacs
 //
