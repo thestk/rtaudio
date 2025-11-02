@@ -952,10 +952,11 @@ inline void RtAudio :: setStreamTime( double time ) { return rtapi_->setStreamTi
 inline void RtAudio :: setErrorCallback( RtAudioErrorCallback errorCallback ) { rtapi_->setErrorCallback( errorCallback ); }
 inline void RtAudio :: showWarnings( bool value ) { rtapi_->showWarnings( value ); }
 
+}
+}
+
 #endif
 
-}
-}
 
 // Indentation settings for Vim and Emacs
 //
