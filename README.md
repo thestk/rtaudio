@@ -28,7 +28,7 @@ RtAudio is a set of C++ classes that provides a common API (Application Programm
 
 RtAudio incorporates the concept of audio streams, which represent audio output (playback) and/or input (recording).  Available audio devices and their capabilities can be enumerated and then specified when opening a stream.  Where applicable, multiple API support can be compiled and a particular API specified when creating an RtAudio instance.  See the \ref apinotes section for information specific to each of the supported audio APIs.
 
-RtAudio is also offered as a module, which is enabled with `RTAUDIO_BUILD_MODULES`, and is accessed with `import rt.audio;`. Namespaces are inlined, so classes can be accessed through namespace `rt::audio` or through the global namespace (for example, `rt::audio::RtApi` and `::RtApi` are both valid).
+RtAudio is also offered as a module, which is enabled with `RTAUDIO_BUILD_MODULES`, and is accessed with `import rt.audio;`. Namespaces are implicitly imported (unless disabled with `RTAUDIO_USE_NAMESPACE`), so classes can be accessed through namespace `rt::audio` or through the global namespace (for example, `rt::audio::RtApi` and `::RtApi` are both valid).
 
 ## Building
 

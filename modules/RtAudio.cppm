@@ -4,13 +4,7 @@ module;
 
 export module rt.audio;
 
-export
-#ifndef RTAUDIO_USE_NAMESPACE
-inline namespace rt {
-inline namespace audio {
-#else
-namespace rt::audio {
-#endif
+export namespace rt::audio {
     using rt::audio::RtAudioFormat;
     using rt::audio::RtAudioStreamFlags;
     using rt::audio::RtAudioStreamStatus;
@@ -24,6 +18,7 @@ namespace rt::audio {
     using rt::audio::CallbackInfo;
     using rt::audio::S24;
 }
+
 #ifndef RTAUDIO_USE_NAMESPACE
-}
+using namespace rt::audio;
 #endif
