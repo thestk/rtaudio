@@ -5,7 +5,7 @@ module;
 export module rt.audio;
 
 export
-#ifdef RTAUDIO_USE_NAMESPACE
+#ifndef RTAUDIO_USE_NAMESPACE
 inline namespace rt {
 inline namespace audio {
 #else
@@ -24,6 +24,6 @@ namespace rt::audio {
     using rt::audio::CallbackInfo;
     using rt::audio::S24;
 }
-#ifdef RTAUDIO_USE_NAMESPACE
+#ifndef RTAUDIO_USE_NAMESPACE
 }
 #endif
