@@ -55,6 +55,8 @@
 #include <windows.h>
 #endif
 
+using namespace rt::audio;
+
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
 const unsigned int RtApi::SAMPLE_RATES[] = {
