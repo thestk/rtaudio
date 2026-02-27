@@ -209,9 +209,9 @@ endif()
 
 # pthread
 if (NEED_PTHREAD)
-  find_package(Threads REQUIRED
-    CMAKE_THREAD_PREFER_PTHREAD
-    THREADS_PREFER_PTHREAD_FLAG)
+  set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+  set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+  find_package(Threads REQUIRED)
   list(APPEND LINKLIBS Threads::Threads)
 endif()
 
