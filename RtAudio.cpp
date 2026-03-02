@@ -9538,14 +9538,14 @@ bool RtApiPulse::probeDeviceOpen( unsigned int deviceId, StreamMode mode,
   if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, firstChannel );
 
   if ( !stream_.apiHandle ) {
-    PulseAudioHandle *pah = new PulseAudioHandle;
-    if ( !pah ) {
+    PulseAudioHandle *pah2 = new PulseAudioHandle;
+    if ( !pah2 ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error allocating memory for handle.";
       goto error;
     }
 
-    stream_.apiHandle = pah;
-    if ( pthread_cond_init( &pah->runnable_cv, NULL ) != 0 ) {
+    stream_.apiHandle = pah2;
+    if ( pthread_cond_init( &pah2->runnable_cv, NULL ) != 0 ) {
       errorText_ = "RtApiPulse::probeDeviceOpen: error creating condition variable.";
       goto error;
     }
