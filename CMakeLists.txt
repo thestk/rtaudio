@@ -1,5 +1,5 @@
 # Set minimum CMake required version for this project.
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
 # Define a C++ project.
 project(RtAudio LANGUAGES CXX)
@@ -305,6 +305,10 @@ endif()
 # Message
 string(REPLACE ";" " " apilist "${API_LIST}")
 message(STATUS "Compiling with support for: ${apilist}")
+
+if(NOT PROJECT_IS_TOP_LEVEL)
+  return()
+endif()
 
 # PkgConfig file
 string(REPLACE ";" " " req "${PKGCONFIG_REQUIRES}")
