@@ -52,6 +52,7 @@
 #include <locale>
 
 #if defined(_WIN32)
+#include <codecvt>
 #include <windows.h>
 #endif
 
@@ -73,6 +74,7 @@ std::string convertCharPointerToStdString(const char *text)
   return text;
 }
 
+#ifdef __WIN32__
 template<> inline
 std::string convertCharPointerToStdString(const wchar_t* text)
 {
@@ -106,6 +108,7 @@ std::string convertCharPointerToStdString(const wchar_t* text)
   return result;
 #endif
 }
+#endif
 
 #if defined(_MSC_VER)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
@@ -418,7 +421,7 @@ class RtApiDummy: public RtApi
 {
 public:
 
-  RtApiDummy() { errorText_ = "RtApiDummy: This class provides no functionality."; error( RTAUDIO_WARNING ); }
+  RtApiDummy() { /*errorText_ = "RtApiDummy: This class provides no functionality."; error( RTAUDIO_WARNING ); */}
   RtAudio::Api getCurrentApi( void ) override { return RtAudio::RTAUDIO_DUMMY; }
   void closeStream( void ) override {}
   RtAudioErrorType startStream( void ) override { return RTAUDIO_NO_ERROR; }
@@ -1237,8 +1240,8 @@ bool RtApiCore :: probeDeviceInfo( AudioDeviceID id, RtAudio::DeviceInfo& info )
 #else
   CFStringGetCString(cfname, mname, length * 3 + 1, CFStringGetSystemEncoding());
 #endif
-  info.name.append( (const char *)mname, strlen(mname) );
-  info.name.append( ": " );
+//  info.name.append( (const char *)mname, strlen(mname) );
+//  info.name.append( ": " );
   CFRelease( cfname );
   free(mname);
 
@@ -2276,9 +2279,44 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
                        stream_.userBuffer[0], stream_.convertInfo[0] );
       }
       else { // copy from user buffer
-        memcpy( outBufferList->mBuffers[handle->iStream[0]].mData,
-                stream_.userBuffer[0],
-                outBufferList->mBuffers[handle->iStream[0]].mDataByteSize );
+          
+          /* !!!
+           macOS can change a device's configuration during use. This can be observed, for example,
+           in the situation where a phone call is answered in macOS. When this situation occurs, it
+           is likely that the number of channels in the capture device is increased, causing an
+           increase in the buffer size and consequently a buffer overflow in the copying process.
+           
+           The protection in relation to the buffer size change was not observed on the playback side,
+           however, it is interesting to leave this protection also in this direction of the audio.
+           
+           !!! */
+          
+          /* If the number of channels in coreaudio buffer is the same as the number of channels in user buffer, proceed with the copy normally. */
+          if (outBufferList->mBuffers[handle->iStream[0]].mNumberChannels == stream_.nUserChannels[0] &&
+              outBufferList->mBuffers[handle->iStream[0]].mDataByteSize == stream_.bufferSize * stream_.nUserChannels[0] * formatBytes( stream_.userFormat )) {
+              memcpy( outBufferList->mBuffers[handle->iStream[0]].mData, stream_.userBuffer[0], outBufferList->mBuffers[handle->iStream[0]].mDataByteSize);
+          }
+          else {
+              ConvertInfo info;
+              
+              /* Assuming that if there is no conversion it is because the device and user formats are the same. */
+              info.channels = stream_.nUserChannels[0];
+              info.inFormat = stream_.userFormat;
+              info.outFormat = stream_.userFormat;
+              info.inJump = stream_.nUserChannels[0];
+              info.outJump = outBufferList->mBuffers[handle->iStream[0]].mNumberChannels;
+              
+              /* You may need to deal with non-interleave and channel offset situations. Evaluate this need in coreAudio. */
+              for ( int k = 0; k < info.channels; k++ ) {
+                  info.inOffset.push_back( k );
+                  info.outOffset.push_back( k );
+              }
+              
+              /* Clears the entire buffer to fill only existing values. */
+              memset(outBufferList->mBuffers[handle->iStream[0]].mData, 0, outBufferList->mBuffers[handle->iStream[0]].mDataByteSize);
+              
+              convertBuffer((char*)outBufferList->mBuffers[handle->iStream[0]].mData, stream_.userBuffer[0], info);
+          }
       }
     }
     else { // fill multiple streams
@@ -2369,9 +2407,41 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
                        stream_.convertInfo[1] );
       }
       else { // copy to user buffer
-        memcpy( stream_.userBuffer[1],
-                inBufferList->mBuffers[handle->iStream[1]].mData,
-                inBufferList->mBuffers[handle->iStream[1]].mDataByteSize );
+          
+          /* !!! Fix Buffer Overflow when device numchannel changes !!!
+           
+           macOS can change a device's configuration during use. This can be observed, for example,
+           in the situation where a phone call is answered in macOS. When this situation occurs, it
+           is likely that the number of channels in the capture device is increased, causing an
+           increase in the buffer size and consequently a buffer overflow in the copying process.
+           
+           !!! */
+          
+          /* If the number of channels in coreaudio buffer is the same as the number of channels in user buffer, proceed with the copy normally. */
+          if (inBufferList->mBuffers[handle->iStream[1]].mNumberChannels == stream_.nUserChannels[1] &&
+              inBufferList->mBuffers[handle->iStream[1]].mDataByteSize == stream_.bufferSize * stream_.nUserChannels[1] * formatBytes( stream_.userFormat )) {
+              memcpy( stream_.userBuffer[1], inBufferList->mBuffers[handle->iStream[1]].mData, inBufferList->mBuffers[handle->iStream[1]].mDataByteSize );
+          }
+          else {
+              ConvertInfo info;
+
+              /* Assuming that if there is no conversion it is because the device and user formats are the same. */
+              info.channels = stream_.nUserChannels[1];
+              info.inFormat = stream_.userFormat;
+              info.outFormat = stream_.userFormat;
+              info.inJump = inBufferList->mBuffers[handle->iStream[1]].mNumberChannels;
+              info.outJump = stream_.nUserChannels[1];
+              
+              /* You may need to deal with non-interleave and channel offset situations. Evaluate this need in coreAudio. */
+              for ( int k = 0; k < info.channels; k++ ) {
+                  info.inOffset.push_back( k );
+                  info.outOffset.push_back( k );
+              }
+              
+              /* No need to clear buffer. */
+              
+              convertBuffer(stream_.userBuffer[1], (char*)inBufferList->mBuffers[handle->iStream[1]].mData, info);
+          }
       }
     }
     else { // read from multiple streams
