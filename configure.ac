@@ -31,11 +31,15 @@ AC_SUBST(SO_VERSION)
 AC_SUBST(api)
 AC_SUBST(req)
 AC_SUBST(req_libs)
+AC_SUBST(pthread_cflags)
+AC_SUBST(pthread_libs)
 AC_SUBST(visibility)
 
 api=""
 req=""
 req_libs=""
+pthread_cflags="-pthread"
+pthread_libs="-lpthread"
 use_asio=""
 
 # standards version
