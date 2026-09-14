@@ -143,6 +143,8 @@ public:
   RtAudioErrorType stopStream( void ) override;
   RtAudioErrorType abortStream( void ) override;
 
+  void streamSampleRateUpdated( int sampleRate );
+
   // This function is intended for internal use only.  It must be
   // public because it is called by an internal callback handler,
   // which is not a member of RtAudio.  External use of this function
@@ -590,7 +592,7 @@ void RtAudio :: openRtApi( RtAudio::Api api )
 #endif
 }
 
-RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
+RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback, RtAudioStreamUpdateCallback&& updateCallback )
 {
   rtapi_ = 0;
 
@@ -601,6 +603,7 @@ RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
 
     if ( rtapi_ ) {
       if ( errorCallback ) rtapi_->setErrorCallback( errorCallback );
+      if ( updateCallback ) rtapi_->setStreamUpdateCallback (updateCallback );
       return;
     }
 
@@ -625,6 +628,7 @@ RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
 
   if ( rtapi_ ) {
     if ( errorCallback ) rtapi_->setErrorCallback( errorCallback );
+    if ( updateCallback ) rtapi_->setStreamUpdateCallback (updateCallback );
     return;
   }
 
@@ -1101,18 +1105,35 @@ unsigned int RtApiCore :: getDefaultInputDevice( void )
 }
 
 // If a device used in an open stream is disconnected, close the stream.
-static OSStatus streamDisconnectListener( AudioObjectID /*id*/,
-                                          UInt32 nAddresses,
-                                          const AudioObjectPropertyAddress properties[],
-                                          void* infoPointer )
+static OSStatus streamPropertyChangeListener( AudioObjectID id,
+                                              UInt32 nAddresses,
+                                              const AudioObjectPropertyAddress properties[],
+                                              void* infoPointer )
 {
+  CallbackInfo *info = (CallbackInfo *) infoPointer;
+  RtApiCore *object = (RtApiCore *) info->object;
+
   for ( UInt32 i=0; i<nAddresses; i++ ) {
     if ( properties[i].mSelector == kAudioDevicePropertyDeviceIsAlive ) {
-      CallbackInfo *info = (CallbackInfo *) infoPointer;
-      RtApiCore *object = (RtApiCore *) info->object;
       info->deviceDisconnected = true;
       object->closeStream();
       return kAudioHardwareUnspecifiedError;
+    }
+    if ( properties[i].mSelector == kAudioDevicePropertyNominalSampleRate )
+    {
+      AudioObjectPropertyAddress property;
+
+      property.mSelector = kAudioDevicePropertyNominalSampleRate;
+      property.mScope    = kAudioObjectPropertyScopeGlobal;
+      property.mElement  = kAudioObjectPropertyElementMaster;
+
+      Float64 sampleRate;
+      UInt32 dataSize = sizeof( Float64 );
+
+      auto result = AudioObjectGetPropertyData( id, &property, 0, NULL, &dataSize, &sampleRate );
+
+      if ( result == noErr)
+        object->streamSampleRateUpdated( static_cast<int> (sampleRate) );
     }
   }
   
@@ -1930,8 +1951,8 @@ bool RtApiCore :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     handle->xrunListenerAdded[mode] = true;
 
     // Setup a listener to detect a possible device disconnect.
-    property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-    result = AudioObjectAddPropertyListener( id , &property, streamDisconnectListener, (void *) &stream_.callbackInfo );
+    property.mSelector = kAudioObjectPropertySelectorWildcard;
+    result = AudioObjectAddPropertyListener( id , &property, streamPropertyChangeListener, (void *) &stream_.callbackInfo );
     if ( result != noErr ) {
       AudioObjectRemovePropertyListener( id, &property, xrunListener, (void *) handle );
       errorStream_ << "RtApiCore::probeDeviceOpen: system error setting disconnect listener for device (" << deviceId << ").";
@@ -1970,8 +1991,8 @@ void RtApiCore :: closeStream( void )
         }
       }
       if ( handle->disconnectListenerAdded[0] ) {
-        property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-        if (AudioObjectRemovePropertyListener( handle->id[0], &property, streamDisconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+        property.mSelector = kAudioObjectPropertySelectorWildcard;
+        if (AudioObjectRemovePropertyListener( handle->id[0], &property, streamPropertyChangeListener, (void *) &stream_.callbackInfo ) != noErr) {
           errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
           error( RTAUDIO_WARNING );
         }
@@ -2006,8 +2027,8 @@ void RtApiCore :: closeStream( void )
       }
 
       if ( handle->disconnectListenerAdded[1] ) {
-        property.mSelector = kAudioDevicePropertyDeviceIsAlive;
-        if (AudioObjectRemovePropertyListener( handle->id[1], &property, streamDisconnectListener, (void *) &stream_.callbackInfo ) != noErr) {
+        property.mSelector = kAudioObjectPropertySelectorWildcard;
+        if (AudioObjectRemovePropertyListener( handle->id[1], &property, streamPropertyChangeListener, (void *) &stream_.callbackInfo ) != noErr) {
           errorText_ = "RtApiCore::closeStream(): error removing disconnect property listener!";
           error( RTAUDIO_WARNING );
         }
@@ -2181,6 +2202,15 @@ RtAudioErrorType RtApiCore :: abortStream( void )
 
   stream_.state = STREAM_STOPPING;
   return stopStream();
+}
+
+void RtApiCore :: streamSampleRateUpdated( int sampleRate )
+{
+  if ( sampleRate != stream_.sampleRate) {
+    stream_.sampleRate = sampleRate;
+    if ( streamUpdateCallback_ != nullptr )
+      streamUpdateCallback_();
+  }
 }
 
 // This function will be called by a spawned thread when the user
