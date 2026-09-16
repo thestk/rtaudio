@@ -230,6 +230,49 @@ typedef std::function<int(void* outputBuffer, void* inputBuffer,
                           RtAudioStreamStatus status,
                           void* userData)> RtAudioCallback;
 
+//! RtAudio buffer size callback function prototype.
+/*!
+    This function type is used to specify a callback function that
+    will be invoked when the system buffer size changes.  This only
+    occurs when a stream is utilizing a native API that allows
+    dynamic buffer resizing (i.e., ASIO, JACK). At the moment, this
+    is only implemented for the JACK API.
+
+    \param bufferSize The current system buffer size in sample frames.
+
+    \param userData A pointer to optional data provided by the client
+           when opening the stream (default = NULL). This data is set 
+           by the user in the RtAudio::StreamOptions structure when
+            calling the RtAudio::openStream() function.
+            
+    \return 0 to continue normal stream operation, 1 to stop the stream
+            and drain the output buffer, or 2 to abort the stream
+            immediately.
+ */
+typedef int (*RtAudioBufferSizeCallback)( unsigned int *bufferSize, void *userData );
+
+//! RtAudio sample rate callback function prototype.
+/*!
+    This function type is used to specify a callback function that
+    will be invoked when the system sample rate changes.  This only
+    occurs when a stream is utilizing a native API that allows
+    dynamic sample rate changes (i.e., ASIO, JACK). At the moment, this
+    is only implemented for the JACK API.
+
+    \param sampleRate The current system sample rate in sample frames
+    per second.
+
+    \param userData A pointer to optional data provided by the client
+           when opening the stream (default = NULL). This data is set 
+           by the user in the RtAudio::StreamOptions structure when
+            calling the RtAudio::openStream() function.
+
+    \return 0 to continue normal stream operation, 1 to stop the stream
+            and drain the output buffer, or 2 to abort the stream
+            immediately.
+ */
+typedef int (*RtAudioSampleRateCallback)( unsigned int *sampleRate, void *userData );
+
 enum RtAudioErrorType {
   RTAUDIO_NO_ERROR = 0,      /*!< No error. */
   RTAUDIO_WARNING,           /*!< A non-critical error. */
@@ -369,12 +412,48 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     However, if you wish to create multiple instances of RtAudio with
     Jack, each instance must have a unique client name. The default
     Pulse application name is set to "RtAudio."
+
+    The \c bufferSizeCallback parameter can be used to set a function
+    that will be called when the system buffer size changes. This only
+    occurs when a stream is utilizing a native API that allows dynamic
+    buffer resizing (i.e., ASIO, JACK). At the moment, this is only
+    implemented for the JACK API. The function should have the 
+    following signature:
+    \c int (*callback)(unsigned int *bufferSize, void *userData).
+    The \c bufferSize parameter will be set to the current system buffer
+    size in sample frames. If the stream is open, the return value will
+    control the behavior of the stream. The function should return 0 to
+    continue normal stream operation, 1 to stop the stream and drain the
+    output buffer, or 2 to abort the stream immediately. The \c userData
+    parameter is an optional pointer to data that can be passed with the
+    \c bufferSizeCallbackUserData parameter, which will be passed to the
+    callback function.
+
+    The \c sampleRateCallback parameter can be used to set a function
+    that will be called when the system sample rate changes. This only
+    occurs when a stream is utilizing a native API that allows dynamic
+    sample rate changes (i.e., ASIO, JACK). At the moment, this is only
+    implemented for the JACK API. The function should have the
+    following signature:
+    \c int (*callback)(unsigned int *sampleRate, void *userData).
+    The \c sampleRate parameter will be set to the current system sample
+    rate in sample frames per second. If the stream is open, the return
+    value will control the behavior of the stream. The function should
+    return 0 to continue normal stream operation, 1 to stop the stream
+    and drain the output buffer, or 2 to abort the stream immediately.
+    The \c userData parameter is an optional pointer to data that can be
+    passed with the \c sampleRateCallbackUserData parameter, which will
+    be passed to the callback function.
   */
   struct StreamOptions {
     RtAudioStreamFlags flags{};      /*!< A bit-mask of stream flags (RTAUDIO_NONINTERLEAVED, RTAUDIO_MINIMIZE_LATENCY, RTAUDIO_HOG_DEVICE, RTAUDIO_ALSA_USE_DEFAULT). */
     unsigned int numberOfBuffers{};  /*!< Number of stream buffers. */
     std::string streamName;        /*!< A stream name (currently used only in Jack). */
     int priority{};                  /*!< Scheduling priority of callback thread (only used with flag RTAUDIO_SCHEDULE_REALTIME). */
+    RtAudioBufferSizeCallback bufferSizeCallback{nullptr}; /*!< Callback function to handle buffer size changes. */
+    void *bufferSizeCallbackUserData; /*!< User data for buffer size callback. */
+    RtAudioSampleRateCallback sampleRateCallback{nullptr}; /*!< Callback function to handle sample rate changes. */
+    void *sampleRateCallbackUserData; /*!< User data for sample rate callback. */
   };
 
   //! A static function to determine the current RtAudio version.
@@ -712,6 +791,22 @@ struct CallbackInfo {
   bool deviceDisconnected{false};
 };
 
+// This global structure type is used to pass the buffer size callback
+// information between the private RtAudio stream structure and the
+// global buffer size callback handling function.
+struct BufferSizeCallbackInfo {
+  void *callback{nullptr};
+  void *userData{};
+};
+
+// This global structure type is used to pass the sample rate callback
+// information between the private RtAudio stream structure and the
+// global sample rate callback handling function.
+struct SampleRateCallbackInfo {
+  void *callback{nullptr};
+  void *userData{};
+};
+
 // **************************************************************** //
 //
 // RtApi class declaration.
@@ -853,6 +948,8 @@ protected:
     RtAudioFormat deviceFormat[2];    // Playback and record, respectively.
     StreamMutex mutex;
     CallbackInfo callbackInfo;
+    BufferSizeCallbackInfo bufferSizeCallbackInfo;
+    SampleRateCallbackInfo sampleRateCallbackInfo;
     ConvertInfo convertInfo[2];
     double streamTime;         // Number of elapsed seconds since the stream started.
 
