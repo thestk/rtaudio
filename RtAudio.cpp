@@ -2572,6 +2572,13 @@ std::string escapeJackPortRegex(std::string &str)
   return escaped_string;
 }
 
+#if defined(__UNIX_JACK__)
+void* RtAudio :: HACK__getJackClient()
+{
+  return static_cast<JackHandle*>(rtapi_->stream_.apiHandle)->client; 
+}
+#endif
+
 #if !defined(__RTAUDIO_DEBUG__)
 static void jackSilentError( const char * ) {};
 #endif
