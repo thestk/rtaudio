@@ -2040,9 +2040,11 @@ void RtApiCore :: closeStream( void )
   }
 
   // Destroy pthread condition variable.
-  pthread_cond_signal( &handle->condition ); // signal condition variable in case stopStream is blocked
-  pthread_cond_destroy( &handle->condition );
-  delete handle;
+  if ( handle ) {
+    pthread_cond_signal( &handle->condition ); // signal condition variable in case stopStream is blocked
+    pthread_cond_destroy( &handle->condition );
+    delete handle;
+  }
   stream_.apiHandle = 0;
 
   CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
