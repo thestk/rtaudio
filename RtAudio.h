@@ -647,7 +647,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
 
  protected:
 
-  void openRtApi( RtAudio::Api api );
+  void openRtApi( RtAudio::Api api, const RtAudioErrorCallback& errorCallback = nullptr );
   std::shared_ptr<RtApi> rtapi_;
 };
 

@@ -548,10 +548,9 @@ RtAudio::Api RtAudio :: getCompiledApiByDisplayName( const std::string &name )
   return RtAudio::UNSPECIFIED;
 }
 
-void RtAudio :: openRtApi( RtAudio::Api api )
+void RtAudio :: openRtApi( RtAudio::Api api, const RtAudioErrorCallback& errorCallback )
 {
   rtapi_.reset();
-
 #if defined(__UNIX_JACK__)
   if ( api == UNIX_JACK )
     rtapi_.reset(new RtApiJack());
@@ -588,6 +587,13 @@ void RtAudio :: openRtApi( RtAudio::Api api )
   if ( api == RTAUDIO_DUMMY )
     rtapi_.reset(new RtApiDummy());
 #endif
+
+  // Install the error callback (if any) as soon as the API object exists, so
+  // that warnings and errors emitted while the caller probes the API (e.g.
+  // RtAudio constructor device enumeration) are routed to the user's
+  // callback rather than being printed to stderr.
+  if ( rtapi_ && errorCallback )
+    rtapi_->setErrorCallback( errorCallback );
 }
 
 RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
@@ -596,11 +602,11 @@ RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
 
   std::string errorMessage;
   if ( api != UNSPECIFIED ) {
-    // Attempt to open the specified API.
-    openRtApi( api );
+    // Attempt to open the specified API.  Any error callback is
+    // installed by openRtApi() as soon as the API object is created.
+    openRtApi( api, errorCallback );
 
     if ( rtapi_ ) {
-      if ( errorCallback ) rtapi_->setErrorCallback( errorCallback );
       return;
     }
 
@@ -618,13 +624,12 @@ RtAudio :: RtAudio( RtAudio::Api api, RtAudioErrorCallback&& errorCallback )
   std::vector< RtAudio::Api > apis;
   getCompiledApi( apis );
   for ( unsigned int i=0; i<apis.size(); i++ ) {
-    openRtApi( apis[i] );
+    openRtApi( apis[i], errorCallback );
     if ( rtapi_ && (rtapi_->getDeviceNames()).size() > 0 )
       break;
   }
 
   if ( rtapi_ ) {
-    if ( errorCallback ) rtapi_->setErrorCallback( errorCallback );
     return;
   }
 
