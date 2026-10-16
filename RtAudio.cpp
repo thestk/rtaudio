@@ -9682,6 +9682,17 @@ bool RtApiPulse::probeDeviceOpen( unsigned int deviceId, StreamMode mode,
  
  error:
   if ( pah && stream_.callbackInfo.isRunning ) {
+    // The callback thread started for the first half of a duplex stream is
+    // waiting on runnable_cv: stop and join it before destroying the
+    // condition variable (as closeStream does), then free the open streams.
+    stream_.callbackInfo.isRunning = false;
+    MUTEX_LOCK( &stream_.mutex );
+    pah->runnable = true;
+    pthread_cond_signal( &pah->runnable_cv );
+    MUTEX_UNLOCK( &stream_.mutex );
+    pthread_join( pah->thread, 0 );
+    if ( pah->s_play ) pa_simple_free( pah->s_play );
+    if ( pah->s_rec ) pa_simple_free( pah->s_rec );
     pthread_cond_destroy( &pah->runnable_cv );
     delete pah;
     stream_.apiHandle = 0;
