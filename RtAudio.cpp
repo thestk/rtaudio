@@ -2229,6 +2229,101 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
   }
 
   AudioDeviceID outputDevice = handle->id[0];
+  AudioDeviceID inputDevice = handle->id[1];
+
+  // Read the input before invoking the user callback, so that the
+  // callback receives the input of the current cycle, not the input
+  // of the previous one. With two different devices, this function
+  // is called separately for the input device and only stores the
+  // input here. Don't bother draining input.
+  if ( handle->drainCounter == 0 &&
+       ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && deviceId == inputDevice ) ) ) {
+
+    if ( handle->nStreams[1] == 1 ) {
+      if ( stream_.doConvertBuffer[1] ) { // convert directly from CoreAudio stream buffer
+        convertBuffer( stream_.userBuffer[1],
+                       (char *) inBufferList->mBuffers[handle->iStream[1]].mData,
+                       stream_.convertInfo[1] );
+      }
+      else { // copy to user buffer
+        memcpy( stream_.userBuffer[1],
+                inBufferList->mBuffers[handle->iStream[1]].mData,
+                inBufferList->mBuffers[handle->iStream[1]].mDataByteSize );
+      }
+    }
+    else { // read from multiple streams
+      Float32 *outBuffer = (Float32 *) stream_.userBuffer[1];
+      if ( stream_.doConvertBuffer[1] ) outBuffer = (Float32 *) stream_.deviceBuffer;
+
+      if ( stream_.deviceInterleaved[1] == false ) { // mono mode
+        UInt32 bufferBytes = inBufferList->mBuffers[handle->iStream[1]].mDataByteSize;
+        for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ ) {
+          memcpy( (void *)&outBuffer[i*stream_.bufferSize],
+                  inBufferList->mBuffers[handle->iStream[1]+i].mData, bufferBytes );
+        }
+      }
+      else { // read from multiple multi-channel streams
+        UInt32 streamChannels, channelsLeft, inJump, outJump, outOffset;
+        Float32 *out, *in;
+
+        bool outInterleaved = ( stream_.userInterleaved ) ? true : false;
+        UInt32 outChannels = stream_.nUserChannels[1];
+        if ( stream_.doConvertBuffer[1] ) {
+          outInterleaved = true; // device buffer will always be interleaved for nStreams > 1 and not mono mode
+          outChannels = stream_.nDeviceChannels[1];
+        }
+
+        if ( outInterleaved ) outOffset = 1;
+        else outOffset = stream_.bufferSize;
+
+        channelsLeft = outChannels;
+        for ( unsigned int i=0; i<handle->nStreams[1]; i++ ) {
+          out = outBuffer;
+          in = (Float32 *) inBufferList->mBuffers[handle->iStream[1]+i].mData;
+          streamChannels = inBufferList->mBuffers[handle->iStream[1]+i].mNumberChannels;
+
+          inJump = 0;
+          // Account for possible channel offset in first stream
+          if ( i == 0 && stream_.channelOffset[1] > 0 ) {
+            streamChannels -= stream_.channelOffset[1];
+            inJump = stream_.channelOffset[1];
+            in += inJump;
+          }
+
+          // Account for possible unread channels at end of the last stream
+          if ( streamChannels > channelsLeft ) {
+            inJump = streamChannels - channelsLeft;
+            streamChannels = channelsLeft;
+          }
+
+          // Determine output buffer offsets and skips
+          if ( outInterleaved ) {
+            outJump = outChannels;
+            out += outChannels - channelsLeft;
+          }
+          else {
+            outJump = 1;
+            out += (outChannels - channelsLeft) * outOffset;
+          }
+
+          for ( unsigned int i=0; i<stream_.bufferSize; i++ ) {
+            for ( unsigned int j=0; j<streamChannels; j++ ) {
+              out[j*outOffset] = *in++;
+            }
+            out += outJump;
+            in += inJump;
+          }
+          channelsLeft -= streamChannels;
+        }
+      }
+
+      if ( stream_.doConvertBuffer[1] ) { // convert from our internal "device" buffer
+        convertBuffer( stream_.userBuffer[1],
+                       stream_.deviceBuffer,
+                       stream_.convertInfo[1] );
+      }
+    }
+  }
 
   // Invoke user callback to get fresh output data UNLESS we are
   // draining stream or duplex mode AND the input/output devices are
@@ -2357,103 +2452,8 @@ bool RtApiCore :: callbackEvent( AudioDeviceID deviceId,
     }
   }
 
-  // Don't bother draining input
-  if ( handle->drainCounter ) {
+  if ( handle->drainCounter )
     handle->drainCounter++;
-    goto unlock;
-  }
-
-  AudioDeviceID inputDevice;
-  inputDevice = handle->id[1];
-  if ( stream_.mode == INPUT || ( stream_.mode == DUPLEX && deviceId == inputDevice ) ) {
-
-    if ( handle->nStreams[1] == 1 ) {
-      if ( stream_.doConvertBuffer[1] ) { // convert directly from CoreAudio stream buffer
-        convertBuffer( stream_.userBuffer[1],
-                       (char *) inBufferList->mBuffers[handle->iStream[1]].mData,
-                       stream_.convertInfo[1] );
-      }
-      else { // copy to user buffer
-        memcpy( stream_.userBuffer[1],
-                inBufferList->mBuffers[handle->iStream[1]].mData,
-                inBufferList->mBuffers[handle->iStream[1]].mDataByteSize );
-      }
-    }
-    else { // read from multiple streams
-      Float32 *outBuffer = (Float32 *) stream_.userBuffer[1];
-      if ( stream_.doConvertBuffer[1] ) outBuffer = (Float32 *) stream_.deviceBuffer;
-
-      if ( stream_.deviceInterleaved[1] == false ) { // mono mode
-        UInt32 bufferBytes = inBufferList->mBuffers[handle->iStream[1]].mDataByteSize;
-        for ( unsigned int i=0; i<stream_.nUserChannels[1]; i++ ) {
-          memcpy( (void *)&outBuffer[i*stream_.bufferSize],
-                  inBufferList->mBuffers[handle->iStream[1]+i].mData, bufferBytes );
-        }
-      }
-      else { // read from multiple multi-channel streams
-        UInt32 streamChannels, channelsLeft, inJump, outJump, outOffset;
-        Float32 *out, *in;
-
-        bool outInterleaved = ( stream_.userInterleaved ) ? true : false;
-        UInt32 outChannels = stream_.nUserChannels[1];
-        if ( stream_.doConvertBuffer[1] ) {
-          outInterleaved = true; // device buffer will always be interleaved for nStreams > 1 and not mono mode
-          outChannels = stream_.nDeviceChannels[1];
-        }
-
-        if ( outInterleaved ) outOffset = 1;
-        else outOffset = stream_.bufferSize;
-
-        channelsLeft = outChannels;
-        for ( unsigned int i=0; i<handle->nStreams[1]; i++ ) {
-          out = outBuffer;
-          in = (Float32 *) inBufferList->mBuffers[handle->iStream[1]+i].mData;
-          streamChannels = inBufferList->mBuffers[handle->iStream[1]+i].mNumberChannels;
-
-          inJump = 0;
-          // Account for possible channel offset in first stream
-          if ( i == 0 && stream_.channelOffset[1] > 0 ) {
-            streamChannels -= stream_.channelOffset[1];
-            inJump = stream_.channelOffset[1];
-            in += inJump;
-          }
-
-          // Account for possible unread channels at end of the last stream
-          if ( streamChannels > channelsLeft ) {
-            inJump = streamChannels - channelsLeft;
-            streamChannels = channelsLeft;
-          }
-
-          // Determine output buffer offsets and skips
-          if ( outInterleaved ) {
-            outJump = outChannels;
-            out += outChannels - channelsLeft;
-          }
-          else {
-            outJump = 1;
-            out += (outChannels - channelsLeft) * outOffset;
-          }
-
-          for ( unsigned int i=0; i<stream_.bufferSize; i++ ) {
-            for ( unsigned int j=0; j<streamChannels; j++ ) {
-              out[j*outOffset] = *in++;
-            }
-            out += outJump;
-            in += inJump;
-          }
-          channelsLeft -= streamChannels;
-        }
-      }
-      
-      if ( stream_.doConvertBuffer[1] ) { // convert from our internal "device" buffer
-        convertBuffer( stream_.userBuffer[1],
-                       stream_.deviceBuffer,
-                       stream_.convertInfo[1] );
-      }
-    }
-  }
-
- unlock:
 
   // Make sure to only tick duplex stream time once if using two devices
   if ( stream_.mode == DUPLEX ) {
@@ -4138,6 +4138,50 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
     return SUCCESS;
   }
 
+  unsigned int nChannels, bufferBytes, i, j;
+  nChannels = stream_.nDeviceChannels[0] + stream_.nDeviceChannels[1];
+
+  // Read the input before invoking the user callback, so that the
+  // callback receives the input of this bufferSwitch (just filled by
+  // the driver), not the input of the previous one. Don't bother
+  // draining input.
+  if ( handle->drainCounter == 0 && ( stream_.mode == INPUT || stream_.mode == DUPLEX ) ) {
+
+    bufferBytes = stream_.bufferSize * formatBytes(stream_.deviceFormat[1]);
+
+    if (stream_.doConvertBuffer[1]) {
+
+      // Always interleave ASIO input data.
+      for ( i=0, j=0; i<nChannels; i++ ) {
+        if ( handle->bufferInfos[i].isInput == ASIOTrue )
+          memcpy( &stream_.deviceBuffer[j++*bufferBytes],
+                  handle->bufferInfos[i].buffers[bufferIndex],
+                  bufferBytes );
+      }
+
+      if ( stream_.doByteSwap[1] )
+        byteSwapBuffer( stream_.deviceBuffer,
+                        stream_.bufferSize * stream_.nDeviceChannels[1],
+                        stream_.deviceFormat[1] );
+      convertBuffer( stream_.userBuffer[1], stream_.deviceBuffer, stream_.convertInfo[1] );
+
+    }
+    else {
+      for ( i=0, j=0; i<nChannels; i++ ) {
+        if ( handle->bufferInfos[i].isInput == ASIOTrue ) {
+          memcpy( &stream_.userBuffer[1][bufferBytes*j++],
+                  handle->bufferInfos[i].buffers[bufferIndex],
+                  bufferBytes );
+        }
+      }
+
+      if ( stream_.doByteSwap[1] )
+        byteSwapBuffer( stream_.userBuffer[1],
+                        stream_.bufferSize * stream_.nUserChannels[1],
+                        stream_.userFormat );
+    }
+  }
+
   // Invoke user callback to get fresh output data UNLESS we are
   // draining stream.
   if ( handle->drainCounter == 0 ) {
@@ -4168,8 +4212,6 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
     }
   }
 
-  unsigned int nChannels, bufferBytes, i, j;
-  nChannels = stream_.nDeviceChannels[0] + stream_.nDeviceChannels[1];
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
     bufferBytes = stream_.bufferSize * formatBytes( stream_.deviceFormat[0] );
@@ -4213,50 +4255,9 @@ bool RtApiAsio :: callbackEvent( long bufferIndex )
     }
   }
 
-  // Don't bother draining input
-  if ( handle->drainCounter ) {
+  if ( handle->drainCounter )
     handle->drainCounter++;
-    goto unlock;
-  }
 
-  if ( stream_.mode == INPUT || stream_.mode == DUPLEX ) {
-
-    bufferBytes = stream_.bufferSize * formatBytes(stream_.deviceFormat[1]);
-
-    if (stream_.doConvertBuffer[1]) {
-
-      // Always interleave ASIO input data.
-      for ( i=0, j=0; i<nChannels; i++ ) {
-        if ( handle->bufferInfos[i].isInput == ASIOTrue )
-          memcpy( &stream_.deviceBuffer[j++*bufferBytes],
-                  handle->bufferInfos[i].buffers[bufferIndex],
-                  bufferBytes );
-      }
-
-      if ( stream_.doByteSwap[1] )
-        byteSwapBuffer( stream_.deviceBuffer,
-                        stream_.bufferSize * stream_.nDeviceChannels[1],
-                        stream_.deviceFormat[1] );
-      convertBuffer( stream_.userBuffer[1], stream_.deviceBuffer, stream_.convertInfo[1] );
-
-    }
-    else {
-      for ( i=0, j=0; i<nChannels; i++ ) {
-        if ( handle->bufferInfos[i].isInput == ASIOTrue ) {
-          memcpy( &stream_.userBuffer[1][bufferBytes*j++],
-                  handle->bufferInfos[i].buffers[bufferIndex],
-                  bufferBytes );
-        }
-      }
-
-      if ( stream_.doByteSwap[1] )
-        byteSwapBuffer( stream_.userBuffer[1],
-                        stream_.bufferSize * stream_.nUserChannels[1],
-                        stream_.userFormat );
-    }
-  }
-
- unlock:
   // The following call was suggested by Malte Clasen.  While the API
   // documentation indicates it should not be required, some device
   // drivers apparently do not function correctly without it.
