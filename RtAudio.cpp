@@ -412,6 +412,88 @@ public:
 
 #endif
 
+#if defined(__LINUX_PIPE__)
+
+#include <unordered_map>
+
+#include <pipewire/extensions/metadata.h>
+#include <pipewire/impl.h>
+#include <pipewire/pipewire.h>
+#include <spa/param/audio/format-utils.h>
+#include <spa/utils/json.h>
+#include <spa/utils/result.h>
+
+class RtApiPipe : public RtApi
+{
+
+public:
+  RtApiPipe();
+  ~RtApiPipe();
+
+  RtAudio::Api getCurrentApi() override { return RtAudio::LINUX_PIPE; }
+
+  void closeStream( void ) override;
+
+  RtAudioErrorType startStream( void ) override;
+  RtAudioErrorType stopStream( void ) override;
+  RtAudioErrorType abortStream( void ) override;
+
+private:
+  static void inputStateChanged( void *data, pw_stream_state old,
+                                 pw_stream_state state, const char *error );
+
+  static void inputAddBuffer( void *data, pw_buffer *buffer );
+
+  static void processInput( void *data );
+  static void processOutput( void *data );
+
+  void probeDevices( void ) override;
+  bool probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels, 
+                        unsigned int firstChannel, unsigned int sampleRate,
+                        RtAudioFormat format, unsigned int *bufferSize,
+                        RtAudio::StreamOptions *options ) override;
+
+  const std::unordered_map<RtAudioFormat, spa_audio_format> pFormats =
+  {
+    { RTAUDIO_SINT8, SPA_AUDIO_FORMAT_S8P },
+    { RTAUDIO_SINT16, SPA_AUDIO_FORMAT_S16P },
+    { RTAUDIO_SINT24, SPA_AUDIO_FORMAT_S24P },
+    { RTAUDIO_SINT32, SPA_AUDIO_FORMAT_S32P },
+    { RTAUDIO_FLOAT32, SPA_AUDIO_FORMAT_F32P },
+    { RTAUDIO_FLOAT64, SPA_AUDIO_FORMAT_F64P }
+  };
+
+  const std::unordered_map<RtAudioFormat, spa_audio_format> iFormats =
+  {
+    { RTAUDIO_SINT8, SPA_AUDIO_FORMAT_S8 },
+    { RTAUDIO_SINT16, SPA_AUDIO_FORMAT_S16 },
+    { RTAUDIO_SINT24, SPA_AUDIO_FORMAT_S24 },
+    { RTAUDIO_SINT32, SPA_AUDIO_FORMAT_S32 },
+    { RTAUDIO_FLOAT32, SPA_AUDIO_FORMAT_F32 },
+    { RTAUDIO_FLOAT64, SPA_AUDIO_FORMAT_F64 }
+  };
+
+  pw_thread_loop *loop = nullptr;
+  pw_context *context = nullptr;
+  pw_core *core = nullptr;
+
+  pw_stream *input = nullptr;
+  pw_stream *output = nullptr;
+
+  spa_hook inputListener;
+  spa_hook outputListener;
+
+  pw_stream_events inputEvents = { 0 };
+  pw_stream_events outputEvents = { 0 };
+
+  pw_link *link = nullptr;
+
+  void *inputBuffer = nullptr;
+
+};
+
+#endif
+
 #if defined(__RTAUDIO_DUMMY__)
 
 class RtApiDummy: public RtApi
@@ -456,6 +538,7 @@ const char* rtaudio_api_names[][2] = {
   { "jack"        , "Jack" },
   { "pulse"       , "Pulse" },
   { "oss"         , "OpenSoundSystem" },
+  { "pipe"        , "PipeWire" },
   { "asio"        , "ASIO" },
   { "wasapi"      , "WASAPI" },
   { "ds"          , "DirectSound" },
@@ -482,6 +565,9 @@ extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
 #endif
 #if defined(__LINUX_OSS__)
   RtAudio::LINUX_OSS,
+#endif
+#if defined(__LINUX_PIPE__)
+  RtAudio::LINUX_PIPE,
 #endif
 #if defined(__WINDOWS_ASIO__)
   RtAudio::WINDOWS_ASIO,
@@ -566,6 +652,10 @@ void RtAudio :: openRtApi( RtAudio::Api api, const RtAudioErrorCallback& errorCa
 #if defined(__LINUX_OSS__)
   if ( api == LINUX_OSS )
     rtapi_.reset(new RtApiOss());
+#endif
+#if defined(__LINUX_PIPE__)
+  if ( api == LINUX_PIPE )
+    rtapi_.reset(new RtApiPipe());
 #endif
 #if defined(__WINDOWS_ASIO__)
   if ( api == WINDOWS_ASIO )
@@ -10923,6 +11013,1152 @@ static void *ossCallbackHandler( void *ptr )
 }
 
 //******************** End of __LINUX_OSS__ *********************//
+#endif
+
+#if defined(__LINUX_PIPE__)
+
+// base class for callback user data objects. in addition to any data needed
+// within the callback, each object keeps track of the internal PipeWire object
+// associated with the callback, as well as a hook that needs to stay allocated
+// until the callback will no longer be called by PipeWire.
+struct CallbackData
+{
+  virtual ~CallbackData() {};
+};
+
+// holds data that is shared between all event callbacks. also keeps track of 
+// all the allocated event callback data objects so that they can be freed
+// once all the callbacks have been executed.
+struct EventData : public CallbackData
+{
+  ~EventData() override
+  {
+    for ( const CallbackData *data : datas )
+    {
+      delete data;
+    }
+  }
+
+  void sync()
+  {
+    seq = pw_core_sync( core, PW_ID_CORE, seq );
+  }
+
+  void addData( CallbackData *data )
+  {
+    datas.push_back( data );
+  }
+
+  pw_main_loop *loop;
+  pw_core *core;
+  pw_registry *registry;
+
+  pw_device_events deviceEvents;
+  pw_node_events nodeEvents;
+  pw_metadata_events metaEvents;
+
+  std::string defaultOutput;
+  std::string defaultInput;
+
+  std::vector<RtAudio::DeviceInfo> oldInfos;
+  std::vector<RtAudio::DeviceInfo> newInfos;
+
+  int seq = 0;
+
+private:
+  std::vector<CallbackData *> datas;
+
+};
+
+// holds information about connected devices. allows the device parameter
+// callback to access information about the associated device.
+struct DeviceData : CallbackData
+{
+  DeviceData( EventData *eventData, pw_device *device ) :
+    eventData(eventData), device(device) {}
+
+  ~DeviceData() override
+  {
+    free( name );
+
+    pw_proxy_destroy( (pw_proxy *)device );
+  }
+
+  EventData *eventData;
+
+  pw_device *device;
+
+  uint32_t id;
+
+  char *name = nullptr;
+
+  spa_hook listener;
+};
+
+// holds information about device nodes (sources and sinks). allows the node
+// parameter callback to access information about the associated node and
+// device.
+struct NodeData : CallbackData
+{
+  NodeData( EventData *eventData, pw_node *node ) :
+    eventData(eventData), node(node) {}
+
+  ~NodeData() override
+  {
+    free( name );
+
+    pw_proxy_destroy( (pw_proxy *)node );
+  }
+
+  EventData *eventData;
+
+  pw_node *node;
+
+  uint32_t device;
+
+  char *name = nullptr;
+
+  spa_hook listener;
+};
+
+// no actual information is stored here, just the necessary internal objects
+// described above.
+struct MetaData : CallbackData
+{
+  MetaData( EventData *eventData, pw_metadata *meta ) :
+    eventData(eventData), meta(meta) {}
+
+  ~MetaData() override
+  {
+    pw_proxy_destroy( (pw_proxy *)meta );
+  }
+
+  EventData *eventData;
+
+  pw_metadata *meta;
+
+  spa_hook listener;
+};
+
+// this callback runs after all the other callbacks have been executed,
+// signaling the main loop function to return. only runs when probing devices.
+void coreEvent( void *data, uint32_t id, int seq )
+{
+  EventData *eventData = (EventData *)data;
+
+  if ( id == PW_ID_CORE && seq == eventData->seq )
+  {
+    pw_main_loop_quit( eventData->loop );
+  }
+}
+
+// this callback runs first when connecting to the PipeWire server,
+// orchestrating the other necessary callbacks. only runs when probing devices.
+void registryEvent( void *data, uint32_t id, uint32_t permissions,
+                    const char *type, uint32_t version, const spa_dict *props )
+{
+  EventData *eventData = (EventData *)data;
+
+  if ( !strncmp( type, PW_TYPE_INTERFACE_Device, 26 ) )
+  {
+    pw_device *device = (pw_device *)pw_registry_bind( eventData->registry, id, type, PW_VERSION_DEVICE, 0 );
+
+    DeviceData *deviceData = new DeviceData( eventData, device );
+
+    pw_device_add_listener( device, &deviceData->listener, &eventData->deviceEvents, deviceData );
+
+    eventData->addData( deviceData );
+    eventData->sync();
+  }
+
+  else if ( !strncmp( type, PW_TYPE_INTERFACE_Node, 24 ) )
+  {
+    pw_node *node = (pw_node *)pw_registry_bind( eventData->registry, id, type, PW_VERSION_NODE, 0 );
+
+    NodeData *nodeData = new NodeData( eventData, node );
+
+    pw_node_add_listener( node, &nodeData->listener, &eventData->nodeEvents, nodeData );
+
+    eventData->addData( nodeData );
+    eventData->sync();
+  }
+
+  else if ( !strncmp( type, PW_TYPE_INTERFACE_Metadata, 28 ) )
+  {
+    pw_metadata *meta = (pw_metadata *)pw_registry_bind( eventData->registry, id, type, PW_VERSION_METADATA, 0 );
+
+    MetaData *metaData = new MetaData( eventData, meta );
+
+    pw_metadata_add_listener( meta, &metaData->listener, &eventData->metaEvents, metaData );
+
+    eventData->addData( metaData );
+    eventData->sync();
+  }
+}
+
+// helper for extracting the default input/output node names, which are
+// reported as JSON by PipeWire.
+std::string jsonGetName( const char *json )
+{
+  spa_json iter;
+
+  const char *val;
+
+  int length = spa_json_begin( &iter, json, 256, &val );
+
+  spa_json sub;
+
+  spa_json_enter( &iter, &sub );
+
+  char key[5];
+
+  while ( ( length = spa_json_object_next( &sub, key, 5, &val ) ) > 0 )
+  {
+    if ( !strncmp( key, "name", 5 ) )
+    {
+      char name[256];
+
+      spa_json_parse_string( val, length, name );
+
+      return name;
+    }
+  }
+
+  return "";
+}
+
+// this callback is used to identify the default input and output devices,
+// which are not reported during the device or node info callbacks. only runs
+// when probing devices.
+int metaProperty( void *data, uint32_t subject, const char *key,
+                  const char *type, const char *value )
+{
+  MetaData *metaData = (MetaData *)data;
+
+  if ( !strncmp( key, "default.audio.source", 21 ) )
+  {
+    metaData->eventData->defaultInput = jsonGetName( value );
+  }
+
+  else if ( !strncmp( key, "default.audio.sink", 19 ) )
+  {
+    metaData->eventData->defaultOutput = jsonGetName( value );
+  }
+
+  return 0;
+}
+
+// this callback runs when a connected device is identified, providing basic
+// information about the device. if the device has not yet been probed, this
+// callback also requests further information to determine whether or not it
+// should be added to the list of probed devices. only runs when probing
+// devices.
+void deviceInfo( void *data, const pw_device_info *info )
+{
+  DeviceData *deviceData = (DeviceData *)data;
+
+  for ( const RtAudio::DeviceInfo &rtInfo : deviceData->eventData->oldInfos )
+  {
+    if ( rtInfo.ID == info->id )
+    {
+      deviceData->eventData->newInfos.push_back( rtInfo );
+
+      return;
+    }
+  }
+
+  deviceData->id = info->id;
+
+  // contrary to what you might think, "nick" is the full readable name of the
+  // device, whereas "name" is its internal identifier.
+  if ( const char *nick = spa_dict_lookup( info->props, PW_KEY_DEVICE_NICK ) )
+  {
+    deviceData->name = strdup( nick );
+  }
+
+  else
+  {
+    deviceData->name = strdup( spa_dict_lookup( info->props, PW_KEY_DEVICE_NAME ) );
+  }
+
+  pw_device_enum_params( deviceData->device, deviceData->eventData->seq,
+                         SPA_PARAM_EnumRoute, 0, -1, nullptr );
+
+  deviceData->eventData->sync();
+}
+
+// this callback runs after identifying a new unprobed device. currently, it is
+// only used to determine whether a device is available for streaming, which
+// cannot be determined from the previous info callback. if the device is
+// available, it is added to the list of probed devices. only runs when probing
+// devices.
+void deviceParam( void *data, int seq, uint32_t id, uint32_t index,
+                  uint32_t next, const spa_pod *param )
+{
+  DeviceData *deviceData = (DeviceData *)data;
+
+  spa_param_availability available = SPA_PARAM_AVAILABILITY_no;
+
+  spa_pod_parse_object( param, SPA_TYPE_OBJECT_ParamRoute, nullptr,
+                        SPA_PARAM_ROUTE_available, SPA_POD_Id( &available ) );
+
+  if ( available == SPA_PARAM_AVAILABILITY_no )
+  {
+    return;
+  }
+
+  for ( const RtAudio::DeviceInfo &info : deviceData->eventData->newInfos )
+  {
+    if ( info.ID == deviceData->id )
+    {
+      return;
+    }
+  }
+
+  RtAudio::DeviceInfo info;
+
+  info.ID = deviceData->id;
+  info.name = deviceData->name;
+  // all streams in PipeWire run at 48000 Hz; input at other sample rates is
+  // resampled as it is received.
+  info.preferredSampleRate = 48000;
+  // PipeWire streams are virtual, so they accept any format, regardless of
+  // what the device claims to support.
+  info.nativeFormats = RTAUDIO_SINT8 | RTAUDIO_SINT16 | RTAUDIO_SINT24 |
+                       RTAUDIO_SINT32 | RTAUDIO_FLOAT32 | RTAUDIO_FLOAT64;
+
+  deviceData->eventData->newInfos.push_back( info );
+}
+
+// this callback runs for each node (source or sink) within a device once it is
+// identified. if an associated device is found, this callback requests further
+// information about the node. only runs when probing devices.
+void nodeInfo( void *data, const pw_node_info *info )
+{
+  NodeData *nodeData = (NodeData *)data;
+
+  const char *device = spa_dict_lookup( info->props, PW_KEY_DEVICE_ID );
+
+  if ( !device )
+  {
+    return;
+  }
+
+  nodeData->name = strdup( spa_dict_lookup( info->props, PW_KEY_NODE_NAME ) );
+  nodeData->device = strtoul( device, nullptr, 10 );
+
+  pw_node_enum_params( nodeData->node, nodeData->eventData->seq,
+                       SPA_PARAM_EnumFormat, 0, -1, nullptr );
+
+  pw_node_enum_params( nodeData->node, nodeData->eventData->seq,
+                       SPA_PARAM_PortConfig, 0, -1, nullptr );
+
+  nodeData->eventData->sync();
+}
+
+// this callback gathers further information about a node, including its sample
+// rate and direction (input/output). if the associated device was previously
+// added to the list of devices, its DeviceInfo entry is updated with this new
+// information. only runs when probing devices.
+void nodeParam( void *data, int seq, uint32_t id, uint32_t index, uint32_t next,
+                const spa_pod *param )
+{
+  NodeData *nodeData = (NodeData *)data;
+
+  if ( id == SPA_PARAM_EnumFormat )
+  {
+    spa_media_type type = SPA_MEDIA_TYPE_unknown;
+
+    int32_t rate = -1;
+
+    spa_pod_parse_object( param, SPA_TYPE_OBJECT_Format, nullptr,
+                          SPA_FORMAT_mediaType, SPA_POD_Id( &type ),
+                          SPA_FORMAT_AUDIO_rate, SPA_POD_Int( &rate ) );
+
+    if ( type != SPA_MEDIA_TYPE_audio || rate == -1 )
+    {
+      return;
+    }
+
+    for ( RtAudio::DeviceInfo& info : nodeData->eventData->newInfos )
+    {
+      if ( info.ID == nodeData->device )
+      {
+        info.currentSampleRate = rate;
+
+        break;
+      }
+    }
+  }
+
+  else if ( id == SPA_PARAM_PortConfig )
+  {
+    spa_direction direction;
+
+    spa_pod_parse_object( param, SPA_TYPE_OBJECT_ParamPortConfig, nullptr,
+                          SPA_PARAM_PORT_CONFIG_direction, SPA_POD_Id( &direction ) );
+
+    for ( RtAudio::DeviceInfo& info : nodeData->eventData->newInfos )
+    {
+      if ( info.ID == nodeData->device )
+      {
+        // "direction" here is from the perspective of the port, not the node.
+        // an "input port" is one that receives input from its node, which
+        // corresponds to audio output from that node.
+        if ( direction == SPA_DIRECTION_INPUT )
+        {
+          info.outputChannels = SPA_AUDIO_MAX_CHANNELS;
+
+          if ( nodeData->eventData->defaultOutput == nodeData->name )
+          {
+            info.isDefaultOutput = true;
+          }
+        }
+
+        else
+        {
+          info.inputChannels = SPA_AUDIO_MAX_CHANNELS;
+
+          if ( nodeData->eventData->defaultInput == nodeData->name )
+          {
+            info.isDefaultInput = true;
+          }
+        }
+
+        if ( info.outputChannels > 0 && info.inputChannels > 0 )
+        {
+          info.duplexChannels = SPA_AUDIO_MAX_CHANNELS;
+        }
+
+        break;
+      }
+    }
+  }
+}
+
+RtApiPipe :: RtApiPipe()
+{
+  inputEvents.version = PW_VERSION_STREAM_EVENTS;
+  inputEvents.process = processInput;
+  inputEvents.state_changed = inputStateChanged;
+  inputEvents.add_buffer = inputAddBuffer;
+  
+  outputEvents.version = PW_VERSION_STREAM_EVENTS;
+  outputEvents.process = processOutput;
+
+  pw_init( nullptr, nullptr );
+}
+
+RtApiPipe :: ~RtApiPipe()
+{
+  if ( stream_.state == STREAM_RUNNING )
+  {
+    stopStream();
+  }
+
+  if ( stream_.state == STREAM_STOPPED )
+  {
+    closeStream();
+  }
+
+  pw_deinit();
+}
+
+void RtApiPipe :: closeStream( void )
+{
+  if ( stream_.state == STREAM_CLOSED )
+  {
+    errorText_ = "RtApiPipe::closeStream(): no open stream to close!";
+
+    error( RTAUDIO_WARNING );
+
+    return;
+  }
+
+  pw_thread_loop_lock( loop );
+
+  if ( input )
+  {
+    pw_stream_destroy( input );
+  }
+
+  if ( output )
+  {
+    pw_stream_destroy( output );
+  }
+
+  if ( link )
+  {
+    pw_proxy_destroy( (pw_proxy *)link );
+  }
+
+  pw_thread_loop_unlock( loop );
+  pw_core_disconnect( core );
+  pw_context_destroy( context );
+  pw_thread_loop_destroy( loop );
+
+  free( inputBuffer );
+
+  inputBuffer = nullptr;
+
+  input = nullptr;
+  output = nullptr;
+  link = nullptr;
+  core = nullptr;
+  context = nullptr;
+  loop = nullptr;
+
+  stream_.state = STREAM_CLOSED;
+};
+
+RtAudioErrorType RtApiPipe :: startStream( void )
+{
+  if ( stream_.state != STREAM_STOPPED )
+  {
+    if ( stream_.state == STREAM_RUNNING )
+    {
+      errorText_ = "RtApiPipe::startStream: the stream is already running!";
+    }
+
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+    {
+      errorText_ = "RtApiPipe::startStream: the stream is stopping or closed!";
+    }
+
+    return error( RTAUDIO_WARNING );
+  }
+
+  if ( input )
+  {
+    if ( const int result = pw_stream_set_active( input, true ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::startStream: failed to activate input stream: " + std::string( spa_strerror( result ) );
+
+      return error( RTAUDIO_SYSTEM_ERROR );
+    }
+  }
+
+  if ( output )
+  {
+    if ( const int result = pw_stream_set_active( output, true ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::startStream: failed to activate output stream: " + std::string( spa_strerror( result ) );
+
+      return error( RTAUDIO_SYSTEM_ERROR );
+    }
+  }
+
+  stream_.callbackInfo.isRunning = true;
+
+  if ( const int result = pw_thread_loop_start( loop ) )
+  {
+    pw_thread_loop_unlock( loop );
+
+    errorText_ = "RtApiPipe::startStream: failed to start main loop: " + std::string( spa_strerror( result ) );
+
+    return error( RTAUDIO_SYSTEM_ERROR );
+  }
+
+  pw_thread_loop_unlock( loop );
+
+  return RTAUDIO_NO_ERROR;
+}
+
+RtAudioErrorType RtApiPipe :: stopStream( void )
+{
+  stream_.state = STREAM_STOPPING;
+
+  pw_thread_loop_lock( loop );
+
+  if ( input )
+  {
+    if ( const int result = pw_stream_set_active( input, false ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::stopStream: failed to deactivate input stream: " + std::string( spa_strerror( result ) );
+
+      return RTAUDIO_SYSTEM_ERROR;
+    }
+
+    if ( const int result = pw_stream_flush( input, false ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::stopStream: failed to flush input stream: " + std::string( spa_strerror( result ) );
+
+      return RTAUDIO_SYSTEM_ERROR;
+    }
+  }
+
+  if ( output )
+  {
+    if ( const int result = pw_stream_set_active( output, false ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::stopStream: failed to deactivate output stream: " + std::string( spa_strerror( result ) );
+
+      return RTAUDIO_SYSTEM_ERROR;
+    }
+
+    if ( const int result = pw_stream_flush( output, false ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::stopStream: failed to flush output stream: " + std::string( spa_strerror( result ) );
+
+      return RTAUDIO_SYSTEM_ERROR;
+    }
+  }
+
+  pw_thread_loop_unlock( loop );
+  pw_thread_loop_stop( loop );
+  pw_thread_loop_lock( loop );
+
+  stream_.state = STREAM_STOPPED;
+  stream_.callbackInfo.isRunning = false;
+
+  return RTAUDIO_NO_ERROR;
+}
+
+RtAudioErrorType RtApiPipe :: abortStream( void )
+{
+  if ( stream_.state != STREAM_RUNNING )
+  {
+    if ( stream_.state == STREAM_STOPPED )
+    {
+      errorText_ = "RtApiPipe::abortStream(): the stream is already stopped!";
+    }
+    
+    else if ( stream_.state == STREAM_STOPPING || stream_.state == STREAM_CLOSED )
+    {
+      errorText_ = "RtApiPipe::abortStream(): the stream is stopping or closed!";
+    }
+
+    return error( RTAUDIO_WARNING );
+  }
+
+  pw_thread_loop_lock( loop );
+
+  if ( input )
+  {
+    if ( const int result = pw_stream_set_active( input, false ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::stopStream: failed to deactivate input stream: " + std::string( spa_strerror( result ) );
+
+      return RTAUDIO_SYSTEM_ERROR;
+    }
+  }
+
+  if ( output )
+  {
+    if ( const int result = pw_stream_set_active( output, false ) )
+    {
+      pw_thread_loop_unlock( loop );
+
+      errorText_ = "RtApiPipe::stopStream: failed to deactivate output stream: " + std::string( spa_strerror( result ) );
+
+      return RTAUDIO_SYSTEM_ERROR;
+    }
+  }
+
+  pw_thread_loop_unlock( loop );
+  pw_thread_loop_stop( loop );
+  pw_thread_loop_lock( loop );
+
+  stream_.state = STREAM_STOPPED;
+  stream_.callbackInfo.isRunning = false;
+
+  return RTAUDIO_NO_ERROR;
+}
+
+// this callback runs before the input stream (if created) begins streaming. if
+// an output stream has already been connected, meaning that the user requested
+// a duplex stream, this callback links the two streams so that their buffers
+// and callbacks are synchronized.
+void RtApiPipe :: inputStateChanged( void *data, pw_stream_state old,
+                                     pw_stream_state state, const char *error )
+{
+  RtApiPipe *api = (RtApiPipe *)data;
+
+  if ( state == PW_STREAM_STATE_PAUSED && api->output &&
+       pw_stream_get_state(api->output, nullptr) == PW_STREAM_STATE_PAUSED )
+  {
+    if ( !pw_context_load_module( api->context, "libpipewire-module-link-factory",
+                                  nullptr, nullptr ) )
+    {
+      api->errorText_ = "RtApiPipe::inputStateChanged: failed to load link factory module.";
+
+      api->error( RTAUDIO_SYSTEM_ERROR );
+
+      return;
+    }
+
+    char inputId[11];
+    char outputId[11];
+
+    snprintf( inputId, 11, "%u", pw_stream_get_node_id( api->input ) );
+    snprintf( outputId, 11, "%u", pw_stream_get_node_id( api->output ) );
+
+    pw_properties *linkProps = pw_properties_new
+    (
+      PW_KEY_LINK_INPUT_NODE, inputId,
+      PW_KEY_LINK_OUTPUT_NODE, outputId,
+      nullptr
+    );
+
+    api->link = (pw_link *)pw_core_create_object( api->core, "link-factory",
+                                                  PW_TYPE_INTERFACE_Link, PW_VERSION_LINK,
+                                                  &linkProps->dict, 0 );
+
+    if ( !api->link )
+    {
+      api->errorText_ = "RtApiPipe::inputStateChanged: failed to link input and output streams.";
+
+      api->error( RTAUDIO_SYSTEM_ERROR );
+    }
+
+    pw_properties_free( linkProps );
+  }
+}
+
+// this callback runs when an internal buffer is allocated for the input stream
+// (if created), allowing RtAudio to allocate an equivalent buffer to pass
+// input data into the output callback for duplex streams. this buffer cannot
+// be pre-allocated when the stream is created, because PipeWire may request
+// a larger buffer size than expected as the program runs.
+void RtApiPipe :: inputAddBuffer( void *data, pw_buffer *buffer )
+{
+  ((RtApiPipe *)data)->inputBuffer = malloc( buffer->buffer->datas[0].maxsize );
+}
+
+// this is the audio callback for input streams. if an output stream exists,
+// this callback writes the input data into a separate buffer that will be read
+// by the upcoming output callback. otherwise, it calls the user's audio
+// callback with the internal input data.
+void RtApiPipe :: processInput( void *data )
+{
+  RtApiPipe *api = (RtApiPipe *)data;
+
+  pw_buffer *input = pw_stream_dequeue_buffer( api->input );
+
+  if ( api->output )
+  {
+    memcpy( api->inputBuffer, input->buffer->datas[0].data, input->buffer->datas[0].chunk->size );
+
+    pw_stream_queue_buffer( api->input, input );
+  }
+
+  else
+  {
+    const unsigned int size = api->formatBytes( api->stream_.deviceFormat[1] );
+    const unsigned int stride = size * api->stream_.nDeviceChannels[1];
+
+    CallbackInfo &info = api->stream_.callbackInfo;
+
+    const int result = info.callback( nullptr, input->buffer->datas[0].data,
+                                      input->buffer->datas[0].chunk->size / stride,
+                                      input->time, api->stream_.streamTime,
+                                      info.userData );
+
+    pw_stream_queue_buffer( api->input, input );
+
+    if (result == 1)
+    {
+      api->stopStream();
+    }
+
+    if (result == 2)
+    {
+      api->abortStream();
+    }
+  }
+}
+
+// this is the audio callback for output streams. since it runs second for
+// duplex streams, it always calls the user's audio callback regardless of
+// whether or not an input stream exists; the contents of the input buffer are
+// either null or were determined beforehand in the input stream callback. note
+// that "runs second" is just a conceptual ordering enforced by this API;
+// although PipeWire guarantees that the input and output callbacks will
+// be evenly interleaved for linked streams, it does not guarantee that the
+// input callback will be called first.
+void RtApiPipe :: processOutput( void *data )
+{
+  RtApiPipe *api = (RtApiPipe *)data;
+
+  pw_buffer *output = pw_stream_dequeue_buffer( api->output );
+
+  if ( !output || ( api->input && !api->inputBuffer ) )
+  {
+    pw_stream_queue_buffer( api->output, output );
+
+    return;
+  }
+
+  void *dest = output->buffer->datas[0].data;
+
+  const unsigned int size = api->formatBytes( api->stream_.deviceFormat[0] );
+
+  CallbackInfo &info = api->stream_.callbackInfo;
+
+  const int result = info.callback( dest, api->inputBuffer, output->requested,
+                                    output->time, api->stream_.streamTime,
+                                    info.userData );
+
+  const int32_t stride = size * api->stream_.nDeviceChannels[0];
+
+  output->buffer->datas[0].chunk->offset = 0;
+  output->buffer->datas[0].chunk->stride = stride;
+  output->buffer->datas[0].chunk->size = output->requested * stride;
+
+  pw_stream_queue_buffer( api->output, output );
+
+  if (result == 1)
+  {
+    api->stopStream();
+  }
+
+  if (result == 2)
+  {
+    api->abortStream();
+  }
+}
+
+void RtApiPipe :: probeDevices( void )
+{
+  pw_main_loop *loop = pw_main_loop_new( nullptr );
+
+  if ( !loop )
+  {
+    errorText_ = "RtApiPipe::probeDevices: failed to create main loop.";
+
+    error( RTAUDIO_SYSTEM_ERROR );
+
+    return;
+  }
+
+  pw_context *context = pw_context_new( pw_main_loop_get_loop( loop ), nullptr, 0 );
+
+  if ( !context )
+  {
+    pw_main_loop_destroy( loop );
+
+    errorText_ = "RtApiPipe::probeDevices: failed to create context.";
+
+    error( RTAUDIO_SYSTEM_ERROR );
+
+    return;
+  }
+
+  pw_core *core = pw_context_connect( context, nullptr, 0 );
+
+  if ( !core )
+  {
+    pw_context_destroy( context );
+    pw_main_loop_destroy( loop );
+
+    errorText_ = "RtApiPipe::probeDevices: failed to connect to context.";
+
+    error( RTAUDIO_SYSTEM_ERROR );
+
+    return;
+  }
+
+  pw_registry *registry = pw_core_get_registry( core, PW_VERSION_REGISTRY, 0 );
+
+  if ( !registry )
+  {
+    pw_core_disconnect( core );
+    pw_context_destroy( context );
+    pw_main_loop_destroy( loop );
+
+    errorText_ = "RtApiPipe::probeDevices: failed to get registry.";
+
+    error( RTAUDIO_SYSTEM_ERROR );
+
+    return;
+  }
+
+  spa_hook coreListener = { 0 };
+
+  pw_core_events coreEvents = { 0 };
+
+  coreEvents.done = coreEvent;
+
+  EventData eventData;
+
+  eventData.loop = loop;
+  eventData.core = core;
+  eventData.registry = registry;
+
+  pw_core_add_listener( core, &coreListener, &coreEvents, &eventData );
+
+  spa_hook registryListener = { 0 };
+
+  pw_registry_events registryEvents = { 0 };
+
+  registryEvents.version = PW_VERSION_REGISTRY_EVENTS;
+  registryEvents.global = registryEvent;
+
+  pw_registry_add_listener( registry, &registryListener, &registryEvents, &eventData );
+
+  eventData.metaEvents.version = PW_VERSION_METADATA_EVENTS;
+  eventData.metaEvents.property = metaProperty;
+
+  eventData.deviceEvents.version = PW_VERSION_DEVICE_EVENTS;
+  eventData.deviceEvents.info = deviceInfo;
+  eventData.deviceEvents.param = deviceParam;
+
+  eventData.nodeEvents.version = PW_VERSION_NODE_EVENTS;
+  eventData.nodeEvents.info = nodeInfo;
+  eventData.nodeEvents.param = nodeParam;
+
+  eventData.oldInfos = deviceList_;
+
+  eventData.sync();
+
+  if ( const int result = pw_main_loop_run( loop ) )
+  {
+    errorText_ = "RtApiPipe::probeDevices: failed to run main loop.";
+
+    error( RTAUDIO_SYSTEM_ERROR );
+  }
+
+  spa_hook_remove( &registryListener );
+  spa_hook_remove( &coreListener );
+
+  pw_proxy_destroy( (pw_proxy *)registry );
+  pw_core_disconnect( core );
+  pw_context_destroy( context );
+  pw_main_loop_destroy( loop );
+
+  deviceList_.clear();
+
+  for ( RtAudio::DeviceInfo& info : eventData.newInfos )
+  {
+    // all PipeWire streams run at 48000 Hz internally, but they are virtual,
+    // so they accept any sample rate and resample data as it is received.
+    for ( unsigned int i = 0; i < MAX_SAMPLE_RATES; i++ )
+    {
+      info.sampleRates.push_back( SAMPLE_RATES[i] );
+    }
+
+    deviceList_.push_back( info );
+  }
+}
+
+bool RtApiPipe :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsigned int channels,
+                                   unsigned int firstChannel, unsigned int sampleRate,
+                                   RtAudioFormat format, unsigned int *bufferSize,
+                                   RtAudio::StreamOptions *options )
+{
+  if ( !loop )
+  {
+    loop = pw_thread_loop_new( "rtaudio", nullptr );
+
+    if ( !loop )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: failed to create main loop.";
+
+      return FAILURE;
+    }
+
+    pw_thread_loop_lock( loop );
+
+    context = pw_context_new( pw_thread_loop_get_loop( loop ), nullptr, 0 );
+
+    if ( !context )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: failed to create context.";
+
+      return FAILURE;
+    }
+
+    core = pw_context_connect( context, nullptr, 0 );
+
+    if ( !core )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: failed to connect to context.";
+
+      return FAILURE;
+    }
+  }
+
+  char latencyStr[13];
+
+  // this latency is mostly a suggestion to PipeWire, and does not necessarily
+  // indicate the actual buffer size that will be used when the stream is
+  // running. due to PipeWire's flexible and virtual nature, streams can
+  // interact with each other and affect latencies and buffer sizes as the
+  // program runs, so there's no way to ensure a fixed buffer size in all
+  // cases.
+  snprintf( latencyStr, 13, "%d/%d", *bufferSize, sampleRate );
+
+  const bool interleaved = !options || ( options->flags & RTAUDIO_NONINTERLEAVED ) != RTAUDIO_NONINTERLEAVED;
+
+  unsigned int flags = PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS |
+                       PW_STREAM_FLAG_RT_PROCESS;
+
+  if ( options && ( options->flags & RTAUDIO_HOG_DEVICE ) == RTAUDIO_HOG_DEVICE )
+  {
+    flags |= PW_STREAM_FLAG_EXCLUSIVE;
+  }
+
+  uint8_t buffer[1024];
+
+  spa_pod_builder builder = SPA_POD_BUILDER_INIT( buffer, sizeof(buffer) );
+
+  const spa_audio_info_raw info = SPA_AUDIO_INFO_RAW_INIT
+  (
+    .format = interleaved ? iFormats.at(format) : pFormats.at(format),
+    .rate = sampleRate,
+    .channels = channels
+  );
+
+  const spa_pod *streamParams[1] =
+  {
+    spa_format_audio_raw_build( &builder, SPA_PARAM_EnumFormat, &info )
+  };
+
+  if ( mode == INPUT )
+  {
+    pw_properties *inputProps = pw_properties_new
+    (
+      PW_KEY_MEDIA_TYPE, "Audio",
+      PW_KEY_MEDIA_CATEGORY, "Capture",
+      PW_KEY_MEDIA_ROLE, "DSP",
+      PW_KEY_NODE_LATENCY, latencyStr,
+      nullptr
+    );
+
+    if ( options && ( options->flags & RTAUDIO_SCHEDULE_REALTIME ) == RTAUDIO_SCHEDULE_REALTIME )
+    {
+      char priority[256];
+
+      snprintf(priority, 256, "%d", options->priority);
+
+      spa_dict_item items[1] =
+      {
+        SPA_DICT_ITEM(PW_KEY_PRIORITY_DRIVER, priority)
+      };
+
+      const spa_dict dict = SPA_DICT(items, 1);
+
+      pw_properties_add(inputProps, &dict);
+    }
+
+    input = pw_stream_new( core, "rtaudio-input", inputProps );
+
+    if ( !input )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: failed to create input stream.";
+
+      return FAILURE;
+    }
+
+    pw_stream_add_listener( input, &inputListener, &inputEvents, this );
+    
+    if ( const int result = pw_stream_connect( input, PW_DIRECTION_INPUT, deviceId,
+                                               (pw_stream_flags)flags, streamParams, 1 ) )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: error connecting stream.";
+
+      return FAILURE;
+    }
+
+    stream_.deviceFormat[1] = format;
+    stream_.deviceId[1] = deviceId;
+    stream_.deviceInterleaved[1] = interleaved;
+    stream_.doByteSwap[1] = false;
+    stream_.doConvertBuffer[1] = false;
+    stream_.latency[1] = *bufferSize / sampleRate;
+    stream_.nDeviceChannels[1] = channels;
+    stream_.nUserChannels[1] = channels;
+  }
+
+  else if ( mode == OUTPUT )
+  {
+    pw_properties *outputProps = pw_properties_new
+    (
+      PW_KEY_MEDIA_TYPE, "Audio",
+      PW_KEY_MEDIA_CATEGORY, "Playback",
+      PW_KEY_MEDIA_ROLE, "DSP",
+      PW_KEY_NODE_LATENCY, latencyStr,
+      nullptr
+    );
+
+    if ( options && ( options->flags & RTAUDIO_SCHEDULE_REALTIME ) == RTAUDIO_SCHEDULE_REALTIME )
+    {
+      char priority[256];
+
+      snprintf(priority, 256, "%d", options->priority);
+
+      spa_dict_item items[1] =
+      {
+        SPA_DICT_ITEM(PW_KEY_PRIORITY_DRIVER, priority)
+      };
+
+      const spa_dict dict = SPA_DICT(items, 1);
+
+      pw_properties_add(outputProps, &dict);
+    }
+
+    output = pw_stream_new( core, "rtaudio-output", outputProps );
+
+    if ( !output )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: failed to create output stream.";
+
+      return FAILURE;
+    }
+
+    pw_stream_add_listener( output, &outputListener, &outputEvents, this );
+    
+    if ( const int result = pw_stream_connect( output, PW_DIRECTION_OUTPUT, deviceId,
+                                               (pw_stream_flags)flags, streamParams, 1 ) )
+    {
+      errorText_ = "RtApiPipe::probeDeviceOpen: error connecting stream.";
+
+      return FAILURE;
+    }
+
+    stream_.deviceFormat[0] = format;
+    stream_.deviceId[0] = deviceId;
+    stream_.deviceInterleaved[0] = interleaved;
+    stream_.doByteSwap[0] = false;
+    stream_.doConvertBuffer[0] = false;
+    stream_.latency[0] = *bufferSize / sampleRate;
+    stream_.nDeviceChannels[0] = channels;
+    stream_.nUserChannels[0] = channels;
+  }
+
+  if ( stream_.mode == UNINITIALIZED )
+  {
+    stream_.mode = mode;
+    stream_.bufferSize = *bufferSize;
+    stream_.nBuffers = 1;
+    stream_.sampleRate = sampleRate;
+    stream_.userFormat = format;
+    stream_.userInterleaved = interleaved;
+  }
+
+  else
+  {
+    stream_.mode = DUPLEX;
+  }
+
+  return SUCCESS;
+}
+
+//******************** End of __LINUX_PIPE__ ********************//
 #endif
 
 

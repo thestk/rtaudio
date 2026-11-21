@@ -20,6 +20,9 @@ endif()
 # Check for Pulse (any OS)
 pkg_check_modules(pulse libpulse-simple)
 
+# Check for PipeWire (Linux)
+pkg_check_modules(pipewire libpipewire-0.3)
+
 # Check for known non-Linux unix-likes
 if (CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
   message(STATUS "NetBSD detected, using OSS")
@@ -55,6 +58,7 @@ option(RTAUDIO_API_WASAPI "Build WASAPI API" ${WIN32})
 option(RTAUDIO_API_OSS "Build OSS4 API" ${xBSD})
 option(RTAUDIO_API_ALSA "Build ALSA API" ${LINUX})
 option(RTAUDIO_API_PULSE "Build PulseAudio API" ${pulse_FOUND})
+option(RTAUDIO_API_PIPE "Build PipeWire API" ${pipewire_FOUND})
 option(RTAUDIO_API_JACK "Build JACK audio server API" ${HAVE_JACK})
 option(RTAUDIO_API_CORE "Build CoreAudio API" ${APPLE})
 option(RTAUDIO_INSTALL "Generate installation target" ON)
@@ -161,6 +165,15 @@ if (RTAUDIO_API_PULSE)
   list(APPEND PKGCONFIG_REQUIRES "libpulse-simple")
   list(APPEND API_DEFS "-D__LINUX_PULSE__")
   list(APPEND API_LIST "pulse")
+endif()
+
+# PipeWire
+if (RTAUDIO_API_PIPE)
+  set(NEED_PTHREAD ON)
+  list(APPEND INCDIRS ${pipewire_INCLUDE_DIRS})
+  list(APPEND LINKLIBS ${pipewire_LIBRARIES})
+  list(APPEND API_DEFS "-D__LINUX_PIPE__")
+  list(APPEND API_LIST "pipe")
 endif()
 
 # CoreAudio

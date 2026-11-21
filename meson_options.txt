@@ -3,6 +3,7 @@ option('jack', type : 'feature', value : 'auto', description: 'Build with JACK B
 option('alsa', type : 'feature', value : 'auto', description: 'Build with ALSA Backend')
 option('pulse', type : 'feature', value : 'auto', description: 'Build with Pulseaudio Backend')
 option('oss', type : 'boolean', value : 'false', description: 'Build with OSS Backend')
+option('pipe', type : 'feature', value : 'auto', description: 'Build with PipeWire Backend')
 option('core', type : 'feature', value : 'auto', description: 'Build with CoreAudio Backend')
 option('dsound', type : 'feature', value : 'auto', description: 'Build with DirectSound Backend')
 option('asio', type : 'feature', value : 'auto', description: 'Build with ASIO Backend')

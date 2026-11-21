@@ -20,6 +20,7 @@ A few options can be passed to configure (or the autogen.sh script), including:
   --with-alsa = choose native ALSA API support (linux only)
   --with-pulse = choose native PulseAudio API support (linux only)
   --with-oss = choose OSS API support (unixes)
+  --with-pipe = choose PipeWire API support (linux only)
   --with-jack = choose JACK server support (linux or Macintosh OS-X)
   --with-core = choose CoreAudio API support (Macintosh OS-X only)
   --with-asio = choose ASIO API support (windows only)

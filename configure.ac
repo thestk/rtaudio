@@ -52,6 +52,7 @@ AC_ARG_WITH(jack, [AS_HELP_STRING([--with-jack], [choose JACK server support])])
 AC_ARG_WITH(alsa, [AS_HELP_STRING([--with-alsa], [choose native ALSA API support (linux only)])])
 AC_ARG_WITH(pulse, [AS_HELP_STRING([--with-pulse], [choose PulseAudio API support (unixes)])])
 AC_ARG_WITH(oss, [AS_HELP_STRING([--with-oss], [choose OSS API support (unixes)])])
+AC_ARG_WITH(pipe, [AS_HELP_STRING([--with-pipe], [choose PipeWire API support (linux only)])])
 AC_ARG_WITH(core, [AS_HELP_STRING([--with-core], [choose CoreAudio API support (mac only)])])
 AC_ARG_WITH(asio, [AS_HELP_STRING([--with-asio], [choose ASIO API support (win32 only)])])
 AC_ARG_WITH(dsound, [AS_HELP_STRING([--with-dsound], [choose DirectSound API support (win32 only)])])
@@ -167,6 +168,7 @@ AS_IF([test "x$with_jack"   = "xyes"], [systems="$systems jack"])
 AS_IF([test "x$with_alsa"   = "xyes"], [systems="$systems alsa"])
 AS_IF([test "x$with_pulse"  = "xyes"], [systems="$systems pulse"])
 AS_IF([test "x$with_oss"    = "xyes"], [systems="$systems oss"])
+AS_IF([test "x$with_pipe"   = "xyes"], [systems="$systems pipe"])
 AS_IF([test "x$with_core"   = "xyes"], [systems="$systems core"])
 AS_IF([test "x$with_asio"   = "xyes"], [systems="$systems asio"])
 AS_IF([test "x$with_dsound" = "xyes"], [systems="$systems dsound"])
@@ -179,7 +181,7 @@ AS_IF([test "x$systems" = "x"],
   AS_CASE([$host],
     [*-*-netbsd*],   [systems="oss"],
     [*-*-freebsd*],  [systems="oss"],
-    [*-*-linux*],    [systems="alsa pulse jack oss"],
+    [*-*-linux*],    [systems="alsa pulse jack oss pipe"],
     [*-apple*],      [systems="core jack"],
     [*-mingw32*],    [systems="asio dsound pulse wasapi jack"],
     [*-mingw64*],    [systems="asio dsound pulse wasapi jack"],
@@ -191,6 +193,7 @@ AS_IF([test "x$with_jack"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep 
 AS_IF([test "x$with_alsa"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v alsa`])
 AS_IF([test "x$with_pulse"  = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v pulse`])
 AS_IF([test "x$with_oss"    = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v oss`])
+AS_IF([test "x$with_pipe"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v pipe`])
 AS_IF([test "x$with_core"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v core`])
 AS_IF([test "x$with_asio"   = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v asio`])
 AS_IF([test "x$with_dsound" = "xno"], [systems=`echo $systems|tr ' ' \\\\n|grep -v dsound`])
@@ -246,6 +249,18 @@ AS_CASE(["$systems"], [*" oss "*], [
        AC_MSG_ERROR([sys/soundcard.h not found]))
     [],
     [#include <sys/soundcard.h>])
+])
+
+AS_CASE(["$systems"], [*" pipe "*], [
+  AC_CHECK_LIB(pipewire-0.3, pw_init,
+    [api="$api -D__LINUX_PIPE__"
+     req="$req pipewire-0.3"
+     need_pthread=yes
+     found="$found PipeWire"
+     CPPFLAGS="-I/usr/include/pipewire-0.3 -I/usr/include/spa-0.2 $CPPFLAGS"
+     LIBS="-lpipewire-0.3 $LIBS"],
+    AS_CASE(["$required"], [*" pipe "*],
+      AC_MSG_ERROR([PipeWire support requires the pipewire-0.3 library])))
 ])
 
 AS_CASE(["$systems"], [*" jack "*], [
