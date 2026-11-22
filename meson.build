@@ -84,6 +84,12 @@ if pulsesimple_dep.found()
 	deps += pulsesimple_dep
 endif
 
+pipe_dep = dependency('libpipewire-0.3', required: get_option('pipe'))
+if pipe_dep.found()
+	defines += '-D__LINUX_PIPE__'
+	deps += pipe_dep
+endif
+
 core_dep = dependency('appleframeworks', modules: ['CoreAudio', 'CoreFoundation'], required: get_option('core'))
 if core_dep.found()
 	defines += '-D__MACOSX_CORE__'
@@ -142,6 +148,7 @@ summary({'ALSA': alsa_dep.found(),
 	'OSS': get_option('oss'),
 	'JACK': jack_dep.found(),
 	'PulseAudio': pulsesimple_dep.found(),
+	'PipeWire': pipe_dep.found(),
 	'CoreAudio': core_dep.found(),
 	'DirectAudio': dsound_dep.found(),
 	'WASAPI': wasapi_found,

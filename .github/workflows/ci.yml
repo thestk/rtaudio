@@ -40,10 +40,14 @@ jobs:
             APIcmake: PULSE
             mesonapi: pulse=enabled
             deps: libpulse-dev
-          - api: oss
-            APIcmake: OSS
-            mesonapi: oss=true
-            deps: oss4-dev
+          # - api: oss
+          #   APIcmake: OSS
+          #   mesonapi: oss=true
+          #   deps: oss4-dev
+          - api: pipe
+            APIcmake: PIPE
+            mesonapi: pipe=enabled
+            deps: libpipewire-0.3
     steps:
     - uses: actions/checkout@v2
       with:
@@ -61,9 +65,9 @@ jobs:
     - name: CMake
       run:
         mkdir bld-cmake && cd bld-cmake
-        && cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/inst -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make VERBOSE=1 && make install && find inst
+        && cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/inst -DRTAUDIO_API_OSS=OFF -DRTAUDIO_API_ALSA=OFF -DRTAUDIO_API_PULSE=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_PIPE=OFF -DRTAUDIO_API_${{matrix.APIcmake}}=ON && make VERBOSE=1 && make install && find inst
     - name: Meson
-      run: meson bld-meson --prefix=$PWD/bld-meson/inst -Ddocs=true -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v install && find inst
+      run: meson bld-meson --prefix=$PWD/bld-meson/inst -Ddocs=true -Dalsa=disabled -Djack=disabled -Dpulse=disabled -Doss=false -Dpipe=disabled -D${{matrix.mesonapi}} && cd bld-meson && ninja -j1 -v install && find inst
 
   MacOS:
     runs-on: macOS-latest

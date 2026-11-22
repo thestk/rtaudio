@@ -281,6 +281,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
     UNIX_JACK,      /*!< The Jack Low-Latency Audio Server API. */
     LINUX_PULSE,    /*!< The Linux PulseAudio API. */
     LINUX_OSS,      /*!< The Linux Open Sound System API. */
+    LINUX_PIPE,     /*!< The Linux PipeWire API. */
     WINDOWS_ASIO,   /*!< The Steinberg Audio Stream I/O API. */
     WINDOWS_WASAPI, /*!< The Microsoft WASAPI API. */
     WINDOWS_DS,     /*!< The Microsoft DirectSound API. */
@@ -688,7 +689,7 @@ namespace audio {
 // Setup for "dummy" behavior if no apis specified.
 #if !(defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) || defined(__WINDOWS_WASAPI__) \
       || defined(__LINUX_ALSA__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__) \
-      || defined(__LINUX_OSS__) || defined(__MACOSX_CORE__))
+      || defined(__LINUX_OSS__) || defined(__LINUX_PIPE__) || defined(__MACOSX_CORE__))
 
   #define __RTAUDIO_DUMMY__
 
