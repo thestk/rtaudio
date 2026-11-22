@@ -6102,7 +6102,11 @@ void RtApiWasapi::wasapiThread()
     if ( captureAudioClient ) {
       // if the callback input buffer was not pulled from captureBuffer, wait for next capture event
       if ( !callbackPulled ) {
-        WaitForSingleObject( loopbackEnabled ? renderEvent : captureEvent, INFINITE );
+        // Bounded, as in Microsoft's event-driven WASAPI samples: a device that
+        // stops signaling (one removed mid-stream) must not hold this thread, and
+        // stopStream() waiting for it, for good. After a timeout the loop goes on
+        // and finds the stream stopping or the device gone.
+        WaitForSingleObject( loopbackEnabled ? renderEvent : captureEvent, 2000 );
       }
 
       // Get capture buffer from stream
@@ -6158,7 +6162,7 @@ void RtApiWasapi::wasapiThread()
     if ( renderAudioClient ) {
       // if the callback output buffer was not pushed to renderBuffer, wait for next render event
       if ( callbackPulled && !callbackPushed ) {
-        WaitForSingleObject( renderEvent, INFINITE );
+        WaitForSingleObject( renderEvent, 2000 ); // bounded, as above
       }
 
       // Get render buffer from stream
