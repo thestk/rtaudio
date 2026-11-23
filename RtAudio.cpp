@@ -4055,7 +4055,17 @@ RtAudioErrorType RtApiAsio :: stopStream()
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
     if ( handle->drainCounter == 0 ) {
       handle->drainCounter = 2;
-      WaitForSingleObject( handle->condition, INFINITE );  // block until signaled
+      // The drain is signaled from the driver's buffer switch callback, so a
+      // driver that never calls back (one that did not start, or lost its
+      // device) would block here for good. Wait a few buffers' worth, then
+      // stop the driver anyway.
+      DWORD timeout = 1000;
+      if ( stream_.sampleRate > 0 )
+        timeout += (DWORD) ( 4000.0 * stream_.bufferSize / stream_.sampleRate );
+      if ( WaitForSingleObject( handle->condition, timeout ) == WAIT_TIMEOUT ) {
+        errorText_ = "RtApiAsio::stopStream: the driver did not drain the stream, stopping it anyway.";
+        error( RTAUDIO_WARNING );
+      }
     }
   }
 
@@ -6092,7 +6102,11 @@ void RtApiWasapi::wasapiThread()
     if ( captureAudioClient ) {
       // if the callback input buffer was not pulled from captureBuffer, wait for next capture event
       if ( !callbackPulled ) {
-        WaitForSingleObject( loopbackEnabled ? renderEvent : captureEvent, INFINITE );
+        // Bounded, as in Microsoft's event-driven WASAPI samples: a device that
+        // stops signaling (one removed mid-stream) must not hold this thread, and
+        // stopStream() waiting for it, for good. After a timeout the loop goes on
+        // and finds the stream stopping or the device gone.
+        WaitForSingleObject( loopbackEnabled ? renderEvent : captureEvent, 2000 );
       }
 
       // Get capture buffer from stream
@@ -6148,7 +6162,7 @@ void RtApiWasapi::wasapiThread()
     if ( renderAudioClient ) {
       // if the callback output buffer was not pushed to renderBuffer, wait for next render event
       if ( callbackPulled && !callbackPushed ) {
-        WaitForSingleObject( renderEvent, INFINITE );
+        WaitForSingleObject( renderEvent, 2000 ); // bounded, as above
       }
 
       // Get render buffer from stream
