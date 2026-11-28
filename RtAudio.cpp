@@ -2547,6 +2547,8 @@ const char* RtApiCore :: getErrorCode( OSStatus code )
 
 #include <unistd.h>
 #include <cstdio>
+#include <atomic>
+#include <ctime>
 
 // A structure to hold various information related to the Jack API
 // implementation.
@@ -2556,11 +2558,12 @@ struct JackHandle {
   std::string deviceName[2];
   bool xrun[2];
   pthread_cond_t condition;
-  int drainCounter;       // Tracks callback counts when draining
-  bool internalDrain;     // Indicates if stop is initiated from callback or not.
+  std::atomic<int> drainCounter; // Tracks callback counts when draining; shared with the JACK process thread
+  std::atomic<bool> internalDrain; // Indicates if stop is initiated from callback or not.
+  bool drained;           // Set by the process thread once an external stop has drained; guarded by stream_.mutex
 
   JackHandle()
-    :client(0), drainCounter(0), internalDrain(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
+    :client(0), drainCounter(0), internalDrain(false), drained(false) { ports[0] = 0; ports[1] = 0; xrun[0] = false; xrun[1] = false; }
 };
 
 std::string escapeJackPortRegex(std::string &str)
@@ -2908,7 +2911,12 @@ bool RtApiJack :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
       goto error;
     }
 
-    if ( pthread_cond_init(&handle->condition, NULL) ) {
+    pthread_condattr_t conditionAttr;
+    pthread_condattr_init( &conditionAttr );
+    pthread_condattr_setclock( &conditionAttr, CLOCK_MONOTONIC ); // stopStream() waits with a timeout
+    int conditionError = pthread_cond_init( &handle->condition, &conditionAttr );
+    pthread_condattr_destroy( &conditionAttr );
+    if ( conditionError ) {
       errorText_ = "RtApiJack::probeDeviceOpen: error initializing pthread condition variable.";
       goto error;
     }
@@ -3093,6 +3101,15 @@ RtAudioErrorType RtApiJack :: startStream( void )
   */
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
+
+  // Reset the drain state before jack_activate(), so the process thread
+  // never sees these being written concurrently.
+  handle->drainCounter = 0;
+  handle->internalDrain = false;
+  MUTEX_LOCK( &stream_.mutex );
+  handle->drained = false;
+  MUTEX_UNLOCK( &stream_.mutex );
+
   int result = jack_activate( handle->client );
   if ( result ) {
     errorText_ = "RtApiJack::startStream(): unable to activate JACK client!";
@@ -3146,8 +3163,6 @@ RtAudioErrorType RtApiJack :: startStream( void )
     free(ports);
   }
 
-  handle->drainCounter = 0;
-  handle->internalDrain = false;
   stream_.state = STREAM_RUNNING;
 
  unlock:
@@ -3168,10 +3183,28 @@ RtAudioErrorType  RtApiJack :: stopStream( void )
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
 
-    if ( handle->drainCounter == 0 ) {
-      handle->drainCounter = 2;
-      pthread_cond_wait( &handle->condition, &stream_.mutex ); // block until signaled
+    // The process thread signals under stream_.mutex once the output
+    // has drained.  Wait on a predicate so that a spurious wakeup, or a
+    // signal sent before we start waiting, cannot be missed.  The wait
+    // is bounded in case the process callback stops being called (for
+    // example a stalled server); jack_deactivate() follows either way.
+    // The mutex must be released before jack_deactivate(), which waits
+    // for the process callback to return.
+    int expected = 0;
+    MUTEX_LOCK( &stream_.mutex );
+    if ( handle->drainCounter.compare_exchange_strong( expected, 2 ) ) {
+      double seconds = 1.0 + 20.0 * stream_.bufferSize / ( stream_.sampleRate ? stream_.sampleRate : 1 );
+      struct timespec deadline;
+      clock_gettime( CLOCK_MONOTONIC, &deadline );
+      deadline.tv_sec += (time_t) seconds;
+      deadline.tv_nsec += (long) ( ( seconds - (time_t) seconds ) * 1e9 );
+      if ( deadline.tv_nsec >= 1000000000L ) { deadline.tv_sec++; deadline.tv_nsec -= 1000000000L; }
+      while ( !handle->drained ) {
+        if ( pthread_cond_timedwait( &handle->condition, &stream_.mutex, &deadline ) != 0 )
+          break; // timed out (or failed): deactivate anyway
+      }
     }
+    MUTEX_UNLOCK( &stream_.mutex );
   }
 
   jack_deactivate( handle->client );
@@ -3190,9 +3223,21 @@ RtAudioErrorType RtApiJack :: abortStream( void )
   }
 
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
-  handle->drainCounter = 2;
+  // Skip the drain, unless a drain or stop is already in progress.
+  int expected = 0;
+  handle->drainCounter.compare_exchange_strong( expected, 2 );
 
   return stopStream();
+}
+
+// Called from the JACK process thread to wake a stopStream() that is
+// waiting for the output to drain.
+static void jackSignalDrained( JackHandle *handle, pthread_mutex_t *mutex )
+{
+  MUTEX_LOCK( mutex );
+  handle->drained = true;
+  pthread_cond_signal( &handle->condition );
+  MUTEX_UNLOCK( mutex );
 }
 
 // This function will be called by a spawned thread when the user
@@ -3206,7 +3251,7 @@ static void *jackStopStream( void *ptr )
   RtApiJack *object = (RtApiJack *) info->object;
 
   object->stopStream();
-  pthread_exit( NULL );
+  return NULL;
 }
 
 bool RtApiJack :: callbackEvent( unsigned long nframes )
@@ -3230,11 +3275,17 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
   if ( handle->drainCounter > 3 ) {
     ThreadHandle threadId;
 
-    stream_.state = STREAM_STOPPING;
-    if ( handle->internalDrain == true )
-      pthread_create( &threadId, NULL, jackStopStream, info );
-    else // external call to stopStream()
-      pthread_cond_signal( &handle->condition );
+    int expected = 4;
+    if ( !handle->drainCounter.compare_exchange_strong( expected, 5 ) )
+      return SUCCESS; // already handled for this stop
+
+    if ( handle->internalDrain == true ) {
+      stream_.state = STREAM_STOPPING;
+      if ( pthread_create( &threadId, NULL, jackStopStream, info ) == 0 )
+        pthread_detach( threadId );
+    }
+    else // external call to stopStream(), which is waiting for this
+      jackSignalDrained( handle, &stream_.mutex );
     return SUCCESS;
   }
 
@@ -3255,14 +3306,20 @@ bool RtApiJack :: callbackEvent( unsigned long nframes )
                                   stream_.bufferSize, streamTime, status, info->userData );
     if ( cbReturnValue == 2 ) {
       stream_.state = STREAM_STOPPING;
-      handle->drainCounter = 2;
+      // If an external stopStream() started a drain meanwhile, it is
+      // waiting; we are aborting, so wake it now.
+      if ( handle->drainCounter.exchange( 2 ) != 0 )
+        jackSignalDrained( handle, &stream_.mutex );
       ThreadHandle id;
-      pthread_create( &id, NULL, jackStopStream, info );
+      if ( pthread_create( &id, NULL, jackStopStream, info ) == 0 )
+        pthread_detach( id );
       return SUCCESS;
     }
     else if ( cbReturnValue == 1 ) {
-      handle->drainCounter = 1;
-      handle->internalDrain = true;
+      // An external stopStream() may already have started a drain; keep it.
+      int expected = 0;
+      if ( handle->drainCounter.compare_exchange_strong( expected, 1 ) )
+        handle->internalDrain = true;
     }
   }
 
